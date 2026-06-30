@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test AJAX</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <h1>Test AJAX Request</h1>
+    <button id="testBtn">Test Jimiki Category (ID: 6)</button>
+    <div id="result"></div>
+
+    <script>
+        // Get CSRF token from meta tag or use a default one for testing
+        const csrfToken = document.querySelector('meta[name="csrf-token"]') ? 
+            document.querySelector('meta[name="csrf-token"]').getAttribute('content') : 
+            'dummy-token';
+            
+        document.getElementById('testBtn').addEventListener('click', function() {
+            fetch('/test-get-products-by-category', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    category_id: 6
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                console.log('Data received:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = '<p>Error: ' + error.message + '</p>';
+            });
+        });
+    </script>
+</body>
+</html>

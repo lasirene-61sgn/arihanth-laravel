@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Workorder Lookup</title>
+</head>
+<body>
+    <h1>Test Workorder Product Lookup</h1>
+    <p>Enter a product code or design code:</p>
+    <input type="text" id="productCode" value="ASD0001">
+    <button onclick="testLookup()">Test Lookup</button>
+    <div id="result"></div>
+
+    <script>
+        async function testLookup() {
+            const code = document.getElementById('productCode').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch(`/super-admin/test-workorder-lookup/${encodeURIComponent(code)}`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

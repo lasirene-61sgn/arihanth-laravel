@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Http\Controllers\Craftsman;
+
+use App\Http\Controllers\Controller;
+use App\Models\ProductCategory;
+use App\Models\ProductSubcategory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class ProductCategoryController extends Controller
+{
+    public function store(Request $request)
+    {
+        // If 'parent_category_id' present, create subcategory; else create category
+        if ($request->filled('parent_category_id')) {
+            $validated = $request->validate([
+                'parent_category_id' => 'required|exists:product_categories,id',
+                'name' => 'required|string|max:255',
+            ]);
+
+            $subcategory = ProductSubcategory::create([
+                'product_category_id' => $validated['parent_category_id'],
+                'name' => $validated['name'],
+            ]);
+
+            return response()->json(['status' => 'success', 'subcategory' => $subcategory]);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:product_categories,name',
+            'has_hook' => 'nullable|boolean',
+            'has_enamel' => 'nullable|boolean',
+            'has_rodium' => 'nullable|boolean',
+            'has_open_close' => 'nullable|boolean',
+            'has_stone' => 'nullable|boolean',
+        ]);
+
+        $category = ProductCategory::create([
+            'name' => $validated['name'],
+            'has_hook' => $request->boolean('has_hook'),
+            'has_enamel' => $request->boolean('has_enamel'),
+            'has_rodium' => $request->boolean('has_rodium'),
+            'has_open_close' => $request->boolean('has_open_close'),
+            'has_stone' => $request->boolean('has_stone'),
+        ]);
+
+        return response()->json(['status' => 'success', 'category' => $category]);
+    }
+
+    /**
+     * Get category options for dynamic form fields
+     */
+    public function getCategoryOptions(Request $request)
+    {
+        $category = ProductCategory::find($request->category_id);
+        if (!$category) {
+            return response()->json([]);
+        }
+
+        return response()->json([
+            'has_hook' => $category->has_hook,
+            'has_enamel' => $category->has_enamel,
+            'has_rodium' => $category->has_rodium,
+            'has_open_close' => $category->has_open_close,
+            'has_stone' => $category->has_stone,
+        ]);
+    }
+}

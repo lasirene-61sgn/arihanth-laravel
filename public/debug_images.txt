@@ -1,0 +1,420 @@
+Event triggered at 2026-02-03 10:13:40
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-03 10:18:07
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-03 10:20:08
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-03 12:55:28
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-03 12:56:50
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-03 12:57:57
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-05 04:26:29
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-05 12:03:11
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-05 12:14:50
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-05 12:51:46
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-05 13:10:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-05 13:11:58
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-09 09:24:28
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-09 09:30:05
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-09 09:46:45
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-09 09:56:39
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-09 10:26:00
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-10 10:39:26
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-10 12:30:36
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-13 05:12:21
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-13 07:50:39
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-13 08:02:09
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-13 08:03:06
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-13 08:03:17
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-13 08:08:20
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-13 09:40:05
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-20 09:06:38
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-20 09:11:25
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-20 09:11:54
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-20 11:20:31
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-20 11:20:44
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-21 06:32:35
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-21 06:33:28
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-21 07:27:18
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-24 07:12:09
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-24 10:11:34
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-24 11:18:03
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 09:53:06
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-02-25 09:54:13
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 10:30:48
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 11:38:00
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 12:18:03
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 12:18:05
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 12:18:07
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 12:18:10
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-25 12:18:13
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-02-27 05:47:09
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-13 11:44:36
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-13 12:02:01
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-13 12:21:53
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-16 07:21:10
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-16 07:21:12
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-17 06:55:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-19 09:09:46
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-03-20 05:53:55
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-03-20 10:02:31
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 10:40:19
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:06:21
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:13:29
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:13:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:15:46
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:15:59
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:16:25
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:16:47
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-20 11:17:46
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-23 12:29:33
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-23 13:29:00
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-24 07:14:55
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-24 07:16:51
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-24 07:27:18
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-27 13:10:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-27 13:11:03
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-27 13:11:17
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-27 13:11:47
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-27 13:15:55
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:44:16
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:44:25
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:45:17
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:45:28
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:45:54
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:46:16
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:47:44
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:48:30
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:52:15
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:53:01
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:54:11
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 05:55:05
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 07:02:41
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 08:41:27
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 08:42:37
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 08:44:21
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 08:45:49
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:04:09
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:04:38
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:07:00
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:07:40
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:09:33
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:11:12
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:12:31
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:13:07
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:45:09
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 09:51:23
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 10:03:07
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 11:39:09
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-03-28 13:04:54
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 09:27:17
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:05:26
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:32:13
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:36:39
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:37:20
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:40:13
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-01 10:40:45
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-02 05:21:26
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-02 06:30:36
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-04 05:29:05
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-04 05:45:31
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-06 10:49:37
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-06 11:04:38
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-07 13:27:20
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-08 09:39:36
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-09 06:19:48
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-11 05:02:18
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-13 06:30:46
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-14 05:22:31
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-14 08:53:50
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-15 05:07:04
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-16 08:39:41
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-16 09:08:22
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-16 09:33:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-18 12:34:10
+Drawings count: 0
+Image column found at: A
+Event triggered at 2026-04-18 12:57:33
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-24 10:26:07
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-04-24 10:28:32
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-14 12:11:04
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-14 13:09:10
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-20 08:49:43
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-21 05:40:30
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-21 08:30:45
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-21 10:25:37
+Drawings count: 0
+Image column found at: S
+Event triggered at 2026-05-22 06:52:09
+Drawings count: 0
+Image column found at: S
