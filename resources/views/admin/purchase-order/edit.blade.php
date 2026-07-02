@@ -46,8 +46,17 @@
                     <form method="POST" action="{{ route('admin.purchase-order.update', $purchaseOrder) }}" enctype="multipart/form-data" id="purchaseOrderForm">
                         @csrf
                         @method('PUT')
-                        <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                        <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
+                        <input type="hidden" name="return_url" value="{{ old('return_url', request('return_url')) }}">
+                        @php
+                            $currentTab = request('tab', 'created');
+                            if (request('return_url')) {
+                                parse_str(parse_url(request('return_url'), PHP_URL_QUERY), $query);
+                                if (isset($query['tab'])) {
+                                    $currentTab = $query['tab'];
+                                }
+                            }
+                        @endphp
+                        <input type="hidden" name="tab" value="{{ old('tab', $currentTab) }}">
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -321,8 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
         group.innerHTML = `
             <div class="grams-quantity-row mb-2">
                 <div class="row g-1">
-                    <div class="col-4"><input type="number" step="0.01" class="form-control grams-input" name="items[${itemIndex}][grams][]" value="0" required></div>
-                    <div class="col-4"><input type="number" class="form-control quantity-input" name="items[${itemIndex}][quantity][]" value="1" required></div>
+                    <div class="col-4"><input type="number" step="0.01" class="form-control grams-input" name="items[${itemIndex}][grams][]" placeholder="Grams" required></div>
+                    <div class="col-4"><input type="number" class="form-control quantity-input" name="items[${itemIndex}][quantity][]" placeholder="Qty" required></div>
                     <div class="col-4"><input type="number" class="form-control individual-total" name="items[${itemIndex}][individual_totals][]" value="0.00" readonly></div>
                 </div>
             </div>`;

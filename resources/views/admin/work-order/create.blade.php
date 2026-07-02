@@ -523,7 +523,8 @@
             
             return fetch(`/admin/product/get-subcategories?category_id=${categoryId}`)
                 .then(response => response.ok ? response.json() : [])
-                .then(list => {
+                .then(data => {
+                    const list = Array.isArray(data) ? data : (data.subcategories || []);
                     if (list.length > 0) {
                         subcategoryContainer.style.display = '';
                         list.forEach(sub => {

@@ -574,7 +574,8 @@ class WorkOrderController extends Controller
             $query->select('product_category')
                 ->from('work_orders')
                 ->whereNull('bp_code');
-        })->orderBy('name')->get();
+        })->orWhere('id', $workOrder->product_category_id)
+        ->orderBy('name')->get();
         $buyers = Buyer::all();
         return view('super-admin.work-order.edit', compact('workOrder', 'categories', 'buyers'));
     }

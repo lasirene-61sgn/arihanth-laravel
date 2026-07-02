@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+    function simulate() {
+        const fetchResponse = [
+            {id: 83, name: "SHORT U PENDANT"},
+            {id: 16, name: "SHORT V PENDANT"}
+        ];
+        
+        let subcategoryOptions = [];
+        let listItems = [];
+        
+        // Simulating refreshSubcategories
+        fetchResponse.forEach(sub => {
+            subcategoryOptions.push({value: sub.id.toString(), text: sub.name});
+            listItems.push({dataset: {value: sub.id.toString()}, classList: {add: function(c){ console.log("Added class " + c + " to " + sub.name); }}});
+        });
+        
+        // Simulating PHP output
+        const savedSubcategoryName = "SHORT U PENDANT";
+        const savedSubcategoryId = 83; // Integer!
+        
+        console.log("savedSubcategoryId:", savedSubcategoryId, typeof savedSubcategoryId);
+        
+        let selectedIndex = -1;
+        
+        if (savedSubcategoryName || savedSubcategoryId) {
+            for (let i = 0; i < subcategoryOptions.length; i++) {
+                if (subcategoryOptions[i].value == savedSubcategoryId || 
+                   (savedSubcategoryName && subcategoryOptions[i].text.trim().toLowerCase() === savedSubcategoryName.trim().toLowerCase())) {
+                    
+                    selectedIndex = i;
+                    console.log("Matched index: " + i);
+                    
+                    listItems.forEach(item => {
+                        if(item.dataset.value == subcategoryOptions[i].value) {
+                            item.classList.add('selected');
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+        
+        if (selectedIndex === -1) {
+            console.log("FAILED TO MATCH");
+        } else {
+            console.log("SUCCESSFULLY MATCHED");
+        }
+    }
+</script>
+</head>
+<body onload="simulate()">
+</body>
+</html>

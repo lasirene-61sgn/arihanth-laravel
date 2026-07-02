@@ -38,9 +38,11 @@
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center bg-white">
                     <h4 class="mb-0">{{ $purchaseOrder->purchase_order_code }}</h4>
-                    <div>
+                    @if(!in_array($purchaseOrder->status, ['in_process', 'overdue', 'completed', 'for_approval']))
+                    <div class="btn-group me-2">
                         <a href="{{ route('super-admin.purchase-order.edit', $purchaseOrder) }}" class="btn btn-primary btn-sm">Edit Purchase Order</a>
                     </div>
+                    @endif
                 </div>
                 <div class="card-body">
                     <div class="row mb-4">

@@ -46,14 +46,25 @@
             </div>
         </div>
 
-        <div class="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
+        <div class="mt-6 flex flex-wrap gap-3 border-t border-slate-100 pt-5 items-center">
             <button onclick="toggleSection('searchSection')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm hover:border-indigo-500 flex items-center shadow-sm">
                 <i class="bi bi-search me-2 text-indigo-600"></i> {{ __('messages.search') }}
             </button>
             <button onclick="toggleSection('filterSection')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm hover:border-indigo-500 flex items-center shadow-sm">
                 <i class="bi bi-funnel me-2 text-indigo-600"></i> {{ __('messages.advanced_filter') }}
             </button>
+            <button onclick="document.getElementById('imageSearchModal').classList.remove('hidden')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm hover:border-indigo-500 flex items-center shadow-sm">
+                <i class="bi bi-image me-2 text-indigo-600"></i> Search by Image
+            </button>
             <a href="{{ route('super-admin.design.index') }}" class="px-4 py-2 text-sm text-slate-400 hover:text-red-500 transition">{{ __('messages.reset_all') }}</a>
+            
+            @if(request()->has('matched_ids'))
+            <div class="ml-auto flex items-center">
+                <span class="text-sm text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    <i class="bi bi-check-circle me-1"></i> Image Search Results Active
+                </span>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -577,6 +588,73 @@
                 </form>
             </div>
         </div>
+
+        <!-- Image Search Modal -->
+        <div id="imageSearchModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                <form action="{{ route('super-admin.design.search-by-image') }}" method="POST" enctype="multipart/form-data" id="imageSearchForm">
+                    @csrf
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-slate-800">Search by Image</h3>
+                        <button type="button" onclick="document.getElementById('imageSearchModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-sm text-slate-600 mb-4">Upload an image to find identical or visually matched designs in the database.</p>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="search-image" class="flex flex-col items-center justify-center w-full h-48 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i class="bi bi-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                                    <p class="mb-2 text-sm text-slate-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p class="text-xs text-slate-500">PNG, JPG, JPEG (Max. 10MB)</p>
+                                </div>
+                                <input id="search-image" name="image" type="file" class="hidden" accept="image/*" required onchange="previewSearchImage(this)"/>
+                            </label>
+                        </div>
+                        <div id="imageSearchPreviewContainer" class="hidden mt-4 relative w-full h-48 rounded-lg overflow-hidden border border-slate-200">
+                            <img id="imageSearchPreview" src="#" alt="Preview" class="w-full h-full object-contain bg-slate-100" />
+                            <button type="button" onclick="clearSearchImage()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <button type="button" onclick="document.getElementById('imageSearchModal').classList.add('hidden')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition">{{ __('messages.cancel') }}</button>
+                        <button type="submit" id="searchImageSubmitBtn" class="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition" disabled>Search Designs</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+            function previewSearchImage(input) {
+                const previewContainer = document.getElementById('imageSearchPreviewContainer');
+                const preview = document.getElementById('imageSearchPreview');
+                const uploadLabel = document.querySelector('label[for="search-image"]');
+                const submitBtn = document.getElementById('searchImageSubmitBtn');
+                
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        uploadLabel.classList.add('hidden');
+                        previewContainer.classList.remove('hidden');
+                        submitBtn.disabled = false;
+                    }
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+            
+            function clearSearchImage() {
+                const input = document.getElementById('search-image');
+                const previewContainer = document.getElementById('imageSearchPreviewContainer');
+                const uploadLabel = document.querySelector('label[for="search-image"]');
+                const submitBtn = document.getElementById('searchImageSubmitBtn');
+                
+                input.value = '';
+                previewContainer.classList.add('hidden');
+                uploadLabel.classList.remove('hidden');
+                submitBtn.disabled = true;
+            }
+        </script>
 
         <script>
             function showAcceptModal(productId, productCode) {

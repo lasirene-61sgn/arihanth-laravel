@@ -746,6 +746,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         // Design Routes (Read-only for Super Admins)
         Route::prefix('design')->group(function () {
             Route::get('/', [SuperAdminDesignController::class, 'index'])->name('design.index');
+            Route::post('/search-by-image', [SuperAdminDesignController::class, 'searchByImage'])->name('design.search-by-image');
             Route::get('/get-available-users', [SuperAdminDesignController::class, 'getAvailableUsers'])->name('design.get-available-users');
             Route::get('/generate-missing-qrcodes', [SuperAdminDesignController::class, 'generateMissingQRCodes'])->name('design.generate-missing-qrcodes');
             Route::get('/{design}', [SuperAdminDesignController::class, 'show'])->name('design.show');

@@ -724,6 +724,7 @@ class WorkOrderController extends Controller
         $workOrder->load(['productCategory', 'subcategoryRelation']);
         $categories = ProductCategory::whereHas('products')
             ->orWhereHas('workOrders')
+            ->orWhere('id', $workOrder->product_category_id)
             ->orderBy('name')
             ->get();
         $buyers = Buyer::all();
@@ -1657,7 +1658,9 @@ class WorkOrderController extends Controller
                 'Quantity' => $order->quantity,
                 'Weight From' => $order->weight_from,
                 'Weight To' => $order->weight_to,
+                'Reference No' => $order->reference_no,
                 'Due Date' => $order->due_date ? $order->due_date->format('Y-m-d') : 'N/A',
+                'Craftsman Due Date' => $order->craftsman_due_date ? $order->craftsman_due_date->format('Y-m-d') : 'N/A',
                 'Status' => $order->status,
                 'Craftsman Status' => $order->craftsman_status,
                 'Allocated Craftsman' => $order->craftsman ? $order->craftsman->business_name : 'N/A',

@@ -39,7 +39,11 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
             <h4 class="text-lg font-bold text-gray-800">{{ $purchaseOrder->purchase_order_code }}</h4>
-            <a href="{{ route('admin.purchase-order.edit', $purchaseOrder) }}" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">Edit Order</a>
+            @if(!in_array($purchaseOrder->status, ['in_process', 'overdue', 'completed', 'for_approval']))
+                <div>
+                    <a href="{{ route('admin.purchase-order.edit', $purchaseOrder) }}" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition">Edit Order</a>
+                </div>
+            @endif
         </div>
 
         <div class="p-6">

@@ -27,6 +27,7 @@ class Design extends Model
         'created_by', // Add this field
         'design_status',
         'qr_code',
+        'image_hash',
     ];
 
     /**

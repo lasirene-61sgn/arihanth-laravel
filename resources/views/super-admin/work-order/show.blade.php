@@ -10,9 +10,11 @@
                 <h1 class="h2">View Work Order</h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <div class="btn-group me-2">
+                        @if(!in_array($workOrder->status, ['in_process', 'completed']))
                         <a href="{{ route('super-admin.work-order.edit', $workOrder) }}" class="btn btn-primary">
                             <i class="bi bi-pencil"></i> Edit Work Order
                         </a>
+                        @endif
                         <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
                             <i class="bi bi-share"></i> Share
                         </button>

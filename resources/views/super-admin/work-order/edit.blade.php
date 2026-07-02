@@ -37,6 +37,79 @@
         object-fit: cover;
         border-radius: 2px;
     }
+    /* Custom Searchable Dropdown Styles */
+    .custom-dropdown-container {
+        position: relative;
+        width: 100%;
+    }
+    .custom-dropdown-display {
+        width: 100%;
+        height: 38px;
+        padding: 6px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background-color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    .custom-dropdown-display:after {
+        content: "\F282";
+        font-family: "bootstrap-icons";
+        font-size: 0.8rem;
+    }
+    .custom-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 0.375rem 0.375rem;
+        z-index: 1050;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 10px;
+    }
+    .custom-dropdown-search {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+    .custom-dropdown-search:focus {
+        outline: none;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    .custom-dropdown-list {
+        max-height: 200px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .custom-dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        border-radius: 0.25rem;
+    }
+    .custom-dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+    .custom-dropdown-item.selected {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .custom-dropdown-item.hidden {
+        display: none;
+    }
 </style>
 @endsection
 
@@ -56,8 +129,17 @@
                     <form action="{{ route('super-admin.work-order.update', $workOrder) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
-                        <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                        <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
+                        <input type="hidden" name="return_url" value="{{ old('return_url', request('return_url')) }}">
+                        @php
+                            $currentTab = request('tab', 'new-orders');
+                            if (request('return_url')) {
+                                parse_str(parse_url(request('return_url'), PHP_URL_QUERY), $query);
+                                if (isset($query['tab'])) {
+                                    $currentTab = $query['tab'];
+                                }
+                            }
+                        @endphp
+                        <input type="hidden" name="tab" value="{{ old('tab', $currentTab) }}">
                         
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -165,10 +247,21 @@
                             
                             <div class="col-md-6 mb-3" id="subcategory-container" style="display: none;">
                                 <label for="subcategory_id" class="form-label">Sub Category</label>
-                                <select class="form-control @error('subcategory_id') is-invalid @enderror" 
-                                       id="subcategory_id" name="subcategory_id">
-                                    <option value="">Select Sub Category</option>
-                                </select>
+                                <div class="custom-dropdown-container" id="subcategory_container">
+                                    <div class="custom-dropdown-display" id="subcategory_display">--Select Sub Category--</div>
+                                    <div class="custom-dropdown-menu" id="subcategory_menu">
+                                        <div class="p-2 border-bottom d-flex gap-2">
+                                            <input type="text" class="custom-dropdown-search flex-grow-1" id="subcategory_search" placeholder="Search subcategories...">
+                                        </div>
+                                        <ul class="custom-dropdown-list" id="subcategory_list">
+                                            <li class="custom-dropdown-item" data-value="">--Select Sub Category--</li>
+                                        </ul>
+                                    </div>
+                                    <select class="form-control @error('subcategory_id') is-invalid @enderror" 
+                                           id="subcategory_id" name="subcategory_id" style="display: none;">
+                                        <option value="">Select Sub Category</option>
+                                    </select>
+                                </div>
                                 @error('subcategory_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -433,6 +526,87 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // GENERIC SEARCHABLE DROPDOWN
+        function initSearchableDropdown(containerId, displayId, menuId, searchInputId, listId, hiddenSelectId, placeholder, onSelect = null) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const display = document.getElementById(displayId);
+            const menu = document.getElementById(menuId);
+            const searchInput = document.getElementById(searchInputId);
+            const listContainer = document.getElementById(listId);
+            const hiddenSelect = document.getElementById(hiddenSelectId);
+
+            function getListItems() {
+                return listContainer.querySelectorAll('.custom-dropdown-item');
+            }
+
+            display.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = menu.style.display === 'block';
+                menu.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    searchInput.focus();
+                    searchInput.value = '';
+                    filterItems('');
+                }
+            });
+
+            searchInput.addEventListener('input', function() {
+                filterItems(this.value.toLowerCase());
+            });
+
+            function filterItems(query) {
+                getListItems().forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+            }
+
+            listContainer.addEventListener('click', function(e) {
+                const item = e.target.closest('.custom-dropdown-item');
+                if (!item) return;
+
+                const val = item.dataset.value;
+                const text = item.textContent.trim();
+                
+                display.textContent = val ? text : placeholder;
+                hiddenSelect.value = val;
+                
+                hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                getListItems().forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                
+                menu.style.display = 'none';
+
+                if (onSelect) {
+                    onSelect(val, item);
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!container.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+
+            // Set initial state
+            if (hiddenSelect.value) {
+                const selectedItem = Array.from(getListItems()).find(i => i.dataset.value === hiddenSelect.value);
+                if (selectedItem) {
+                    display.textContent = selectedItem.textContent.trim();
+                    selectedItem.classList.add('selected');
+                }
+            }
+        }
+        
+        initSearchableDropdown('category_container', 'category_display', 'category_menu', 'category_search', 'category_list', 'product_category_id', '--Select Category--');
+        initSearchableDropdown('subcategory_container', 'subcategory_display', 'subcategory_menu', 'subcategory_search', 'subcategory_list', 'subcategory_id', '--Select Sub Category--');
         const categorySelect = document.getElementById('product_category_id');
         const subcategoryContainer = document.getElementById('subcategory-container');
         const subcategorySelect = document.getElementById('subcategory_id');
@@ -451,19 +625,40 @@
 
         function refreshSubcategories(categoryId) {
             subcategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
-            if (!categoryId) { subcategoryContainer.style.display = 'none'; return Promise.resolve(); }
+            const listContainer = document.getElementById('subcategory_list');
+            const display = document.getElementById('subcategory_display');
+            listContainer.innerHTML = '<li class="custom-dropdown-item" data-value="">--Select Sub Category--</li>';
+            display.textContent = '--Select Sub Category--';
+
+            if (!categoryId) { 
+                subcategoryContainer.style.display = 'none'; 
+                return Promise.resolve(); 
+            }
+            
             return fetch(`{{ url('/super-admin/product/get-subcategories') }}?category_id=${categoryId}`)
-                .then(r => r.json())
-                .then(list => {
+                .then(response => response.ok ? response.json() : [])
+                .then(data => {
+                    const list = Array.isArray(data) ? data : (data.subcategories || []);
                     if (list.length > 0) {
                         subcategoryContainer.style.display = '';
-                        list.forEach(s => {
+                        list.forEach(sub => {
                             const opt = document.createElement('option');
-                            opt.value = s.id; opt.textContent = s.name; subcategorySelect.appendChild(opt);
+                            opt.value = sub.id; opt.textContent = sub.name;
+                            subcategorySelect.appendChild(opt);
+
+                            const li = document.createElement('li');
+                            li.className = 'custom-dropdown-item';
+                            li.dataset.value = sub.id; li.textContent = sub.name;
+                            listContainer.appendChild(li);
                         });
                     } else {
                         subcategoryContainer.style.display = '';
                     }
+                    return list;
+                })
+                .catch(error => {
+                    console.error('Error fetching subcategories:', error);
+                    return [];
                 });
         }
 
@@ -476,16 +671,33 @@
         function initializeSubcategory() {
             if (categorySelect.value) {
                 refreshSubcategories(categorySelect.value).then(() => {
-                    // Try ID Match first (New Logic)
-                    const savedSubcategoryId = "{{ old('subcategory_id', $workOrder->subcategory_id) }}";
-                    if (savedSubcategoryId) {
-                        subcategorySelect.value = savedSubcategoryId;
-                        if (subcategorySelect.selectedIndex === -1) {
-                             // Fallback to Name Match logic if ID not in list (legacy data)
-                             fallbackNameMatch();
+                    const savedSubcategoryName = @json($workOrder->subcategory);
+                    const savedSubcategoryId = @json($workOrder->subcategory_id);
+                    
+                    let subcategoryOptions = subcategorySelect.options;
+                    let listItems = document.querySelectorAll('#subcategory_list .custom-dropdown-item');
+                    let display = document.getElementById('subcategory_display');
+                    
+                    let selectedIndex = -1;
+                    
+                    if (savedSubcategoryName || savedSubcategoryId) {
+                        for (let i = 0; i < subcategoryOptions.length; i++) {
+                            if (subcategoryOptions[i].value == savedSubcategoryId || 
+                               (savedSubcategoryName && subcategoryOptions[i].text.trim().toLowerCase() === savedSubcategoryName.trim().toLowerCase())) {
+                                
+                                subcategorySelect.selectedIndex = i;
+                                selectedIndex = i;
+                                
+                                display.textContent = subcategoryOptions[i].text;
+                                
+                                listItems.forEach(item => {
+                                    if(item.dataset.value == subcategoryOptions[i].value) {
+                                        item.classList.add('selected');
+                                    }
+                                });
+                                break;
+                            }
                         }
-                    } else {
-                        fallbackNameMatch();
                     }
                     
                     if (subcategorySelect.options.length > 1) {

@@ -633,8 +633,25 @@ class PurchaseOrderController extends Controller
         if ($returnUrl) {
             return redirect($returnUrl)->with('success', 'Order updated successfully.');
         }
+        
+        $tab = $request->input('tab');
+        if (!$tab || $tab === 'created') {
+            if ($purchaseOrder->craftsman_status === 'rejected' || $purchaseOrder->status === 'rejected') {
+                $tab = 'rejected';
+            } elseif ($purchaseOrder->status === 'completed') {
+                $tab = 'completed';
+            } elseif ($purchaseOrder->status === 'for_approval') {
+                $tab = 'for_approval';
+            } elseif ($purchaseOrder->status === 'in_process') {
+                $tab = 'in_process';
+            } elseif ($purchaseOrder->craftsman_status === 'allocated' || $purchaseOrder->allocated_craftsman_code) {
+                $tab = 'allocated';
+            } else {
+                $tab = 'created';
+            }
+        }
 
-        return redirect()->route('admin.purchase-order.index')->with('success', 'Order updated successfully.');
+        return redirect()->route('admin.purchase-order.index', ['tab' => $tab])->with('success', 'Order updated successfully.');
     }
 
     /**

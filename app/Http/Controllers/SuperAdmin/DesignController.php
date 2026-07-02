@@ -12,6 +12,8 @@ use App\Exports\ProductExport;
 use App\Models\Design;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Jenssegers\ImageHash\ImageHash;
+use Jenssegers\ImageHash\Implementations\DifferenceHash;
 
 class DesignController extends Controller
 {
@@ -59,6 +61,12 @@ class DesignController extends Controller
         // Category filter
         if ($request->filled('category_filter')) {
             $query->where('product_category_id', $request->category_filter);
+        }
+
+        // Image Search Filter
+        if ($request->filled('matched_ids')) {
+            $matchedIds = explode(',', $request->matched_ids);
+            $query->whereIn('id', $matchedIds);
         }
 
         // Tab Filtering
@@ -200,14 +208,27 @@ class DesignController extends Controller
             'qr_code' => $qrPath,
         ]);
 
+        $imagePath = $product->images->first() ? $product->images->first()->path : null;
+        $imageHash = null;
+        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+            try {
+                $hasher = new ImageHash(new DifferenceHash());
+                $hash = $hasher->hash(storage_path('app/public/' . $imagePath));
+                $imageHash = $hash->toHex();
+            } catch (\Exception $e) {
+                Log::warning('Image hash generation failed for ' . $designCode . ': ' . $e->getMessage());
+            }
+        }
+
         // Create the Design record
         \App\Models\Design::updateOrCreate(
             ['product_id' => $product->id],
             [
                 'design_code' => $designCode,
                 'design_name' => $product->product_name,
-                'image' => $product->images->first() ? $product->images->first()->path : null,
+                'image' => $imagePath,
                 'qr_code' => $qrPath,
+                'image_hash' => $imageHash,
             ]
         );
 
@@ -517,5 +538,72 @@ class DesignController extends Controller
 
         $designs = Product::whereIn('id', $ids)->get();
         return view('super-admin.design.print-80x40', compact('designs'));
+    }
+
+    public function searchByImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:10240', // Max 10MB
+        ]);
+
+        $uploadedImage = $request->file('image');
+        $tempPath = $uploadedImage->store('temp', 'public');
+        $absolutePath = storage_path('app/public/' . $tempPath);
+
+        try {
+            $hasher = new ImageHash(new DifferenceHash());
+            $uploadedHash = $hasher->hash($absolutePath);
+            
+            $uploadedHex = $uploadedHash->toHex();
+            
+            // Get all designs that have a hash
+            $allDesigns = Design::whereNotNull('image_hash')->get();
+            $matchedProductIds = [];
+            
+            foreach ($allDesigns as $design) {
+                try {
+                    $dbHex = $design->image_hash;
+                    
+                    // Pad strings if necessary
+                    $len = max(strlen($uploadedHex), strlen($dbHex));
+                    $h1 = str_pad($uploadedHex, $len, '0', STR_PAD_LEFT);
+                    $h2 = str_pad($dbHex, $len, '0', STR_PAD_LEFT);
+                    
+                    $distance = 0;
+                    if (extension_loaded('gmp')) {
+                        $distance = gmp_hamdist('0x' . $h1, '0x' . $h2);
+                    } else {
+                        for ($i = 0; $i < $len; $i++) {
+                            $xor = hexdec($h1[$i]) ^ hexdec($h2[$i]);
+                            while ($xor > 0) {
+                                $distance += $xor & 1;
+                                $xor >>= 1;
+                            }
+                        }
+                    }
+
+                    // Distance <= 10 usually means identical or slightly resized/cropped
+                    if ($distance <= 10) {
+                        $matchedProductIds[] = $design->product_id;
+                    }
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
+
+            // Cleanup temp file
+            Storage::disk('public')->delete($tempPath);
+            
+            if (empty($matchedProductIds)) {
+                return redirect()->route('super-admin.design.index')->with('error', 'No matching designs found.');
+            }
+            
+            // Redirect to index with the matched IDs to filter
+            return redirect()->route('super-admin.design.index', ['matched_ids' => implode(',', $matchedProductIds)]);
+
+        } catch (\Exception $e) {
+            Storage::disk('public')->delete($tempPath);
+            return redirect()->route('super-admin.design.index')->with('error', 'Error analyzing image: ' . $e->getMessage());
+        }
     }
 }
