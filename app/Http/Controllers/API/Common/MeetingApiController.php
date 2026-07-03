@@ -67,63 +67,63 @@ class MeetingApiController extends Controller
 
             // Send notification to the other party that this user has joined
             $userToNotify = null;
-                
-                if ($isParticipant) {
+
+            if ($isParticipant) {
+                $userToNotify = $meeting->host;
+            } elseif ($isHost) {
+                $userToNotify = $meeting->participant;
+            } elseif ($isSuperAdmin) {
+                // SuperAdmin override: find the Buyer/Craftsman
+                if ($meeting->host && !($meeting->host instanceof \App\Models\ProcessOwner)) {
                     $userToNotify = $meeting->host;
-                } elseif ($isHost) {
+                } else {
                     $userToNotify = $meeting->participant;
-                } elseif ($isSuperAdmin) {
-                    // SuperAdmin override: find the Buyer/Craftsman
-                    if ($meeting->host && !($meeting->host instanceof \App\Models\ProcessOwner)) {
-                        $userToNotify = $meeting->host;
-                    } else {
-                        $userToNotify = $meeting->participant;
-                    }
                 }
+            }
 
-                $cacheKey = "meeting_joined_notified_{$meeting->id}_" . get_class($user) . "_{$user->id}";
+            $cacheKey = "meeting_joined_notified_{$meeting->id}_" . get_class($user) . "_{$user->id}";
 
-                if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, now()->addHours(4))) {
-                    if ($userToNotify && method_exists($userToNotify, 'notify')) {
-                        // Generate token for the user to be notified
-                        $targetToken = Agora::make($userToNotify->id)
-                            ->channel($room_id)
-                            ->uId($userToNotify->id)
-                            ->join(false)
-                            ->audioOnly(false)
-                            ->token();
+            if (\Illuminate\Support\Facades\Cache::add($cacheKey, true, now()->addHours(4))) {
+                if ($userToNotify && method_exists($userToNotify, 'notify')) {
+                    // Generate token for the user to be notified
+                    $targetToken = Agora::make($userToNotify->id)
+                        ->channel($room_id)
+                        ->uId($userToNotify->id)
+                        ->join(false)
+                        ->audioOnly(false)
+                        ->token();
 
-                        $userToNotify->notify(new MeetingStatusNotification($meeting, 'joined', [
-                            'app_id' => $appId,
-                            'token' => $targetToken,
-                            'channel_name' => $room_id,
-                            'uid' => $userToNotify->id,
-                            'caller_name' => $this->getFormattedCallerName($user)
-                        ]));
+                    $userToNotify->notify(new MeetingStatusNotification($meeting, 'joined', [
+                        'app_id' => $appId,
+                        'token' => $targetToken,
+                        'channel_name' => $room_id,
+                        'uid' => $userToNotify->id,
+                        'caller_name' => $this->getFormattedCallerName($user)
+                    ]));
 
-                        // If a Buyer/Craftsman joined, ring the Admin web panel
-                        if (!($user instanceof \App\Models\ProcessOwner)) {
-                            try {
-                                $callerName = $this->getFormattedCallerName($user);
-                                
-                                $category = null;
-                                if ($meeting->participant_type === \App\Models\ProcessOwner::class) {
-                                    $pAdmin = \App\Models\ProcessOwner::find($meeting->participant_id);
-                                    if ($pAdmin) $category = $pAdmin->category;
-                                } elseif ($meeting->host_type === \App\Models\ProcessOwner::class) {
-                                    $hAdmin = \App\Models\ProcessOwner::find($meeting->host_id);
-                                    if ($hAdmin) $category = $hAdmin->category;
-                                }
+                    // If a Buyer/Craftsman joined, ring the Admin web panel
+                    if (!($user instanceof \App\Models\ProcessOwner)) {
+                        try {
+                            $callerName = $this->getFormattedCallerName($user);
 
-                                broadcast(new \App\Events\MeetingIncomingEvent($meeting->id, $room_id, $callerName, $category));
-                            } catch (\Exception $e) {
-                                Log::warning('Pusher broadcast failed (non-fatal): ' . $e->getMessage());
+                            $category = null;
+                            if ($meeting->participant_type === \App\Models\ProcessOwner::class) {
+                                $pAdmin = \App\Models\ProcessOwner::find($meeting->participant_id);
+                                if ($pAdmin) $category = $pAdmin->category;
+                            } elseif ($meeting->host_type === \App\Models\ProcessOwner::class) {
+                                $hAdmin = \App\Models\ProcessOwner::find($meeting->host_id);
+                                if ($hAdmin) $category = $hAdmin->category;
                             }
-                            
-                            $this->writeRtdbActiveCall($meeting, $user);
+
+                            broadcast(new \App\Events\MeetingIncomingEvent($meeting->id, $room_id, $callerName, $category));
+                        } catch (\Exception $e) {
+                            Log::warning('Pusher broadcast failed (non-fatal): ' . $e->getMessage());
                         }
+
+                        $this->writeRtdbActiveCall($meeting, $user);
                     }
                 }
+            }
 
             return response()->json([
                 'success' => true,
@@ -153,7 +153,7 @@ class MeetingApiController extends Controller
 
         $isHost = ($meeting->host_id == $user->id && $meeting->host_type == get_class($user));
         $isParticipant = ($meeting->participant_id == $user->id && $meeting->participant_type == get_class($user));
-        
+
         $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
             || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
 
@@ -297,10 +297,10 @@ class MeetingApiController extends Controller
                     $hostFormatted = trim("$code - $name");
                 } elseif ($meeting['host_type'] === \App\Models\ProcessOwner::class) {
                     $name = $meeting['host']['full_name'] ?? ($meeting['host']['name'] ?? 'Admin');
-                    
+
                     $role = $meeting['host']['role'] ?? '';
                     $isSuper = ($role === 'superadmin' || $role === 'super_admin');
-                    
+
                     if ($isSuper) {
                         $hostFormatted = "Superadmin - " . $name;
                     } else {
@@ -322,10 +322,10 @@ class MeetingApiController extends Controller
                     $participantFormatted = trim("$code - $name");
                 } elseif ($meeting['participant_type'] === \App\Models\ProcessOwner::class) {
                     $name = $meeting['participant']['full_name'] ?? ($meeting['participant']['name'] ?? 'Admin');
-                    
+
                     $role = $meeting['participant']['role'] ?? '';
                     $isSuper = ($role === 'superadmin' || $role === 'super_admin');
-                    
+
                     if ($isSuper) {
                         $participantFormatted = "Superadmin - " . $name;
                     } else {
@@ -337,7 +337,7 @@ class MeetingApiController extends Controller
 
             // 5. SMART SWAP LOGIC BASED ON THE LOGGED-IN PANEL
             // The frontend relies on 'host.full_name' always containing the PARTNER'S name!
-            
+
             $isUserDbHost = ($meeting['host_type'] === $currentUserClass && $meeting['host_id'] == $currentUserId);
 
             if ($isAdminLoggedIn) {
@@ -382,7 +382,7 @@ class MeetingApiController extends Controller
 
         $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
             || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
-        
+
         $isAdmin = ($user instanceof \App\Models\ProcessOwner && $user->role === 'admin');
 
         // If no category is provided, return the allowed categories for the user's role
@@ -447,17 +447,16 @@ class MeetingApiController extends Controller
         $participantId = $request->participant_id;
         $participantType = null;
 
-        // If participant_type is provided, use it
         if ($request->filled('participant_type')) {
             $participantType = $typeMap[$request->participant_type] ?? null;
         }
 
         $isSenderAdmin = ($user instanceof \App\Models\ProcessOwner);
 
-        // If not provided, try to infer it
+        // CASE 1: If participant_type was NOT provided, infer it automatically
         if (!$participantType) {
             if ($isSenderAdmin) {
-                // Admin creates: search both tables by code
+                // Admin creates: Search through ALL potential targets (Buyer, Craftman, or another Admin)
                 $buyer = \App\Models\Buyer::where('bp_code', $participantId)->first();
                 if ($buyer) {
                     $participantType = \App\Models\Buyer::class;
@@ -467,104 +466,74 @@ class MeetingApiController extends Controller
                     if ($craftsman) {
                         $participantType = \App\Models\Craftman::class;
                         $participantId = $craftsman->id;
+                    } else {
+                        // FIXED: Allow Admin/Super-Admin to find another Admin by user_code when type is omitted
+                        $adminTarget = \App\Models\ProcessOwner::where('user_code', $participantId)->first();
+                        if ($adminTarget) {
+                            $participantType = \App\Models\ProcessOwner::class;
+                            $participantId = $adminTarget->id;
+                        }
                     }
                 }
             } else {
-                // Buyer/Craftsman creates: must be Admin
+                // Buyer/Craftsman creates: Target must be an Admin
                 $participantType = \App\Models\ProcessOwner::class;
-
-                // Try looking up by category first
-                $category = \App\Models\AdminCategory::where('name', $participantId)->first();
-                if ($category) {
-                    $placeholderAdmin = \App\Models\ProcessOwner::where('category', $category->name)->first();
-                    if ($placeholderAdmin) {
-                        $participantId = $placeholderAdmin->id;
-                    } else {
-                        return response()->json(['success' => false, 'message' => 'No admins available in this category.'], 404);
-                    }
+                $admin = \App\Models\ProcessOwner::where('user_code', $participantId)->first();
+                if ($admin) {
+                    $participantId = $admin->id;
                 } else {
-                    // Fallback to user_code
-                    $admin = \App\Models\ProcessOwner::where('user_code', $participantId)->first();
-                    if ($admin) {
-                        $participantId = $admin->id;
-                    } else {
-                        // If it's a numeric ID, try finding by ID
-                        if (is_numeric($participantId) && \App\Models\ProcessOwner::find($participantId)) {
-                            $participantId = (int) $participantId;
-                        } else {
-                            return response()->json(['success' => false, 'message' => 'Admin or Category not found.'], 404);
-                        }
-                    }
+                    return response('Admin not found with that code.', 404)->header('Content-Type', 'text/plain');
                 }
             }
         } else {
-            // If type WAS provided, do the specific lookup
+            // CASE 2: If participant_type WAS explicitly provided
             if ($participantType === \App\Models\Buyer::class) {
                 $buyer = \App\Models\Buyer::where('bp_code', $participantId)->first();
-                if (!$buyer) return response()->json(['success' => false, 'message' => 'Buyer not found with that BP code.'], 404);
+                if (!$buyer) return response('Buyer not found with that BP code.', 404)->header('Content-Type', 'text/plain');
                 $participantId = $buyer->id;
             } elseif ($participantType === \App\Models\Craftman::class) {
                 $craftsman = \App\Models\Craftman::where('craftman_code', $participantId)->first();
-                if (!$craftsman) return response()->json(['success' => false, 'message' => 'Craftsman not found with that code.'], 404);
+                if (!$craftsman) return response('Craftsman not found with that code.', 404)->header('Content-Type', 'text/plain');
                 $participantId = $craftsman->id;
             } elseif ($participantType === \App\Models\ProcessOwner::class) {
-                if ($request->participant_type === 'admin') {
-                    // Admin (by Category)
-                    $categoryName = strtolower(str_replace(' ', '', $participantId));
-                    $placeholderAdmin = \App\Models\ProcessOwner::whereRaw('LOWER(REPLACE(category, " ", "")) = ?', [$categoryName])->first();
-                    if ($placeholderAdmin) {
-                        $participantId = $placeholderAdmin->id;
+                $admin = \App\Models\ProcessOwner::where('user_code', $participantId)->first();
+                if ($admin) {
+                    $participantId = $admin->id;
+                } else {
+                    if (is_numeric($participantId) && \App\Models\ProcessOwner::find($participantId)) {
+                        $participantId = (int) $participantId;
                     } else {
-                        // Fallback to searching category name directly
-                        $placeholderAdmin = \App\Models\ProcessOwner::where('category', 'like', "%{$participantId}%")->first();
-                        if ($placeholderAdmin) {
-                            $participantId = $placeholderAdmin->id;
-                        } else {
-                            return response()->json(['success' => false, 'message' => 'No admins available in this category.'], 404);
-                        }
-                    }
-                } elseif ($request->participant_type === 'super-admin') {
-                    // SuperAdmin (by user_code or ID)
-                    $admin = \App\Models\ProcessOwner::where('user_code', $participantId)->first();
-                    if ($admin) {
-                        $participantId = $admin->id;
-                    } else {
-                        if (is_numeric($participantId)) {
-                            $admin = \App\Models\ProcessOwner::find($participantId);
-                            if ($admin) {
-                                $participantId = $admin->id;
-                            } else {
-                                return response()->json(['success' => false, 'message' => 'SuperAdmin not found.'], 404);
-                            }
-                        } else {
-                            return response()->json(['success' => false, 'message' => 'SuperAdmin not found.'], 404);
-                        }
+                        return response('Admin/Super-Admin not found with that code or ID.', 404)->header('Content-Type', 'text/plain');
                     }
                 }
             }
         }
 
-        // If still no type found after trying to infer (for Admin case)
         if (!$participantType) {
-            return response()->json(['success' => false, 'message' => 'Could not determine participant type from the provided code.'], 400);
+            return response('Could not determine participant type from the provided inputs.', 400)->header('Content-Type', 'text/plain');
         }
 
         $isParticipantAdmin = ($participantType === \App\Models\ProcessOwner::class);
 
-        // Removed Rule 1: Admins and Superadmins can now create meetings with other Admins/Superadmins
+        // Business Logic Rules Validation
+        // NOTE: If you explicitly want to ALLOW Admins/Superadmins to meet with other Admins, 
+        // leave this validation block commented out or removed.
+        /*
+    if ($isSenderAdmin && $isParticipantAdmin) {
+        return response('Admins can only create meetings with Buyers or Craftsmen.', 403)->header('Content-Type', 'text/plain');
+    }
+    */
 
-        // Rule 2: Buyers and Craftsmen can only create meetings with Admins
         if (!$isSenderAdmin && !$isParticipantAdmin) {
-            return response()->json(['success' => false, 'message' => 'Buyers and Craftsmen can only create meetings with Admins.'], 403);
+            return response('Buyers and Craftsmen can only create meetings with Admins.', 403)->header('Content-Type', 'text/plain');
         }
 
         // Determine status
         $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
         $isAdmin = ($user instanceof \App\Models\ProcessOwner && $user->role === 'admin');
-
-        // As per your request: Admin creates -> approved, Buyer creates -> pending
         $status = ($isSuperAdmin || $isAdmin) ? 'approved' : 'pending';
 
+        // Persist meeting to Database
         $meeting = Meeting::create([
             'host_id' => $user->id,
             'host_type' => get_class($user),
@@ -575,9 +544,10 @@ class MeetingApiController extends Controller
             'status' => $status,
         ]);
 
-        // Load participant to get the code
+        // Load related participant to get the code string
         $meeting->load('participant');
         $participantCode = null;
+
         if ($meeting->participant instanceof \App\Models\Buyer) {
             $participantCode = $meeting->participant->bp_code;
         } elseif ($meeting->participant instanceof \App\Models\Craftman) {
@@ -586,11 +556,10 @@ class MeetingApiController extends Controller
             $participantCode = $meeting->participant->user_code;
         }
 
-        // Convert to array and add the code
         $responseData = $meeting->toArray();
         $responseData['participant_code'] = $participantCode;
 
-        return response()->json(['success' => true, 'message' => 'Meeting created successfully', 'data' => $responseData], 201);
+        return response()->json($responseData, 201);
     }
 
     /**
@@ -785,7 +754,7 @@ class MeetingApiController extends Controller
             $name = $caller->name ?? ($caller->full_name ?? ($caller->business_name ?? 'Craftsman'));
         } elseif ($caller instanceof \App\Models\ProcessOwner) {
             $name = $caller->full_name ?? ($caller->name ?? 'Admin');
-            
+
             $isSuper = isset($caller->role) && ($caller->role === 'superadmin' || $caller->role === 'super_admin');
             if ($isSuper) {
                 return "Superadmin - " . $name;
@@ -799,7 +768,7 @@ class MeetingApiController extends Controller
         if ($code && $name) {
             return "$code - $name";
         }
-        
+
         return $code ?: ($name ?: 'Participant');
     }
 }
