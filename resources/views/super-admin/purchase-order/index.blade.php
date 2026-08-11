@@ -141,7 +141,28 @@
 
             <ul class="nav nav-tabs" id="poTabs" role="tablist">
                 @php
+                $overdueOrders = collect();
+                $nowGlobal = \Carbon\Carbon::now();
+                
+                $checkOverdue = function($po) use ($nowGlobal, &$overdueOrders) {
+                    $dueDateValue = $po->craftsman_due_date ?? $po->due_date ?? null;
+                    if ($dueDateValue) {
+                        $dueDate = \Carbon\Carbon::parse($dueDateValue);
+                        if ($dueDate->lt($nowGlobal->startOfDay()) || ($dueDate->isToday() && $nowGlobal->hour >= 12)) {
+                            if(!$overdueOrders->contains('id', $po->id)) {
+                                $overdueOrders->push($po);
+                            }
+                        }
+                    }
+                };
+
+                foreach($createdOrders as $po) $checkOverdue($po);
+                foreach($allocatedOrders as $po) $checkOverdue($po);
+                foreach($inProcessOrders as $po) $checkOverdue($po);
+                foreach($forApprovalOrders as $po) $checkOverdue($po);
+
                 $tabDefinitions = [
+                ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
                 ['id' => 'created', 'label' => __('messages.created'), 'data' => $createdOrders],
                 ['id' => 'allocated', 'label' => __('messages.allocated'), 'data' => $allocatedOrders],
                 ['id' => 'in_process', 'label' => __('messages.in_process'), 'data' => $inProcessOrders],
@@ -308,6 +329,114 @@
                                             @endif
                                             <td>
                                                 <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-secondary toggle-items-btn" title="Show Items">
+                                                        <i class="bi bi-chevron-down"></i>
+                                                    </button>
+                                                    <template class="items-template">
+                                                        <div class="p-3 bg-light border-bottom">
+                                                            <h6 class="mb-2"><strong>Items Added:</strong></h6>
+                                                            @if(is_array($po->items) && count($po->items) > 0)
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-sm table-bordered mb-0 bg-white">
+                                                                        <thead class="table-secondary">
+                                                                            <tr>
+                                                                                <th>Category</th>
+                                                                                <th>Product / Design</th>
+                                                                                <th>Grams calculation</th>
+                                                                                <th>Total Weight</th>
+                                                                                <th>Image</th>
+                                                                                <th>Notes</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @foreach($po->items as $item)
+                                                                                @php
+                                                                                    $productId = $item['product_id'] ?? null;
+                                                                                    $prodModel = $productId ? \App\Models\Product::with(['images', 'subcategory', 'category'])->find($productId) : null;
+                                                                                    
+                                                                                    $prodName = $prodModel ? $prodModel->product_name : ($item['product_name'] ?? $item['manual_product'] ?? 'N/A');
+
+                                                                                    $catName = 'N/A';
+                                                                                    if (!empty($item['category_name']) && $item['category_name'] !== 'N/A') {
+                                                                                        $catName = $item['category_name'];
+                                                                                    } elseif (!empty($item['produts_category']) && $item['produts_category'] !== 'N/A') {
+                                                                                        $catName = $item['produts_category'];
+                                                                                    } elseif (!empty($item['category'])) {
+                                                                                        if (is_numeric($item['category'])) {
+                                                                                            $cat = \App\Models\ProductCategory::find($item['category']);
+                                                                                            $catName = $cat ? $cat->name : 'N/A';
+                                                                                        } else {
+                                                                                            $catName = $item['category'];
+                                                                                        }
+                                                                                    }
+                                                                                    if (($catName === 'N/A' || empty($catName)) && $prodModel && $prodModel->category) {
+                                                                                        $catName = $prodModel->category->name;
+                                                                                    }
+
+                                                                                    $subName = 'N/A';
+                                                                                    if (!empty($item['subcategory_name']) && $item['subcategory_name'] !== 'N/A') {
+                                                                                        $subName = $item['subcategory_name'];
+                                                                                    } elseif (!empty($item['sub_category_name']) && $item['sub_category_name'] !== 'N/A') {
+                                                                                        $subName = $item['sub_category_name'];
+                                                                                    } elseif ($prodModel && $prodModel->subcategory) {
+                                                                                        $subName = $prodModel->subcategory->name;
+                                                                                    } elseif (!empty($item['subcategory'])) {
+                                                                                        if (is_numeric($item['subcategory'])) {
+                                                                                            $sub = \App\Models\ProductSubcategory::find($item['subcategory']);
+                                                                                            $subName = $sub ? $sub->name : 'N/A';
+                                                                                        } else {
+                                                                                            $subName = $item['subcategory'];
+                                                                                        }
+                                                                                    }
+
+                                                                                    $designModel = $productId ? \App\Models\Design::where('product_id', $productId)->first() : null;
+                                                                                    $designCode = $designModel ? $designModel->design_code : ($item['design_code'] ?? 'N/A');
+
+                                                                                    $imageSrc = null;
+                                                                                    if (!empty($item['image'])) {
+                                                                                        $imageSrc = str_contains($item['image'], 'images/') ? asset($item['image']) : asset('storage/' . $item['image']);
+                                                                                    } elseif ($designModel && !empty($designModel->image)) {
+                                                                                        $imageSrc = str_starts_with($designModel->image, 'storage/') || str_starts_with($designModel->image, 'images/') ? asset($designModel->image) : asset('storage/' . $designModel->image);
+                                                                                    } elseif ($prodModel && $prodModel->images->count() > 0) {
+                                                                                        $path = $prodModel->images[0]->path;
+                                                                                        $imageSrc = str_starts_with($path, 'storage/') || str_starts_with($path, 'images/') ? asset($path) : asset('storage/' . $path);
+                                                                                    }
+                                                                                @endphp
+                                                                                <tr>
+                                                                                    <td>{{ $catName }}</td>
+                                                                                    <td>
+                                                                                        <span class="fw-bold d-block">{{ $prodName }}</span>
+                                                                                        <small class="text-blue-600">Sub: {{ $subName }}</small>
+                                                                                        <br><small class="text-muted">Design: {{ $designCode }}</small>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        @if(isset($item['grams']) && is_array($item['grams']))
+                                                                                            @foreach($item['grams'] as $i => $gram)
+                                                                                                <div>{{ $gram }}g × {{ is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1 }} = <strong>{{ number_format(is_array($item['individual_totals'] ?? null) ? ($item['individual_totals'][$i] ?? 0) : ($item['individual_totals'] ?? 0), 2) }}g</strong></div>
+                                                                                            @endforeach
+                                                                                        @else
+                                                                                            {{ $item['grams'] ?? 0 }}g × {{ $item['quantity'] ?? 0 }} = <strong>{{ number_format((float)($item['grams'] ?? 0) * (float)($item['quantity'] ?? 0), 2) }}g</strong>
+                                                                                        @endif
+                                                                                    </td>
+                                                                                    <td class="fw-bold">{{ number_format((float)($item['total'] ?? 0), 2) }}g</td>
+                                                                                    <td>
+                                                                                        @if($imageSrc)
+                                                                                            <img src="{{ $imageSrc }}" class="img-thumbnail" style="max-height: 50px; cursor: pointer;" onclick="window.open(this.src, '_blank')" alt="Item Image">
+                                                                                        @else
+                                                                                            <span class="text-muted small">No Image</span>
+                                                                                        @endif
+                                                                                    </td>
+                                                                                    <td><small>{{ $item['item_notes'] ?? '-' }}</small></td>
+                                                                                </tr>
+                                                                            @endforeach
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            @else
+                                                                <p class="text-muted mb-0">No items found.</p>
+                                                            @endif
+                                                        </div>
+                                                    </template>
                                                     <a href="{{ route('super-admin.purchase-order.show', $po) }}" class="btn btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
 
                                                     @if($tab['id'] == 'created')
@@ -459,6 +588,25 @@
                 "pageLength": 10,
                 "dom": 'rtip'
             });
+        });
+
+        // Toggle child rows
+        $('.po-datatable tbody').on('click', '.toggle-items-btn', function () {
+            var tr = $(this).closest('tr');
+            var table = $(this).closest('table').DataTable();
+            var row = table.row(tr);
+            var icon = $(this).find('i');
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+                icon.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            } else {
+                var templateContent = tr.find('.items-template').html();
+                row.child(templateContent).show();
+                tr.addClass('shown');
+                icon.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+            }
         });
 
         // Checkbox Logic

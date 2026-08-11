@@ -703,7 +703,8 @@ class PurchaseOrderController extends Controller
         $purchaseOrder->update([
             'allocated_craftsman_code' => $request->allocated_craftsman_code,
             'craftsman_status' => 'allocated',
-            'allocated_by' => \Auth::guard("super_admin")->id()
+            'allocated_by' => \Auth::guard("super_admin")->id(),
+            'allocated_at' => now(),
         ]);
 
         // Send Notification
@@ -727,7 +728,8 @@ class PurchaseOrderController extends Controller
         PurchaseOrder::whereIn('id', $request->order_ids)->update([
             'allocated_craftsman_code' => $request->craftsman_code,
             'craftsman_status' => 'allocated',
-            'allocated_by' => \Auth::guard("super_admin")->id()
+            'allocated_by' => \Auth::guard("super_admin")->id(),
+            'allocated_at' => now(),
         ]);
 
         // Send Notification

@@ -34,6 +34,7 @@ class PurchaseOrderController extends Controller
             if ($purchaseOrder && $purchaseOrder->allocated_craftsman_code === $craftsman->craftman_code && $purchaseOrder->craftsman_status === 'allocated') {
                 $purchaseOrder->update([
                     'craftsman_status' => 'in_process',
+                    'craftsman_accepted_at' => now(),
                     'status' => 'in_process'
                 ]);
                 $count++;
@@ -95,6 +96,7 @@ class PurchaseOrderController extends Controller
             if ($purchaseOrder && $purchaseOrder->allocated_craftsman_code === $craftsman->craftman_code && $purchaseOrder->craftsman_status === 'in_process') {
                 $purchaseOrder->update([
                     'craftsman_status' => 'completed',
+                    'craftsman_completed_at' => now(),
                     'status' => 'for_approval'
                 ]);
                 $count++;
@@ -493,6 +495,7 @@ class PurchaseOrderController extends Controller
             // FIX: Update BOTH craftsman_status and the main status
             $purchaseOrder->update([
                 'craftsman_status' => 'in_process',
+                'craftsman_accepted_at' => now(),
                 'status' => 'in_process' // This line makes it show in SuperAdmin In-Process tab
             ]);
             
@@ -550,6 +553,7 @@ class PurchaseOrderController extends Controller
                 // All items accepted
                 $purchaseOrder->update([
                     'craftsman_status' => 'in_process',
+                    'craftsman_accepted_at' => now(),
                     'status' => 'in_process',
                     'rejected_items' => [],
                     'items' => $acceptedItemList // Keep all items
@@ -560,6 +564,7 @@ class PurchaseOrderController extends Controller
                 // Mixed: some accepted, some rejected
                 $purchaseOrder->update([
                     'craftsman_status' => 'in_process',
+                    'craftsman_accepted_at' => now(),
                     'status' => 'in_process',
                     'rejected_items' => $rejectedItemList,
                     'items' => $acceptedItemList // Only keep accepted items for craftsman
@@ -607,6 +612,7 @@ class PurchaseOrderController extends Controller
             // All items completed, just update the existing PO
             $purchaseOrder->update([
                 'craftsman_status' => 'completed',
+                'craftsman_completed_at' => now(),
                 'status' => 'for_approval',
             ]);
             return redirect()->route('craftsman.purchase-order.index', ['tab' => 'completed'])

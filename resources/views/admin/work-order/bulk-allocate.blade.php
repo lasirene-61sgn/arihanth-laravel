@@ -41,6 +41,29 @@
                             <input type="hidden" name="work_order_ids[]" value="{{ $workOrder->id }}">
                         @endforeach
                         
+                        @if(isset($suggestedCraftsmen) && count($suggestedCraftsmen) > 0)
+                        <div class="alert alert-info mb-4 border-info">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-lightbulb-fill text-warning me-2" style="font-size: 1.2rem;"></i>
+                                <strong>Suggested Craftsmen for these items:</strong>
+                            </div>
+                            <p class="small mb-2">Based on historical completions of these categories and design codes, we recommend:</p>
+                            <div class="d-flex flex-column gap-2">
+                                @foreach($suggestedCraftsmen as $index => $stat)
+                                    @php $c = $stat['craftsman']; @endphp
+                                    <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border">
+                                        <div>
+                                            <span class="badge bg-{{ $index === 0 ? 'success' : 'secondary' }} me-2">#{{ $index + 1 }}</span>
+                                            <strong>{{ $c->business_name }}</strong> ({{ $c->craftman_code }})
+                                            <span class="text-muted small ms-2"><i class="bi bi-check-circle-fill text-success"></i> {{ $stat['completed_count'] }} similar completed</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary select-suggestion-btn" data-code="{{ $c->craftman_code }}">Select</button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="allocated_craftsman_bp_code" class="form-label">Select Craftsman *</label>
@@ -119,10 +142,21 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('.select2').select2({
+        var craftsmanSelect = $('.select2');
+        craftsmanSelect.select2({
             placeholder: "Select Craftsman",
             allowClear: true,
             width: '100%'
+        });
+
+        // Suggested Craftsmen Selection Logic
+        $('.select-suggestion-btn').on('click', function() {
+            const code = $(this).data('code');
+            craftsmanSelect.val(code).trigger('change');
+            
+            // Visual feedback
+            $('.select-suggestion-btn').removeClass('btn-primary text-white').addClass('btn-outline-primary').text('Select');
+            $(this).removeClass('btn-outline-primary').addClass('btn-primary text-white').html('<i class="bi bi-check-lg"></i> Selected');
         });
     });
 </script>

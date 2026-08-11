@@ -24,6 +24,7 @@ class PurchaseOrder extends Model
         'created_by',
         'creator_type',
         'allocated_by',
+        'allocated_at',
         'approved_by',
     ];
 

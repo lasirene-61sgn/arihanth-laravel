@@ -522,6 +522,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{workOrder}/reallocate', [AdminWorkOrderController::class, 'reallocateForm'])->name('work-order.reallocate.form');
             Route::post('/{workOrder}/reallocate', [AdminWorkOrderController::class, 'reallocate'])->name('work-order.reallocate');
             Route::get('/{workOrder}/copy', [AdminWorkOrderController::class, 'copy'])->name('work-order.copy');
+            
+            // Undo Flow
+            Route::post('/{workOrder}/undo', [AdminWorkOrderController::class, 'undo'])->name('work-order.undo');
+            Route::post('/{workOrder}/send-undo-otp', [AdminWorkOrderController::class, 'sendUndoOtp'])->name('work-order.send-undo-otp');
+            
+            // Return Flow
+            Route::post('/{workOrder}/return', [AdminWorkOrderController::class, 'processReturn'])->name('work-order.return');
+            Route::post('/{workOrder}/send-return-otp', [AdminWorkOrderController::class, 'sendReturnOtp'])->name('work-order.send-return-otp');
         });
 
         // Stock Order Routes (New Flow)
@@ -907,6 +915,14 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('/bulk-complete', [WorkOrderController::class, 'bulkComplete'])->name('work-order.bulk-complete');
             Route::get('/{workOrder}/reallocate', [WorkOrderController::class, 'reallocateForm'])->name('work-order.reallocate.form');
             Route::post('/{workOrder}/reallocate', [WorkOrderController::class, 'reallocate'])->name('work-order.reallocate');
+            
+            // Undo Flow
+            Route::post('/{workOrder}/undo', [WorkOrderController::class, 'undo'])->name('work-order.undo');
+            Route::post('/{workOrder}/send-undo-otp', [WorkOrderController::class, 'sendUndoOtp'])->name('work-order.send-undo-otp');
+            
+            // Return Flow
+            Route::post('/{workOrder}/return', [WorkOrderController::class, 'processReturn'])->name('work-order.return');
+            Route::post('/{workOrder}/send-return-otp', [WorkOrderController::class, 'sendReturnOtp'])->name('work-order.send-return-otp');
             Route::get('/{workOrder}/copy', [WorkOrderController::class, 'copy'])->name('work-order.copy');
         });
 

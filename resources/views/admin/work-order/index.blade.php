@@ -1231,6 +1231,9 @@
                                     </td> -->
                                     <td class="p-4 text-right">
                                         <div class="inline-flex items-center gap-1">
+                                            <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
+                                                <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
+                                            </button>
                                             <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                                             </a>
@@ -1749,6 +1752,9 @@
 
                                         <td class="p-4 text-right">
                                             <div class="inline-flex items-center gap-1">
+                                                <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
+                                                    <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
+                                                </button>
                                                 <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                     <i class="bi bi-eye text-sm text-[16px]"></i>
                                                 </a>
@@ -2039,6 +2045,9 @@
                                 </td> -->
                                     <td class="p-4 text-right">
                                         <div class="inline-flex items-center gap-1">
+                                            <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
+                                                <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
+                                            </button>
                                             <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                                             </a>
@@ -2758,4 +2767,105 @@
         background-color: transparent !important;
     }
 </style>
+<!-- Admin Undo Modal -->
+<div id="adminUndoModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen px-4 text-center flex items-center justify-center">
+        <div class="inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">Undo Work Order Status</h3>
+            <p class="text-sm text-slate-500 mb-4" id="adminUndoModalMsg"></p>
+            
+            <form id="adminUndoForm" method="POST" action="">
+                @csrf
+                
+                <div id="adminUndoOtpSection" class="hidden">
+                    <div class="mb-4 text-left">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Select SuperAdmin to Receive OTP</label>
+                        <select id="superAdminSelect" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm mb-2">
+                            @foreach($superAdmins as $sa)
+                                <option value="{{ $sa->id }}">{{ $sa->user_code }} - {{ $sa->name }} - {{ $sa->mobile_no }}</option>
+                            @endforeach
+                        </select>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="sendAdminUndoOtp('sms')" class="px-3 py-1.5 bg-slate-100 text-xs text-pink-600 hover:text-pink-700 font-medium rounded border border-slate-200">
+                                <i class="bi bi-chat-left-text me-1"></i> SMS
+                            </button>
+                            <button type="button" onclick="sendAdminUndoOtp('whatsapp')" class="px-3 py-1.5 bg-emerald-50 text-xs text-emerald-600 hover:text-emerald-700 font-medium rounded border border-emerald-200">
+                                <i class="bi bi-whatsapp me-1"></i> WhatsApp
+                            </button>
+                            <span id="adminOtpStatus" class="ml-2 text-xs text-green-600 hidden">OTP Sent!</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 text-left">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Enter OTP</label>
+                        <input type="text" name="otp" id="adminUndoOtpInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="6-digit OTP">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeAdminUndoModal()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors shadow-sm">Confirm Undo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUndoWoId = null;
+
+function openAdminUndoModal(woId, undoCount) {
+    currentUndoWoId = woId;
+    document.getElementById('adminUndoForm').action = `/admin/work-order/${woId}/undo`;
+    
+    if (undoCount >= 1) {
+        document.getElementById('adminUndoOtpSection').classList.remove('hidden');
+        document.getElementById('adminUndoOtpInput').required = true;
+        document.getElementById('adminUndoModalMsg').innerText = "You have already undone this work order once. OTP is required to undo again.";
+    } else {
+        document.getElementById('adminUndoOtpSection').classList.add('hidden');
+        document.getElementById('adminUndoOtpInput').required = false;
+        document.getElementById('adminUndoModalMsg').innerText = "Are you sure you want to undo the status of this work order?";
+    }
+    
+    document.getElementById('adminUndoModal').classList.remove('hidden');
+}
+
+function closeAdminUndoModal() {
+    document.getElementById('adminUndoModal').classList.add('hidden');
+}
+
+function sendAdminUndoOtp(method) {
+    const superAdminId = document.getElementById('superAdminSelect').value;
+    if (!superAdminId) return;
+    
+    document.getElementById('adminOtpStatus').classList.remove('hidden');
+    document.getElementById('adminOtpStatus').innerText = "Sending...";
+    document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-amber-600";
+    
+    fetch(`/admin/work-order/${currentUndoWoId}/send-undo-otp`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ superadmin_id: superAdminId, delivery_method: method })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('adminOtpStatus').innerText = "OTP Sent!";
+            document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-emerald-600";
+        } else {
+            document.getElementById('adminOtpStatus').innerText = "Failed: " + data.message;
+            document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
+        }
+    })
+    .catch(err => {
+        document.getElementById('adminOtpStatus').innerText = "Error sending OTP";
+        document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
+    });
+}
+</script>
+
 @endsection

@@ -13,6 +13,8 @@ use App\Models\WorkOrderImage;
 use App\Services\ImageWatermarkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
+use App\Models\ProcessOwner;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Imports\WorkOrderImport;
@@ -205,6 +207,8 @@ class WorkOrderController extends Controller
             $subcategories = ProductSubcategory::orderBy('name')->get();
         }
 
+        $superAdmins = \App\Models\ProcessOwner::where('role', 'super_admin')->get();
+
         return view('admin.work-order.index', compact(
             'newOrders',
             'allocatedOrders',
@@ -224,7 +228,8 @@ class WorkOrderController extends Controller
             'bpCodeFilter',
             'categoryFilter',
             'subcategoryFilter',
-            'craftsmanFilter'
+            'craftsmanFilter',
+            'superAdmins'
         ));
     }
 
@@ -409,7 +414,8 @@ class WorkOrderController extends Controller
     public function show(WorkOrder $workOrder)
     {
         $workOrder->load(['productCategory', 'subcategoryRelation', 'buyer', 'craftsman', 'product.images', 'images']);
-        return view('admin.work-order.show', compact('workOrder'));
+        $superAdmins = \App\Models\ProcessOwner::where('role', 'super_admin')->get();
+        return view('admin.work-order.show', compact('workOrder', 'superAdmins'));
     }
 
     /**
@@ -449,6 +455,7 @@ class WorkOrderController extends Controller
             'status' => 'allocated',
             'craftsman_status' => 'allocated', // Set initial craftsman status
             'allocated_by' => Auth::guard('admin')->id(),
+            'allocated_at' => now(),
         ]);
 
         // Send Notification
@@ -700,6 +707,7 @@ class WorkOrderController extends Controller
             'status' => 'allocated',
             'craftsman_status' => 'allocated', // Reset craftsman status
             'allocated_by' => Auth::guard('admin')->id(),
+            'allocated_at' => now(),
         ]);
 
         // Send Notification
@@ -914,37 +922,25 @@ class WorkOrderController extends Controller
         $newWorkOrder->status = 'new';
         $newWorkOrder->craftsman_status = null;
         $newWorkOrder->allocated_craftsman_bp_code = null;
+        $newWorkOrder->allocated_by = null; // Reset allocator
         $newWorkOrder->approved_by = null;
         $newWorkOrder->rejection_reason = null;
         $newWorkOrder->due_date = today()->addDays(7); // Set a new due date (7 days from now)
         $newWorkOrder->craftsman_due_date = today()->addDays(14); // Set a new craftsman due date (14 days from now)
+
+        // Set the creator to the person copying it
+        $user = \Illuminate\Support\Facades\Auth::guard('admin')->user() ?? \Illuminate\Support\Facades\Auth::user();
+        if ($user) {
+            $newWorkOrder->created_by = $user->id;
+            $newWorkOrder->creator_type = 'admin';
+            $newWorkOrder->creator_user_code = $user->user_code ?? null;
+        }
 
         // Generate a new work order number
         $newWorkOrder->work_order_number = WorkOrder::generateWorkOrderNumber();
 
         // Save the new work order
         $newWorkOrder->save();
-
-        // For copied work orders, we only copy the original product image, not completion proof images
-        // This prevents craftsmen from seeing completion proof images as reference images
-
-        // Copy the main product image if it exists
-        if ($workOrder->product_image) {
-            $sourcePath = public_path($workOrder->product_image);
-
-            if (file_exists($sourcePath)) {
-                // Create a new filename to avoid conflicts
-                $pathInfo = pathinfo($workOrder->product_image);
-                $newFileName = $pathInfo['filename'] . '_copy_' . time() . '_' . rand(1000, 9999) . '.' . $pathInfo['extension'];
-                $newFilePath = $pathInfo['dirname'] . '/' . $newFileName;
-                $newFullPath = public_path($newFilePath);
-
-                // Copy the main product image file to the new location
-                if (copy($sourcePath, $newFullPath)) {
-                    $newWorkOrder->update(['product_image' => $newFilePath]);
-                }
-            }
-        }
 
         // We intentionally do NOT copy the WorkOrderImage records (craftsman completion proof images)
         // This prevents craftsmen from seeing completion proof images when working on the new order
@@ -1107,6 +1103,7 @@ class WorkOrderController extends Controller
             'status' => 'allocated',
             'craftsman_status' => 'allocated',
             'allocated_by' => Auth::id(),
+            'allocated_at' => now(),
         ];
         
         if ($request->filled('craftsman_due_date')) {
@@ -1165,7 +1162,55 @@ class WorkOrderController extends Controller
         }
 
         $craftsmen = Craftman::all();
-        return view('admin.work-order.bulk-allocate', compact('workOrders', 'craftsmen'));
+
+        // ------------------ CRAFTSMAN PERFORMANCE SUGGESTIONS ------------------
+        $categories = $workOrders->pluck('product_category_id')->filter()->unique()->toArray();
+        $designCodes = $workOrders->pluck('design_code')->filter()->unique()->toArray();
+        $productCodes = $workOrders->pluck('product_code')->filter()->unique()->toArray();
+
+        $suggestedCraftsmen = [];
+        
+        if (!empty($categories) || !empty($designCodes) || !empty($productCodes)) {
+            $craftsmanStats = [];
+            foreach ($craftsmen as $craftsman) {
+                // Determine completed matching orders count
+                $count = WorkOrder::where('allocated_craftsman_bp_code', $craftsman->craftman_code)
+                    ->where(function($query) {
+                        $query->where('craftsman_status', 'completed')
+                              ->orWhere('status', 'completed');
+                    })
+                    ->where(function($query) use ($categories, $designCodes, $productCodes) {
+                        if (!empty($categories)) {
+                            $query->orWhereIn('product_category_id', $categories);
+                        }
+                        if (!empty($designCodes)) {
+                            $query->orWhereIn('design_code', $designCodes);
+                        }
+                        if (!empty($productCodes)) {
+                            $query->orWhereIn('product_code', $productCodes);
+                        }
+                    })
+                    ->count();
+
+                if ($count > 0) {
+                    $craftsmanStats[] = [
+                        'craftsman' => $craftsman,
+                        'completed_count' => $count
+                    ];
+                }
+            }
+
+            // Sort descending by highest completed matching count
+            usort($craftsmanStats, function($a, $b) {
+                return $b['completed_count'] <=> $a['completed_count'];
+            });
+
+            // Get Top 3
+            $suggestedCraftsmen = array_slice($craftsmanStats, 0, 3);
+        }
+        // -----------------------------------------------------------------------
+
+        return view('admin.work-order.bulk-allocate', compact('workOrders', 'craftsmen', 'suggestedCraftsmen'));
     }
 
     /**
@@ -1702,5 +1747,187 @@ class WorkOrderController extends Controller
     {
         $filename = 'WorkOrders_' . now()->format('d-m-Y') . '.xlsx';
         return Excel::download(new AdminWorkOrderExport($request), $filename);
+    }
+
+    public function sendUndoOtp(Request $request, WorkOrder $workOrder)
+    {
+        $request->validate([
+            'superadmin_id' => 'required|exists:process_owners,id',
+            'delivery_method' => 'nullable|string|in:sms,whatsapp'
+        ]);
+
+        $superAdmin = ProcessOwner::where('role', 'super_admin')->findOrFail($request->superadmin_id);
+        
+        $otp = rand(100000, 999999);
+        $cacheKey = "undo_otp_admin_{$workOrder->id}";
+        Cache::put($cacheKey, $otp, 600); // 10 minutes
+
+        $method = $request->delivery_method ?? 'sms';
+
+        if ($superAdmin->mobile_no) {
+            if ($method === 'whatsapp') {
+                $this->sendWhatsAppMsg($superAdmin->mobile_no, $otp);
+                return response()->json(['success' => true, 'message' => 'OTP sent to SuperAdmin via WhatsApp successfully.']);
+            } else {
+                $this->sendSMSMsg($superAdmin->mobile_no, $otp);
+                return response()->json(['success' => true, 'message' => 'OTP sent to SuperAdmin via SMS successfully.']);
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => 'SuperAdmin does not have a valid mobile number.']);
+    }
+
+    public function undo(Request $request, WorkOrder $workOrder)
+    {
+        if ($workOrder->admin_undo_count >= 1) {
+            $request->validate([
+                'otp' => 'required|numeric'
+            ]);
+            
+            $cacheKey = "undo_otp_admin_{$workOrder->id}";
+            $cachedOtp = Cache::get($cacheKey);
+            
+            if (!$cachedOtp || $cachedOtp != $request->otp) {
+                return back()->with('error', 'Invalid or expired OTP. Please request a new one.');
+            }
+            Cache::forget($cacheKey);
+        }
+
+        $this->performUndo($workOrder);
+        
+        $workOrder->admin_undo_count += 1;
+        $workOrder->save();
+
+        return back()->with('success', 'Work Order status undone successfully.');
+    }
+
+    public function sendReturnOtp(Request $request, WorkOrder $workOrder)
+    {
+        $request->validate([
+            'superadmin_id' => 'required|exists:process_owners,id',
+            'delivery_method' => 'nullable|string|in:sms,whatsapp'
+        ]);
+
+        $superAdmin = ProcessOwner::where('role', 'super_admin')->findOrFail($request->superadmin_id);
+        
+        $otp = rand(100000, 999999);
+        $cacheKey = "return_otp_admin_{$workOrder->id}";
+        Cache::put($cacheKey, $otp, 600); // 10 minutes
+
+        $method = $request->delivery_method ?? 'sms';
+
+        if ($superAdmin->mobile_no) {
+            if ($method === 'whatsapp') {
+                $this->sendWhatsAppMsg($superAdmin->mobile_no, $otp);
+                return response()->json(['success' => true, 'message' => 'Return OTP sent via WhatsApp successfully.']);
+            } else {
+                $this->sendSMSMsg($superAdmin->mobile_no, $otp);
+                return response()->json(['success' => true, 'message' => 'Return OTP sent via SMS successfully.']);
+            }
+        }
+
+        return response()->json(['success' => false, 'message' => 'SuperAdmin does not have a valid mobile number.']);
+    }
+
+    public function processReturn(Request $request, WorkOrder $workOrder)
+    {
+        $request->validate([
+            'return_due_date' => 'required|date',
+            'return_note' => 'nullable|string',
+            'damaged_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+        ]);
+
+        if ($workOrder->admin_return_count >= 1) {
+            $request->validate([
+                'otp' => 'required|numeric'
+            ]);
+            
+            $cacheKey = "return_otp_admin_{$workOrder->id}";
+            $cachedOtp = Cache::get($cacheKey);
+            
+            if (!$cachedOtp || $cachedOtp != $request->otp) {
+                return back()->with('error', 'Invalid or expired OTP. Please request a new one.');
+            }
+            Cache::forget($cacheKey);
+        }
+
+        if ($workOrder->status == 'for_approval') {
+            $workOrder->status = 'in_process';
+            $workOrder->craftsman_status = 'in_process';
+        }
+
+        if ($request->hasFile('damaged_image')) {
+            $file = $request->file('damaged_image');
+            $filePath = $file->store('damaged_images', 'public');
+            $workOrder->damaged_image = $filePath;
+        }
+
+        $workOrder->return_due_date = $request->return_due_date;
+        $workOrder->return_note = $request->return_note;
+        $workOrder->admin_return_count += 1;
+        $workOrder->save();
+
+        return back()->with('success', 'Work Order returned successfully.');
+    }
+
+    private function performUndo(WorkOrder $workOrder)
+    {
+        if (strtolower($workOrder->status) === 'completed') {
+            $workOrder->status = 'for_approval';
+            $workOrder->craftsman_status = 'completed'; // Keeps craftsman at completed while admin re-evaluates
+        } elseif (strtolower($workOrder->status) === 'for_approval') {
+            $workOrder->status = 'in_process';
+            $workOrder->craftsman_status = 'in_process';
+        } elseif (strtolower($workOrder->status) === 'in_process' || strtolower($workOrder->craftsman_status) === 'in_process') {
+            $workOrder->status = 'allocated';
+            $workOrder->craftsman_status = 'allocated';
+        }
+    }
+
+    private function sendSMSMsg($phone, $otp)
+    {
+        $phone = trim($phone);
+        if (strlen($phone) === 10) {
+            $phone = '91' . $phone;
+        }
+
+        $authKey = '501083AjcyWEDYv69ba6085P1';
+        $templateId = '69ba5f87a27ca7c5ac011655';
+
+        $payload = [
+            'template_id' => $templateId,
+            'short_url'   => '0',
+            'recipients'  => [
+                [
+                    'mobiles' => $phone,
+                    'var'     => (string)$otp
+                ]
+            ]
+        ];
+
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'authkey' => $authKey,
+            'accept'  => 'application/json',
+        ])->post('https://api.msg91.com/api/v5/flow/', $payload);
+
+        Log::info('MSG91 Undo OTP Sent:', [
+            'phone' => $phone,
+            'response' => $response->json()
+        ]);
+
+        return $response->successful();
+    }
+
+    private function sendWhatsAppMsg($phone, $otp)
+    {
+        $phone = trim($phone);
+        if (strlen($phone) === 10) {
+            $phone = '91' . $phone;
+        }
+
+        // Note: Using SMS flow as fallback for WhatsApp since WhatsApp API is not yet implemented in the codebase.
+        // Update this to MSG91 WhatsApp API endpoint and template once configured.
+        Log::warning('WhatsApp OTP requested but API not configured. Falling back to SMS flow.', ['phone' => $phone]);
+        return $this->sendSMSMsg($phone, $otp);
     }
 }

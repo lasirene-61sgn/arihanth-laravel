@@ -67,22 +67,31 @@
                         @if($purchaseOrder->creator_details['name'] !== 'System' && $purchaseOrder->creator_details['name'] !== 'N/A')
                         <div class="col-md-3 mt-3">
                             <label class="form-label fw-bold text-muted small">Created By</label>
-                            @php $creator = $purchaseOrder->creator_details; @endphp
-                            <p class="mb-0">{{ $creator['name'] }} <span class="badge bg-secondary">{{ $creator['type'] }}</span></p>
+                            @php 
+                                $creator = $purchaseOrder->creator_details; 
+                                $creatorCode = !empty($creator['user_code']) && $creator['user_code'] !== 'N/A' ? $creator['user_code'] : (!empty($creator['bp_code']) && $creator['bp_code'] !== 'N/A' ? $creator['bp_code'] : $creator['type']);
+                            @endphp
+                            <p class="mb-0"><span class="badge bg-info">{{ $creatorCode }}</span> {{ $creator['name'] }}</p>
                         </div>
                         @endif
                         @if($purchaseOrder->allocator_details['name'] !== 'Unknown User' && $purchaseOrder->allocator_details['name'] !== 'N/A')
                         <div class="col-md-3 mt-3">
                             <label class="form-label fw-bold text-muted small">Allocated By</label>
-                            @php $allocator = $purchaseOrder->allocator_details; @endphp
-                            <p class="mb-0">{{ $allocator['name'] }} <span class="badge bg-secondary">{{ $allocator['type'] }}</span></p>
+                            @php 
+                                $allocator = $purchaseOrder->allocator_details; 
+                                $allocatorCode = !empty($allocator['user_code']) && $allocator['user_code'] !== 'N/A' ? $allocator['user_code'] : (!empty($allocator['bp_code']) && $allocator['bp_code'] !== 'N/A' ? $allocator['bp_code'] : $allocator['type']);
+                            @endphp
+                            <p class="mb-0"><span class="badge bg-warning text-dark">{{ $allocatorCode }}</span> {{ $allocator['name'] }}</p>
                         </div>
                         @endif
                         @if($purchaseOrder->approver_details['name'] !== 'Unknown User' && $purchaseOrder->approver_details['name'] !== 'N/A')
                         <div class="col-md-3 mt-3">
                             <label class="form-label fw-bold text-muted small">Approved By</label>
-                            @php $approver = $purchaseOrder->approver_details; @endphp
-                            <p class="mb-0">{{ $approver['name'] }} <span class="badge bg-secondary">{{ $approver['type'] }}</span></p>
+                            @php 
+                                $approver = $purchaseOrder->approver_details; 
+                                $approverCode = !empty($approver['user_code']) && $approver['user_code'] !== 'N/A' ? $approver['user_code'] : (!empty($approver['bp_code']) && $approver['bp_code'] !== 'N/A' ? $approver['bp_code'] : $approver['type']);
+                            @endphp
+                            <p class="mb-0"><span class="badge bg-success">{{ $approverCode }}</span> {{ $approver['name'] }}</p>
                         </div>
                         @endif
                         <div class="col-md-3 mt-3">
@@ -97,7 +106,95 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
+                    <!-- Order Tracking Timeline -->
+                    <div class="card shadow-sm mt-4 mb-4 border-info">
+                        <div class="card-header bg-light d-flex align-items-center">
+                            <i class="bi bi-signpost-split me-2 text-primary"></i>
+                            <h5 class="mb-0">Order Tracking</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline position-relative px-3" style="border-left: 2px solid #e9ecef; margin-left: 15px;">
+                                <!-- Created -->
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Order Created</h6>
+                                    @php 
+                                        $creator = $purchaseOrder->creator_details;
+                                        $creatorCode = !empty($creator['user_code']) && $creator['user_code'] !== 'N/A' ? $creator['user_code'] : (!empty($creator['bp_code']) && $creator['bp_code'] !== 'N/A' ? $creator['bp_code'] : $creator['type']);
+                                    @endphp
+                                    <p class="mb-0 text-muted small">Created By: <span class="badge bg-info">{{ $creatorCode }}</span> <span class="fw-bold text-dark">{{ $creator['name'] ?? 'N/A' }}</span></p>
+                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->created_at ? $purchaseOrder->created_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</small>
+                                </div>
+
+                                <!-- Due Date -->
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-warning rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Target Due Date</h6>
+                                    <small class="text-secondary"><i class="bi bi-calendar me-1"></i> {{ $purchaseOrder->due_date ? $purchaseOrder->due_date->format('d M Y') : 'Not Set' }}</small>
+                                </div>
+
+                                <!-- Allocated -->
+                                @if($purchaseOrder->allocated_craftsman_code)
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-info rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Allocated to Craftsman</h6>
+                                    @php 
+                                        $allocator = $purchaseOrder->allocator_details;
+                                        $allocatorCode = !empty($allocator['user_code']) && $allocator['user_code'] !== 'N/A' ? $allocator['user_code'] : (!empty($allocator['bp_code']) && $allocator['bp_code'] !== 'N/A' ? $allocator['bp_code'] : $allocator['type']);
+                                    @endphp
+                                    <p class="mb-0 text-muted small">Allocated By: <span class="badge bg-warning text-dark">{{ $allocatorCode }}</span> <span class="fw-bold text-dark">{{ $allocator['name'] ?? 'Admin' }}</span></p>
+                                    <p class="mb-0 text-muted small">Allocated To: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->allocated_at ? \Carbon\Carbon::parse($purchaseOrder->allocated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</small>
+                                </div>
+                                @endif
+
+                                <!-- Craftsman Due Date -->
+                                @if($purchaseOrder->craftsman_due_date)
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-danger rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Craftsman Due Date</h6>
+                                    <small class="text-secondary"><i class="bi bi-calendar me-1"></i> {{ $purchaseOrder->craftsman_due_date->format('d M Y') }}</small>
+                                </div>
+                                @endif
+
+                                <!-- Accepted by Craftsman -->
+                                @if(in_array($purchaseOrder->craftsman_status, ['in_process', 'completed', 'accepted']) && $purchaseOrder->allocated_craftsman_code)
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Accepted by Craftsman</h6>
+                                    <p class="mb-0 text-muted small">Accepted By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                </div>
+                                @endif
+
+                                <!-- Completed by Craftsman -->
+                                @if(strtolower($purchaseOrder->craftsman_status) === 'completed' && $purchaseOrder->allocated_craftsman_code)
+                                <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-info rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1">Completed by Craftsman</h6>
+                                    <p class="mb-0 text-muted small">Completed By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'Craftsman' }}</span></p>
+                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                </div>
+                                @endif
+
+                                <!-- Final Approval by Admin/Superadmin -->
+                                @if(strtolower($purchaseOrder->status) === 'completed' || strtolower($purchaseOrder->status) === 'approved')
+                                <div class="timeline-item position-relative" style="padding-left: 20px;">
+                                    <span class="position-absolute bg-success rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
+                                    <h6 class="mb-1 text-success">Order Approved & Completed</h6>
+                                    @php 
+                                        $approver = $purchaseOrder->approver_details;
+                                        $approverCode = !empty($approver['user_code']) && $approver['user_code'] !== 'N/A' ? $approver['user_code'] : (!empty($approver['bp_code']) && $approver['bp_code'] !== 'N/A' ? $approver['bp_code'] : $approver['type']);
+                                    @endphp
+                                    <p class="mb-0 text-muted small">Approved By: <span class="badge bg-success">{{ $approverCode }}</span> <span class="fw-bold text-dark">{{ $approver['name'] ?? 'Admin' }}</span></p>
+                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</small>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
                         <table class="table table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>

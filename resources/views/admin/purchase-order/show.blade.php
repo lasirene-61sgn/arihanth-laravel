@@ -69,22 +69,31 @@
                 @if($purchaseOrder->creator_details['name'] !== 'System' && $purchaseOrder->creator_details['name'] !== 'N/A')
                   <div>
                       <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Created By</label>
-                      @php $creator = $purchaseOrder->creator_details; @endphp
-                      <p class="text-gray-900 font-medium">{{ $creator['name'] }} <span class="text-[10px] bg-gray-200 text-gray-700 px-1 rounded">{{ $creator['type'] }}</span></p>
+                      @php 
+                          $creator = $purchaseOrder->creator_details; 
+                          $creatorCode = !empty($creator['user_code']) && $creator['user_code'] !== 'N/A' ? $creator['user_code'] : (!empty($creator['bp_code']) && $creator['bp_code'] !== 'N/A' ? $creator['bp_code'] : $creator['type']);
+                      @endphp
+                      <p class="text-gray-900 font-medium">{{ $creator['name'] }} <span class="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">{{ $creatorCode }}</span></p>
                   </div>
                   @endif
                 @if($purchaseOrder->allocator_details['name'] !== 'Unknown User' && $purchaseOrder->allocator_details['name'] !== 'N/A')
                   <div>
                       <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Allocated By</label>
-                      @php $allocator = $purchaseOrder->allocator_details; @endphp
-                      <p class="text-gray-900 font-medium">{{ $allocator['name'] }} <span class="text-[10px] bg-gray-200 text-gray-700 px-1 rounded">{{ $allocator['type'] }}</span></p>
+                      @php 
+                          $allocator = $purchaseOrder->allocator_details; 
+                          $allocatorCode = !empty($allocator['user_code']) && $allocator['user_code'] !== 'N/A' ? $allocator['user_code'] : (!empty($allocator['bp_code']) && $allocator['bp_code'] !== 'N/A' ? $allocator['bp_code'] : $allocator['type']);
+                      @endphp
+                      <p class="text-gray-900 font-medium">{{ $allocator['name'] }} <span class="text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">{{ $allocatorCode }}</span></p>
                   </div>
                   @endif
                 @if($purchaseOrder->approver_details['name'] !== 'Unknown User' && $purchaseOrder->approver_details['name'] !== 'N/A')
                   <div>
                       <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Approved By</label>
-                      @php $approver = $purchaseOrder->approver_details; @endphp
-                      <p class="text-gray-900 font-medium">{{ $approver['name'] }} <span class="text-[10px] bg-gray-200 text-gray-700 px-1 rounded">{{ $approver['type'] }}</span></p>
+                      @php 
+                          $approver = $purchaseOrder->approver_details; 
+                          $approverCode = !empty($approver['user_code']) && $approver['user_code'] !== 'N/A' ? $approver['user_code'] : (!empty($approver['bp_code']) && $approver['bp_code'] !== 'N/A' ? $approver['bp_code'] : $approver['type']);
+                      @endphp
+                      <p class="text-gray-900 font-medium">{{ $approver['name'] }} <span class="text-[10px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded">{{ $approverCode }}</span></p>
                   </div>
                   @endif
                 <div>
@@ -96,6 +105,95 @@
                             <span class="text-gray-400">Not Completed</span>
                         @endif
                     </p>
+                </div>
+            </div>
+
+            <!-- Order Tracking Timeline -->
+            <div class="mt-8 mb-6 border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center">
+                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <h4 class="text-lg font-bold text-gray-800">Order Tracking</h4>
+                </div>
+                <div class="p-6">
+                    <div class="relative border-l-2 border-gray-200 ml-3">
+                        
+                        <!-- Created -->
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Order Created</h3>
+                            @php 
+                                $creator = $purchaseOrder->creator_details;
+                                $creatorCode = !empty($creator['user_code']) && $creator['user_code'] !== 'N/A' ? $creator['user_code'] : (!empty($creator['bp_code']) && $creator['bp_code'] !== 'N/A' ? $creator['bp_code'] : $creator['type']);
+                            @endphp
+                            <p class="text-xs text-gray-500 mt-1">Created By: <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-medium">{{ $creatorCode }}</span> <span class="font-semibold text-gray-800">{{ $creator['name'] ?? 'N/A' }}</span></p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->created_at ? $purchaseOrder->created_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</p>
+                        </div>
+
+                        <!-- Target Due Date -->
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-yellow-400 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Target Due Date</h3>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>{{ $purchaseOrder->due_date ? $purchaseOrder->due_date->format('d M Y') : 'Not Set' }}</p>
+                        </div>
+
+                        <!-- Allocated -->
+                        @if($purchaseOrder->allocated_craftsman_code)
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-indigo-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Allocated to Craftsman</h3>
+                            @php 
+                                $allocator = $purchaseOrder->allocator_details;
+                                $allocatorCode = !empty($allocator['user_code']) && $allocator['user_code'] !== 'N/A' ? $allocator['user_code'] : (!empty($allocator['bp_code']) && $allocator['bp_code'] !== 'N/A' ? $allocator['bp_code'] : $allocator['type']);
+                            @endphp
+                            <p class="text-xs text-gray-500 mt-1">Allocated By: <span class="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 text-[10px] font-medium">{{ $allocatorCode }}</span> <span class="font-semibold text-gray-800">{{ $allocator['name'] ?? 'Admin' }}</span></p>
+                            <p class="text-xs text-gray-500 mt-1">Allocated To: <span class="px-1.5 py-0.5 rounded bg-gray-200 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->allocated_at ? \Carbon\Carbon::parse($purchaseOrder->allocated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</p>
+                        </div>
+                        @endif
+
+                        <!-- Craftsman Due Date -->
+                        @if($purchaseOrder->craftsman_due_date)
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-red-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Craftsman Due Date</h3>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>{{ $purchaseOrder->craftsman_due_date->format('d M Y') }}</p>
+                        </div>
+                        @endif
+
+                        <!-- Accepted by Craftsman -->
+                        @if(in_array($purchaseOrder->craftsman_status, ['in_process', 'completed', 'accepted']) && $purchaseOrder->allocated_craftsman_code)
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-indigo-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Accepted by Craftsman</h3>
+                            <p class="text-xs text-gray-500 mt-1">Accepted By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                        </div>
+                        @endif
+
+                        <!-- Completed by Craftsman -->
+                        @if(strtolower($purchaseOrder->craftsman_status) === 'completed' && $purchaseOrder->allocated_craftsman_code)
+                        <div class="mb-8 ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-gray-900 text-sm">Completed by Craftsman</h3>
+                            <p class="text-xs text-gray-500 mt-1">Completed By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'Craftsman' }}</span></p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                        </div>
+                        @endif
+
+                        <!-- Final Approval by Admin/Superadmin -->
+                        @if(strtolower($purchaseOrder->status) === 'completed' || strtolower($purchaseOrder->status) === 'approved')
+                        <div class="ml-6 relative">
+                            <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-green-500 ring-4 ring-white"></span>
+                            <h3 class="font-semibold text-green-600 text-sm">Order Approved & Completed</h3>
+                            @php 
+                                $approver = $purchaseOrder->approver_details;
+                                $approverCode = !empty($approver['user_code']) && $approver['user_code'] !== 'N/A' ? $approver['user_code'] : (!empty($approver['bp_code']) && $approver['bp_code'] !== 'N/A' ? $approver['bp_code'] : $approver['type']);
+                            @endphp
+                            <p class="text-xs text-gray-500 mt-1">Approved By: <span class="px-1.5 py-0.5 rounded bg-green-100 text-green-800 text-[10px] font-medium">{{ $approverCode }}</span> <span class="font-semibold text-gray-800">{{ $approver['name'] ?? 'Admin' }}</span></p>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A' }}</p>
+                        </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 

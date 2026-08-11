@@ -208,6 +208,7 @@ class WorkOrderController extends Controller
         
         $workOrder->update([
             'craftsman_status' => 'in_process', // Move directly to in process
+            'craftsman_accepted_at' => now(),
         ]);
         
         // Redirect to the work order index page with a parameter to show the in-process tab
@@ -235,6 +236,7 @@ class WorkOrderController extends Controller
             if ($workOrder && $workOrder->allocated_craftsman_bp_code === $craftsman->craftman_code && $workOrder->craftsman_status === 'allocated') {
                 $workOrder->update([
                     'craftsman_status' => 'in_process',
+                    'craftsman_accepted_at' => now(),
                 ]);
                 $count++;
             }
@@ -303,6 +305,7 @@ class WorkOrderController extends Controller
             if ($workOrder && $workOrder->allocated_craftsman_bp_code === $craftsman->craftman_code && $workOrder->craftsman_status === 'in_process') {
                $workOrder->update([
                     'craftsman_status' => 'completed',
+                    'craftsman_completed_at' => now(),
                     'status' => 'for_approval', // Assuming this is the status flow
                 ]);
 
@@ -406,6 +409,7 @@ class WorkOrderController extends Controller
         
         $workOrder->update([
             'craftsman_status' => 'completed',
+            'craftsman_completed_at' => now(),
             'status' => 'for_approval', // Notify super admin for approval
         ]);
         

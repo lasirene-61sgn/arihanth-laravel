@@ -1182,9 +1182,14 @@
                                         <!--    </div>-->
                                         <!--</td>-->
                                         <td class="tw-px-4 tw-py-4 tw-text-right">
-                                            <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors tw-inline-block" title="View">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
+                                            <div class="tw-flex tw-justify-end tw-gap-1">
+                                                <button type="button" onclick="openSuperAdminUndoModal({{ $order->id }}, {{ $order->superadmin_undo_count }})" class="tw-p-2 tw-text-purple-600 hover:tw-bg-purple-50 tw-rounded-lg tw-transition-colors" title="Undo Status">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                                <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors tw-inline-block" title="View">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                         </tr>
                                         @endforeach
@@ -1943,6 +1948,9 @@
                                             </td>
                                             <td class="tw-px-4 tw-py-4 tw-text-right">
                                                 <div class="tw-flex tw-justify-end tw-gap-1">
+                                                    <button type="button" onclick="openSuperAdminUndoModal({{ $order->id }}, {{ $order->superadmin_undo_count }})" class="tw-p-2 tw-text-purple-600 hover:tw-bg-purple-50 tw-rounded-lg tw-transition-colors" title="Undo Status">
+                                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                                    </button>
                                                     <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors" title="View">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
@@ -2185,6 +2193,9 @@
                                     </td>
                                     <td class="tw-px-4 tw-py-4 tw-text-right">
                                         <div class="tw-flex tw-justify-end tw-gap-1">
+                                            <button type="button" onclick="openSuperAdminUndoModal({{ $order->id }}, {{ $order->superadmin_undo_count }})" class="tw-p-2 tw-text-purple-600 hover:tw-bg-purple-50 tw-rounded-lg tw-transition-colors" title="Undo Status">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
                                             <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors" title="View">
                                                 <i class="bi bi-eye"></i>
                                             </a>
@@ -2764,4 +2775,95 @@
         background-color: transparent !important;
     }
 </style>
+<!-- SuperAdmin Undo Modal -->
+<div id="superAdminUndoModal" class="tw-fixed tw-inset-0 tw-z-[9999] tw-hidden tw-bg-slate-900/50 tw-backdrop-blur-sm tw-overflow-y-auto">
+    <div class="tw-min-h-screen tw-px-4 tw-text-center tw-flex tw-items-center tw-justify-center">
+        <div class="tw-inline-block tw-w-full tw-max-w-md tw-p-6 tw-my-8 tw-text-left tw-align-middle tw-transition-all tw-transform tw-bg-white tw-shadow-xl tw-rounded-2xl tw-relative">
+            <h3 class="tw-text-lg tw-font-bold tw-text-slate-900 tw-mb-4">Undo Work Order Status</h3>
+            <p class="tw-text-sm tw-text-slate-500 tw-mb-4" id="superAdminUndoModalMsg"></p>
+            
+            <form id="superAdminUndoForm" method="POST" action="">
+                @csrf
+                
+                <div id="superAdminUndoOtpSection" class="tw-hidden">
+                    <div class="tw-mb-4 tw-p-3 tw-bg-slate-50 tw-border tw-border-slate-200 tw-rounded-lg tw-text-sm tw-text-left">
+                        <div class="tw-font-medium tw-text-slate-700 tw-mb-1">Send OTP To:</div>
+                        <div class="tw-text-slate-600">
+                            {{ auth('super_admin')->user()->user_code }} - {{ auth('super_admin')->user()->name }} - {{ auth('super_admin')->user()->mobile_no }}
+                        </div>
+                    </div>
+                    <div class="tw-mb-4 tw-text-left tw-flex tw-items-center tw-gap-2">
+                        <button type="button" onclick="sendSuperAdminUndoOtp('sms')" class="tw-px-3 tw-py-1.5 tw-bg-slate-100 tw-text-xs tw-text-pink-600 hover:tw-text-pink-700 tw-font-medium tw-rounded tw-border tw-border-slate-200"><i class="bi bi-chat-left-text tw-mr-1"></i> SMS</button>
+                        <button type="button" onclick="sendSuperAdminUndoOtp('whatsapp')" class="tw-px-3 tw-py-1.5 tw-bg-emerald-50 tw-text-xs tw-text-emerald-600 hover:tw-text-emerald-700 tw-font-medium tw-rounded tw-border tw-border-emerald-200"><i class="bi bi-whatsapp tw-mr-1"></i> WhatsApp</button>
+                        <span id="superAdminOtpStatus" class="tw-ml-2 tw-text-xs tw-text-green-600 tw-hidden">OTP Sent!</span>
+                    </div>
+                    
+                    <div class="tw-mb-4 tw-text-left">
+                        <label class="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Enter OTP</label>
+                        <input type="text" name="otp" id="superAdminUndoOtpInput" class="tw-w-full tw-px-3 tw-py-2 tw-bg-slate-50 tw-border tw-border-slate-200 tw-rounded-lg tw-text-sm" placeholder="6-digit OTP">
+                    </div>
+                </div>
+
+                <div class="tw-mt-6 tw-flex tw-justify-end tw-gap-3">
+                    <button type="button" onclick="closeSuperAdminUndoModal()" class="tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-slate-700 tw-bg-slate-100 hover:tw-bg-slate-200 tw-rounded-lg tw-transition-colors">Cancel</button>
+                    <button type="submit" class="tw-px-4 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-bg-purple-600 hover:tw-bg-purple-700 tw-rounded-lg tw-transition-colors tw-shadow-sm">Confirm Undo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSuperAdminUndoWoId = null;
+
+function openSuperAdminUndoModal(woId, undoCount) {
+    currentSuperAdminUndoWoId = woId;
+    document.getElementById('superAdminUndoForm').action = `/super-admin/work-order/${woId}/undo`;
+    
+    if (undoCount >= 6) {
+        document.getElementById('superAdminUndoOtpSection').classList.remove('tw-hidden');
+        document.getElementById('superAdminUndoOtpInput').required = true;
+        document.getElementById('superAdminUndoModalMsg').innerText = "You have reached the maximum undo limit without OTP (6 times). OTP is required to undo again.";
+    } else {
+        document.getElementById('superAdminUndoOtpSection').classList.add('tw-hidden');
+        document.getElementById('superAdminUndoOtpInput').required = false;
+        document.getElementById('superAdminUndoModalMsg').innerText = `Are you sure you want to undo the status of this work order? (Used: ${undoCount}/6 before OTP is required)`;
+    }
+    
+    document.getElementById('superAdminUndoModal').classList.remove('tw-hidden');
+}
+
+function closeSuperAdminUndoModal() {
+    document.getElementById('superAdminUndoModal').classList.add('tw-hidden');
+}
+
+function sendSuperAdminUndoOtp(method) {
+    document.getElementById('superAdminOtpStatus').classList.remove('tw-hidden');
+    document.getElementById('superAdminOtpStatus').innerText = "Sending...";
+    document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-amber-600";
+    
+    fetch(`/super-admin/work-order/${currentSuperAdminUndoWoId}/send-undo-otp`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ delivery_method: method })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('superAdminOtpStatus').innerText = "OTP Sent!";
+            document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-emerald-600";
+        } else {
+            document.getElementById('superAdminOtpStatus').innerText = "Failed: " + data.message;
+            document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
+        }
+    })
+    .catch(err => {
+        document.getElementById('superAdminOtpStatus').innerText = "Error sending OTP";
+        document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
+    });
+}
+</script>
 @endsection

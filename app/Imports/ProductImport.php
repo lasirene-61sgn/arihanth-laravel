@@ -15,16 +15,17 @@ class ProductImport implements ToModel, WithHeadingRow
     protected $tempPath;
     protected $forcedBPCode;
 
-    public function __construct($tempPath, $forcedBPCode = null){
+    public function __construct($tempPath, $forcedBPCode = null)
+    {
         $this->tempPath = $tempPath;
         $this->forcedBPCode = $forcedBPCode;
     }
-  
+
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+     * @param array $row
+     *
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
     public function model(array $row)
     {
         $creatorId = null;
@@ -32,9 +33,10 @@ class ProductImport implements ToModel, WithHeadingRow
         elseif (Auth::guard('admin')->check())         $creatorId = Auth::guard('admin')->id();
         elseif (Auth::guard('buyer')->check())         $creatorId = Auth::guard('buyer')->id();
         elseif (Auth::guard('craftsman')->check())     $creatorId = Auth::guard('craftsman')->id();
-        elseif (Auth::check())                        $creatorId = Auth::id(); // Fallback for Sanctum/API
+        elseif (Auth::check())                         $creatorId = Auth::id(); // Fallback for Sanctum/API
 
         $productcode = !empty($row['product_code']) ? $row['product_code'] : Product::generateProductCode();
+
         $product = Product::create([
             'product_code' => $productcode,
             'product_name' => $row['product_name'],
@@ -47,25 +49,59 @@ class ProductImport implements ToModel, WithHeadingRow
             'weight_to' => $row['weight_to'] ?? null,
             'created_by' => $creatorId,
         ]);
-        if(!empty($row['image_name'])){
-            $imageFileName = $row['image_name'];
-            $filePath = $this->tempPath . '/' . $imageFileName;
 
+        // 1. Determine the image filename base (either from image_name column or product_code)
+        $targetFileName = !empty($row['image_name']) ? $row['image_name'] : $productcode;
 
-            if(file_exists($filePath)){
-                $watermarkService = new ImageWatermarkService();
+        // 2. Find the actual file in the unzipped directory
+        $foundFilePath = $this->findImageFile($targetFileName);
 
-                $newFileName = time() . '_' . $imageFileName;
-                $storagePath = 'products/' . $newFileName;
-                Storage::disk('public')->put($storagePath, file_get_contents($filePath));
-                    $watermarkPath = $watermarkService->addWatermark($storagePath);
+        if ($foundFilePath && file_exists($foundFilePath)) {
+            $watermarkService = new ImageWatermarkService();
 
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'path' => $watermarkPath,
-                    ]);
+            $extension = pathinfo($foundFilePath, PATHINFO_EXTENSION);
+            $newFileName = time() . '_' . $productcode . '.' . $extension;
+            $storagePath = 'products/' . $newFileName;
+
+            // Save original image to public disk
+            Storage::disk('public')->put($storagePath, file_get_contents($foundFilePath));
+
+            // Apply watermark service
+            $watermarkPath = $watermarkService->addWatermark($storagePath);
+
+            // Create record in product_images table
+            ProductImage::create([
+                'product_id' => $product->id,
+                'path'       => $watermarkPath,
+            ]);
+        }
+
+        return $product;
+    }
+
+    /**
+     * Helper method to locate the image file even if extension is omitted in Excel
+     */
+    private function findImageFile($fileName)
+    {
+        // Search recursively inside $this->tempPath for the image file
+        $dirIterator = new \RecursiveDirectoryIterator($this->tempPath, \RecursiveDirectoryIterator::SKIP_DOTS);
+        $iterator = new \RecursiveIteratorIterator($dirIterator);
+
+        $extensions = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP'];
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $filenameWithoutExt = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+                $ext = pathinfo($file->getFilename(), PATHINFO_EXTENSION);
+
+                // Match exact filename (with or without extension)
+                if ($filenameWithoutExt === $fileName && in_array($ext, $extensions)) {
+                    return $file->getRealPath();
+                }
             }
         }
-        return $product;
+
+        return null;
     }
 }

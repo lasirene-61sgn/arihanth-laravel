@@ -75,7 +75,15 @@ class WorkOrder extends Model
         'creator_user_code',
         'approved_by',
         'allocated_by',
+        'allocated_at',
+        'admin_undo_count',
+        'superadmin_undo_count',
+        'admin_return_count',
+        'superadmin_return_count',
+        'return_due_date',
+        'return_note',
         'rejection_reason',
+        'damaged_image',
         'screw_name'
     ];
 
@@ -87,6 +95,7 @@ class WorkOrder extends Model
     protected $casts = [
         'due_date' => 'date',
         'craftsman_due_date' => 'date',
+        'return_due_date' => 'date',
     ];
 
     /**
@@ -164,21 +173,21 @@ class WorkOrder extends Model
     public function getCreatorDetailsAttribute()
     {
         // 0. Use new fields if available (High Performance & Correctness)
-        if ($this->creator_type && $this->creator_user_code) {
+        if ($this->creator_type) {
             if ($this->creator_type === 'key_user') {
-                $keyUser = \App\Models\KeyUser::where('user_code', $this->creator_user_code)->first();
+                $keyUser = \App\Models\KeyUser::where('user_code', $this->creator_user_code)->first() ?? \App\Models\KeyUser::find($this->created_by);
                 if ($keyUser) return [
                     'name' => $keyUser->full_name ?? $keyUser->name ?? 'Key User',
                     'bp_code' => $keyUser->bp_code,
-                    'user_code' => $keyUser->user_code,
+                    'user_code' => $keyUser->user_code ?? 'N/A',
                     'type' => 'Key User'
                 ];
             } elseif ($this->creator_type === 'user') {
-                $user = \App\Models\User::where('user_code', $this->creator_user_code)->first();
+                $user = \App\Models\User::where('user_code', $this->creator_user_code)->first() ?? \App\Models\User::find($this->created_by);
                 if ($user) return [
                     'name' => $user->full_name ?? $user->name ?? 'User',
-                    'bp_code' => $user->bp_code,
-                    'user_code' => $user->user_code,
+                    'bp_code' => $user->bp_code ?? 'N/A',
+                    'user_code' => $user->user_code ?? 'N/A',
                     'type' => 'User'
                 ];
             } elseif ($this->creator_type === 'buyer') {
@@ -186,16 +195,16 @@ class WorkOrder extends Model
                 if ($buyer) return [
                     'name' => $buyer->business_name ?? $buyer->name ?? 'Buyer',
                     'bp_code' => $buyer->bp_code,
-                    'user_code' => null,
+                    'user_code' => 'N/A',
                     'type' => 'Buyer'
                 ];
-            } elseif ($this->creator_type === 'admin') {
+            } elseif (in_array($this->creator_type, ['admin', 'super_admin', 'superadmin'])) {
                 $processOwner = \App\Models\ProcessOwner::find($this->created_by);
                 if ($processOwner) return [
                     'name' => $processOwner->full_name ?? $processOwner->name ?? 'Admin',
                     'bp_code' => 'N/A',
                     'user_code' => $processOwner->user_code ?? 'N/A',
-                    'type' => 'Admin'
+                    'type' => $this->creator_type === 'super_admin' ? 'Super Admin' : 'Admin'
                 ];
             }
         }
@@ -316,7 +325,7 @@ class WorkOrder extends Model
                     'type' => 'Legacy'
                 ];
             }
-            
+
             return [
                 'name' => 'N/A',
                 'user_code' => 'N/A',
@@ -405,12 +414,12 @@ class WorkOrder extends Model
         }
 
         $code = 'WA' . str_pad($number, 4, '0', STR_PAD_LEFT);
-        
+
         while (self::where('work_order_number', $code)->exists()) {
             $number++;
             $code = 'WA' . str_pad($number, 4, '0', STR_PAD_LEFT);
         }
-        
+
         return $code;
     }
 
@@ -418,17 +427,17 @@ class WorkOrder extends Model
      * Get the buyer associated with this work order
      */
     public function buyer()
-{
-    return $this->belongsTo(Buyer::class, 'bp_code', 'bp_code')
-                ->select([
-                    'bp_code',
-                    'business_name',
-                    'mobile',
-                    'email',
-                    'city',
-                    'state'
-                ]);
-}
+    {
+        return $this->belongsTo(Buyer::class, 'bp_code', 'bp_code')
+            ->select([
+                'bp_code',
+                'business_name',
+                'mobile',
+                'email',
+                'city',
+                'state'
+            ]);
+    }
 
     /**
      * Get the craftsman associated with this work order
@@ -545,7 +554,7 @@ class WorkOrder extends Model
         $images = [];
         if ($this->images->count() > 0) {
             foreach ($this->images as $woImage) {
-                if ($woImage->image_url) {
+                if ($woImage->image_url && !str_contains($woImage->image_path, '_multi_')) {
                     $images[] = $woImage->image_url;
                 }
             }
@@ -560,21 +569,42 @@ class WorkOrder extends Model
     {
         $images = [];
 
-        // 1. check the single product_image (Legacy/Backward Compatibility)
-        if ($this->product_image) {
-            $images[] = $this->product_image_url;
-        }
-
-        // 2. return ALL Product Images from the catalogue
+        // 1. return ALL Product Images from the catalogue
+        $skipProductImage = false;
         if ($this->product && $this->product->images && $this->product->images->count() > 0) {
             foreach ($this->product->images as $image) {
                 if ($image->path) {
-                    $images[] = asset('storage/' . $image->path);
+                    $url = asset('storage/' . $image->path);
+                    if (!in_array($url, $images)) {
+                        $images[] = $url;
+                    }
+                    if ($this->product_image && str_contains($this->product_image, basename($image->path))) {
+                        $skipProductImage = true;
+                    }
                 }
             }
         }
 
-        return array_unique($images);
+        // 2. add WorkOrderImage records that were uploaded as product images (_multi_)
+        if ($this->images && $this->images->count() > 0) {
+            foreach ($this->images as $woImage) {
+                if ($woImage->image_url && str_contains($woImage->image_path, '_multi_')) {
+                    if (!in_array($woImage->image_url, $images)) {
+                        $images[] = $woImage->image_url;
+                    }
+                }
+            }
+        }
+
+        // 3. check the single product_image (Legacy/Backward Compatibility)
+        if ($this->product_image && !$skipProductImage) {
+            $url = $this->product_image_url;
+            if (!in_array($url, $images)) {
+                $images[] = $url;
+            }
+        }
+
+        return $images;
     }
 
     /**

@@ -113,6 +113,20 @@
                                     </p>
                                 </div>
 
+                                @if($workOrder->return_note)
+                                <div class="col-12 mb-3">
+                                    <label class="text-muted d-block">Return Note</label>
+                                    <div class="p-2 bg-light border rounded small">{{ $workOrder->return_note }}</div>
+                                </div>
+                                @endif
+                                @if($workOrder->damaged_image)
+                                <div class="col-12 mb-3">
+                                    <label class="text-muted d-block">Damaged Image</label>
+                                    <div class="d-block border rounded shadow-sm" style="cursor: pointer; max-height: 200px; width: fit-content; overflow: hidden;" onclick="openUniversalPreview('{{ asset('storage/' . $workOrder->damaged_image) }}', 'image')">
+                                        <img src="{{ asset('storage/' . $workOrder->damaged_image) }}" class="img-fluid" style="max-height: 200px; object-fit: contain;">
+                                    </div>
+                                </div>
+                                @endif
 
                                 <div class="col-md-6 mb-3">
                                     <label class="text-muted">Product Category</label>
