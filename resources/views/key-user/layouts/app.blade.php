@@ -180,9 +180,7 @@
                             <i class="bi bi-box-seam mr-3 text-lg"></i>
                             <span>Products</span>
                         </span>
-                        <!-- <span class="inline-flex items-center justify-center px-2 py-0.5 ml-3 text-xs font-semibold rounded-full" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);">
-                        <!--    {{ $sidebarCounts['productsCount'] }}-->
-                        <!--</span> -->-->
+                        
                     </a>
                     @endif
 

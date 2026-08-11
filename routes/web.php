@@ -1070,6 +1070,7 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         // Repairs Routes for Craftsmen
         Route::prefix('repairs')->name('repairs.')->group(function () {
             Route::get('/', [App\Http\Controllers\Craftsman\RepairController::class, 'index'])->name('index');
+            Route::get('/{id}', [App\Http\Controllers\Craftsman\RepairController::class, 'show'])->name('show');
             Route::post('/{repair}/accept', [App\Http\Controllers\Craftsman\RepairController::class, 'accept'])->name('accept');
             Route::post('/{repair}/reject', [App\Http\Controllers\Craftsman\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/complete', [App\Http\Controllers\Craftsman\RepairController::class, 'complete'])->name('complete');
@@ -1278,6 +1279,7 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
         Route::prefix('repairs')->name('repairs.')->group(function () {
             Route::get('/', [App\Http\Controllers\Buyer\RepairController::class, 'index'])->name('index');
             Route::get('/create', [App\Http\Controllers\Buyer\RepairController::class, 'create'])->name('create');
+            Route::get('/{id}', [App\Http\Controllers\Buyer\RepairController::class, 'show'])->name('show');
             Route::post('/', [App\Http\Controllers\Buyer\RepairController::class, 'store'])->name('store');
             Route::post('/{repair}/accept-completed', [App\Http\Controllers\Buyer\RepairController::class, 'acceptCompleted'])->name('accept-completed');
             Route::post('/{repair}/reject-completed', [App\Http\Controllers\Buyer\RepairController::class, 'rejectCompleted'])->name('reject-completed');

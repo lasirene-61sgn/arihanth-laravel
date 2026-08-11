@@ -444,7 +444,7 @@ class WorkOrderController extends Controller
     public function show(WorkOrder $workOrder)
     {
         $workOrder->load(['productCategory', 'subcategoryRelation', 'buyer', 'craftsman']);
-        return view('key-user.work-order.show', compact('workOrder'));
+        return view('buyer.work-order.show', compact('workOrder'));
     }
 
     /**

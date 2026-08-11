@@ -502,6 +502,10 @@
                                                             <span class="tw-text-blue-400 tw-font-bold tw-uppercase">SIZE:</span>
                                                             <span class="tw-text-blue-800 tw-font-semibold">{{ $order->size ?: '-' }}</span>
                                                         </div>
+                                                        <div class="tw-text-[11px] tw-mt-0.5">
+                                                            <span class="tw-text-blue-400 tw-font-bold tw-uppercase">LENGTH:</span>
+                                                            <span class="tw-text-blue-800 tw-font-semibold">{{ $order->length ?: '-' }}</span>
+                                                        </div>
                                                     </div>
 
                                                     <div class="tw-flex tw-items-center tw-gap-2 tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-px-2 tw-py-1.5 tw-w-fit">
@@ -2867,3 +2871,5 @@ function sendSuperAdminUndoOtp(method) {
 }
 </script>
 @endsection
+
+

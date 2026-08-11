@@ -413,9 +413,19 @@ class WorkOrderController extends Controller
      */
     public function show(WorkOrder $workOrder)
     {
-        $workOrder->load(['productCategory', 'subcategoryRelation', 'buyer', 'craftsman', 'product.images', 'images']);
+        $workOrder->load(['productCategory', 'subcategoryRelation', 'buyer', 'craftsman', 'images']);
+        
+        // Load product with images for design display to avoid eager loading bugs with orWhere
+        $product = null;
+        if ($workOrder->product_code) {
+            $product = \App\Models\Product::with('images')
+                ->where('product_code', $workOrder->product_code)
+                ->orWhere('design_code', $workOrder->product_code)
+                ->first();
+        }
+
         $superAdmins = \App\Models\ProcessOwner::where('role', 'super_admin')->get();
-        return view('admin.work-order.show', compact('workOrder', 'superAdmins'));
+        return view('admin.work-order.show', compact('workOrder', 'superAdmins', 'product'));
     }
 
     /**

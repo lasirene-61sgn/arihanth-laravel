@@ -1617,69 +1617,69 @@ class WorkOrderController extends Controller
      * Copy a completed work order to create a new one.
      */
     public function copy(WorkOrder $workOrder)
-{
-    // Create a new work order based on the existing one
-    $newWorkOrder = $workOrder->replicate();
+    {
+        // Create a new work order based on the existing one
+        $newWorkOrder = $workOrder->replicate();
 
-    // Reset status and tracking fields
-    $newWorkOrder->status = 'new';
-    $newWorkOrder->craftsman_status = null;
-    $newWorkOrder->allocated_craftsman_bp_code = null;
-    $newWorkOrder->allocated_by = null;
-    $newWorkOrder->allocated_at = null;
-    $newWorkOrder->approved_by = null;
-    $newWorkOrder->rejection_reason = null;
+        // Reset status and tracking fields
+        $newWorkOrder->status = 'new';
+        $newWorkOrder->craftsman_status = null;
+        $newWorkOrder->allocated_craftsman_bp_code = null;
+        $newWorkOrder->allocated_by = null;
+        $newWorkOrder->allocated_at = null;
+        $newWorkOrder->approved_by = null;
+        $newWorkOrder->rejection_reason = null;
 
-    // Reset return logs & notes for a fresh cycle
-    $newWorkOrder->return_note = null;
-    $newWorkOrder->return_due_date = null;
-    $newWorkOrder->damaged_image = null;
-    $newWorkOrder->admin_return_count = 0;
-    $newWorkOrder->superadmin_return_count = 0;
+        // Reset return logs & notes for a fresh cycle
+        $newWorkOrder->return_note = null;
+        $newWorkOrder->return_due_date = null;
+        $newWorkOrder->damaged_image = null;
+        $newWorkOrder->admin_return_count = 0;
+        $newWorkOrder->superadmin_return_count = 0;
 
-    // Set new due dates
-    $newWorkOrder->due_date = today()->addDays(7);
-    $newWorkOrder->craftsman_due_date = today()->addDays(14);
+        // Set new due dates
+        $newWorkOrder->due_date = today()->addDays(7);
+        $newWorkOrder->craftsman_due_date = today()->addDays(14);
 
-    // Determine authenticated user and assign creator fields dynamically
-    if (\Illuminate\Support\Facades\Auth::guard('super_admin')->check()) {
-        $user = \Illuminate\Support\Facades\Auth::guard('super_admin')->user();
-        $newWorkOrder->created_by = $user->id;
-        $newWorkOrder->creator_type = 'super_admin';
-        $newWorkOrder->creator_user_code = $user->user_code ?? null;
-    } else {
-        $user = \Illuminate\Support\Facades\Auth::user();
-        if ($user) {
+        // Determine authenticated user and assign creator fields dynamically
+        if (\Illuminate\Support\Facades\Auth::guard('super_admin')->check()) {
+            $user = \Illuminate\Support\Facades\Auth::guard('super_admin')->user();
             $newWorkOrder->created_by = $user->id;
-            $newWorkOrder->creator_type = 'admin';
+            $newWorkOrder->creator_type = 'super_admin';
             $newWorkOrder->creator_user_code = $user->user_code ?? null;
-        }
-    }
-
-    // Generate a unique work order number
-    $newWorkOrder->work_order_number = WorkOrder::generateWorkOrderNumber();
-
-    // Save the new work order instance
-    $newWorkOrder->save();
-
-    // Copy Product Gallery / Design Images (excluding completion proofs)
-    // Adjust relation name ('images') if your relationship is defined differently in the model
-    if ($workOrder->relationLoaded('images') || method_exists($workOrder, 'images')) {
-        foreach ($workOrder->images as $image) {
-            // Only replicate product catalog/gallery images, omit completion proof types
-            if (isset($image->type) && $image->type === 'completion_proof') {
-                continue;
+        } else {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            if ($user) {
+                $newWorkOrder->created_by = $user->id;
+                $newWorkOrder->creator_type = 'admin';
+                $newWorkOrder->creator_user_code = $user->user_code ?? null;
             }
-
-            $newImage = $image->replicate();
-            $newImage->work_order_id = $newWorkOrder->id;
-            $newImage->save();
         }
-    }
 
-    return redirect()->route('super-admin.work-order.edit', $newWorkOrder)
-        ->with('success', 'Work Order copied successfully! Please review and update as needed.');
-}
+        // Generate a unique work order number
+        $newWorkOrder->work_order_number = WorkOrder::generateWorkOrderNumber();
+
+        // Save the new work order instance
+        $newWorkOrder->save();
+
+        // Copy Product Gallery / Design Images (excluding completion proofs)
+        // Adjust relation name ('images') if your relationship is defined differently in the model
+        if ($workOrder->relationLoaded('images') || method_exists($workOrder, 'images')) {
+            foreach ($workOrder->images as $image) {
+                // Only replicate product catalog/gallery images, omit completion proof types
+                if (isset($image->type) && $image->type === 'completion_proof') {
+                    continue;
+                }
+
+                $newImage = $image->replicate();
+                $newImage->work_order_id = $newWorkOrder->id;
+                $newImage->save();
+            }
+        }
+
+        return redirect()->route('super-admin.work-order.edit', $newWorkOrder)
+            ->with('success', 'Work Order copied successfully! Please review and update as needed.');
+    }
 
     public function sendUndoOtp(Request $request, WorkOrder $workOrder)
     {

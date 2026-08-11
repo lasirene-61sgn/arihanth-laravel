@@ -247,7 +247,7 @@
                                         <th class="px-6 py-4 font-semibold">BP Code</th>
                                         <th class="px-6 py-4 font-semibold">Category</th>
                                         <th class="px-6 py-4 font-semibold">Type</th>
-                                        <th class="px-6 py-4 font-semibold">Order Type</th>
+                                        <!-- <th class="px-6 py-4 font-semibold">Order Type</th> -->
                                         <th class="px-6 py-4 font-semibold">Qty</th>
                                         <th class="px-6 py-4 font-semibold">Status</th>
                                         <th class="px-6 py-4 font-semibold">Date</th>
@@ -304,7 +304,7 @@
                                         <td class="px-6 py-4 text-slate-600">{{ $workOrder->bp_code }}</td>
                                         <td class="px-6 py-4 text-slate-600">{{ $workOrder->product_category }}</td>
                                         <td class="px-6 py-4 text-slate-600">{{ $workOrder->type }}</td>
-                                        <td class="px-6 py-4 font-medium">
+                                        <!-- <td class="px-6 py-4 font-medium">
                                             @php
                                             $typeClasses = [
                                             'Regular' => 'bg-blue-50 text-blue-700 border-blue-100',
@@ -316,7 +316,7 @@
                                             <span class="px-2.5 py-1 text-[11px] rounded-full border {{ $cls }}">
                                                 {{ $workOrder->order_type }}
                                             </span>
-                                        </td>
+                                        </td> -->
                                         <td class="px-6 py-4 text-slate-600">{{ $workOrder->quantity }}</td>
                                         <td class="px-6 py-4 font-medium">
                                             <span class="inline-flex items-center {{ $workOrder->open_close == 'Open' ? 'text-emerald-600' : 'text-slate-500' }}">
@@ -342,6 +342,11 @@
                                                 <a href="{{ route('buyer.work-order.print', $workOrder) }}"
                                                     class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors" target="_blank" title="Print">
                                                     <i class="bi bi-printer text-lg"></i>
+                                                </a>
+
+                                                <a href="{{ route('buyer.work-order.show', $workOrder) }}"
+                                                    class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors">
+                                                    <i class="bi bi-eye text-lg"></i>
                                                 </a>
 
                                                 @if($id === 'new-orders')

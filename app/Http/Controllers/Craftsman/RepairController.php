@@ -20,13 +20,21 @@ class RepairController extends Controller
         return view('craftsman.repairs.index', compact('repairs'));
     }
 
+    public function show($id)
+    {
+        $craftsmanCode = Auth::guard('craftsman')->user()->craftman_code;
+        $repair = Repair::with('buyer')->where('allocated_craftsman_code', $craftsmanCode)->findOrFail($id);
+        return view('craftsman.repairs.show', compact('repair'));
+    }
+
     public function accept($id)
     {
         $craftsmanCode = Auth::guard('craftsman')->user()->craftman_code;
         $repair = Repair::where('allocated_craftsman_code', $craftsmanCode)->findOrFail($id);
         $repair->update([
             'craftsman_status' => 'Accepted',
-            'status' => 'In_Process'
+            'status' => 'In_Process',
+            'craftsman_accepted_at' => now(),
         ]);
         return redirect()->route('craftsman.repairs.index')->with('success', 'Repair accepted.');
     }
@@ -49,6 +57,7 @@ class RepairController extends Controller
         $repair->update([
             'craftsman_status' => 'Completed',
             'status' => 'Craftsman_Completed',
+            'craftsman_completed_at' => now(),
         ]);
         return redirect()->route('craftsman.repairs.index')->with('success', 'Repair marked as completed by craftsman.');
     }

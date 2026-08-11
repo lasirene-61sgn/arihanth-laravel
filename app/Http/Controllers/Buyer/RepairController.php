@@ -18,6 +18,12 @@ class RepairController extends Controller
         return view('buyer.repairs.index', compact('repairs'));
     }
 
+    public function show($id)
+    {
+        $repair = Repair::with('craftsman')->where('buyer_id', Auth::guard('buyer')->id())->findOrFail($id);
+        return view('buyer.repairs.show', compact('repair'));
+    }
+
     public function create()
     {
         return view('buyer.repairs.create');
@@ -60,8 +66,9 @@ class RepairController extends Controller
             'image_proof' => $imagePath,
             'order_no' => $request->order_no,
             'repair' => $request->repair,
-            'ref' =>$request->ref,
             'status' => 'Pending',
+            'created_by' => Auth::guard('buyer')->id(),
+            'creator_type' => 'buyer',
         ]);
 
         return redirect()->route('buyer.repairs.index')->with('success', 'Repair order created successfully.');
@@ -70,8 +77,11 @@ class RepairController extends Controller
     public function acceptCompleted($id)
     {
         $repair = Repair::where('buyer_id', Auth::guard('buyer')->id())->findOrFail($id);
-        $repair->update(['status' => 'Buyer_Accepted']);
-        return redirect()->route('buyer.repairs.index')->with('success', 'Repair accepted.');
+        $repair->update([
+            'status' => 'Buyer_Accepted',
+            'buyer_accepted_at' => now(),
+        ]);
+        return redirect()->route('buyer.repairs.index')->with('success', 'Repair accepted successfully.');
     }
 
     public function rejectCompleted(Request $request, $id)

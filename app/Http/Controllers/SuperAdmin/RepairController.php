@@ -183,6 +183,9 @@ class RepairController extends Controller
             'ref' => $request->ref,
             'notes' => $request->notes,
             'status' => 'Pending',
+            'created_by' => auth()->id(),
+            'creator_type' => 'super_admin',
+            'creator_user_code' => auth()->user()->user_code ?? null,
         ]);
 
         return redirect()->route('super-admin.repairs.index')->with('success', 'Repair order created successfully.');
@@ -262,6 +265,8 @@ class RepairController extends Controller
             'allocated_craftsman_code' => $request->craftsman_code,
             'craftsman_status' => 'Pending',
             'allocation_notes' => $request->allocation_notes,
+            'allocated_by' => auth()->id(),
+            'allocated_at' => now(),
         ]);
 
         // Notify Craftsman
@@ -276,7 +281,12 @@ class RepairController extends Controller
     public function complete($id)
     {
         $repair = Repair::findOrFail($id);
-        $repair->update(['status' => 'Completed']);
+        $repair->update([
+            'status' => 'Buyer_Accepted',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+            'buyer_accepted_at' => now(),
+        ]);
         
         // Notify Buyer
         if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
@@ -298,7 +308,12 @@ class RepairController extends Controller
             ->get();
             
         foreach ($repairs as $repair) {
-            $repair->update(['status' => 'Completed']);
+            $repair->update([
+                'status' => 'Buyer_Accepted',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+                'buyer_accepted_at' => now(),
+            ]);
             // Notify Buyer
             if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
                 $repair->buyer->notify(new RepairCompleted($repair));

@@ -78,6 +78,14 @@
                             <label class="text-muted small fw-medium d-block mb-1">Work Order Number</label>
                             <span class="fw-bold text-dark fs-6">{{ $workOrder->work_order_number }}</span>
                         </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-medium d-block mb-1">Product Code</label>
+                            <span class="fw-bold text-dark">{{ $product->product_code }}</span>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-medium d-block mb-1">Design Code</label>
+                            <span class="fw-bold text-dark">{{ $product->design_code }}</span>
+                        </div>
 
                         
 
@@ -176,6 +184,12 @@
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="p-3 bg-light rounded-3 border border-light">
+                                <span class="text-muted small d-block mb-1">Length</span>
+                                <span class="fw-bold text-dark fs-6">{{ $workOrder->length ?: 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="p-3 bg-light rounded-3 border border-light">
                                 <span class="text-muted small d-block mb-1">Rodium</span>
                                 <span class="fw-bold text-dark fs-6">{{ $workOrder->rodium ?? 'N/A' }}</span>
                             </div>
@@ -207,7 +221,7 @@
                         <!-- Due Date -->
                         <div class="position-relative mb-4">
                             <span class="position-absolute bg-warning rounded-circle shadow-sm" style="width: 14px; height: 14px; left: -32px; top: 4px;"></span>
-                            <h6 class="mb-1 fw-bold text-dark">Target Due Date</h6>
+                            <h6 class="mb-1 fw-bold text-dark">Customer Due Date</h6>
                             <small class="text-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-calendar-check"></i> {{ $workOrder->due_date ? $workOrder->due_date->format('d M Y') : 'Not Set' }}</small>
                         </div>
 

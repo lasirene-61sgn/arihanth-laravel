@@ -639,7 +639,7 @@ class WorkOrder extends Model
      */
     public function isOverdue()
     {
-        if ($this->status === 'completed' || $this->craftsman_status === 'rejected') {
+        if ($this->status === 'completed' || $this->craftsman_status === 'rejected' || $this->craftsman_status === 'completed') {
             return false;
         }
 

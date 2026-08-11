@@ -179,6 +179,9 @@ class RepairController extends Controller
             'ref' => $request->ref,
             'notes' => $request->notes,
             'status' => 'Pending',
+            'created_by' => auth()->id(),
+            'creator_type' => 'admin',
+            'creator_user_code' => auth()->user()->user_code ?? null,
         ]);
 
         return redirect()->route('admin.repairs.index')->with('success', 'Repair order created successfully.');
@@ -269,6 +272,8 @@ class RepairController extends Controller
             'allocated_craftsman_code' => $request->craftsman_code,
             'craftsman_status' => 'Pending',
             'allocation_notes' => $request->allocation_notes,
+            'allocated_by' => auth()->id(),
+            'allocated_at' => now(),
         ]);
 
         return redirect()->route('admin.repairs.index')->with('success', 'Repair allocated to craftsman successfully.');
@@ -277,8 +282,13 @@ class RepairController extends Controller
     public function complete($id)
     {
         $repair = Repair::findOrFail($id);
-        $repair->update(['status' => 'Completed']);
-        return redirect()->route('admin.repairs.index')->with('success', 'Repair marked as completed.');
+        $repair->update([
+            'status' => 'Buyer_Accepted',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+            'buyer_accepted_at' => now(),
+        ]);
+        return redirect()->route('admin.repairs.index')->with('success', 'Repair marked as fully completed.');
     }
 
     public function bulkComplete(Request $request)
@@ -290,7 +300,12 @@ class RepairController extends Controller
 
         $count = Repair::whereIn('id', $repairIds)
             ->whereIn('status', ['Pending', 'Accepted', 'In_Process', 'Craftsman_Completed'])
-            ->update(['status' => 'Completed']);
+            ->update([
+                'status' => 'Buyer_Accepted',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+                'buyer_accepted_at' => now(),
+            ]);
 
         return redirect()->back()->with('success', $count . ' repair orders marked as completed.');
     }

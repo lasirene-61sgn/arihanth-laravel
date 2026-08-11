@@ -409,6 +409,7 @@
                                                 @if($order->size)
                                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                                 @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                             </div>
                                             <br>
                                             <div class="flex flex-wrap gap-1">
@@ -672,6 +673,7 @@
                                                 @if($order->size)
                                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                                 @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                             </div>
                                             <br>
                                             <div class="flex flex-wrap gap-1">
@@ -943,6 +945,7 @@
                             @if($order->size)
                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                             @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                         </div>
                         <br>
                         <div class="flex flex-wrap gap-1">
@@ -1210,6 +1213,7 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
@@ -1473,6 +1477,7 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
@@ -1734,6 +1739,7 @@
                                                 @if($order->size)
                                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                                 @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                             </div>
                                             <br>
                                             <div class="flex flex-wrap gap-1">
@@ -2024,6 +2030,7 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
@@ -2294,6 +2301,7 @@
                                                 @if($order->size)
                                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                                 @endif
+                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                             </div>
                                             <br>
                                             <div class="flex flex-wrap gap-1">
@@ -2869,3 +2877,6 @@ function sendAdminUndoOtp(method) {
 </script>
 
 @endsection
+
+
+
