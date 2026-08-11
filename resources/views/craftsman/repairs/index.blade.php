@@ -83,17 +83,19 @@
                 <table class="table table-custom align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <!-- <th>ID</th> -->
+                             <th>Order No</th>
                             <th>Date</th>
                             <!--<th>BP Code</th>-->
                             <th>Product Name</th>
                             <th>Weight</th>
                             <th style="min-width: 200px;">Repair Details</th>
-                            <th>Order No</th>
-                            <th>Repairs</th>
+                            
+                            <!-- <th>Repairs</th> -->
                             <th>Notes</th>
-                            <th>Status</th>
+                            
                             <th>Proof</th>
+                            <th>Status</th>
                             <!-- <th>Due Date</th> -->
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -101,7 +103,10 @@
                     <tbody>
                         @forelse($repairs as $repair)
                             <tr>
-                                <td class="fw-bold text-primary">#{{ $repair->id }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ $repair->order_no }}</span>
+                                </td>
+                                <!-- <td class="fw-bold text-primary">#{{ $repair->id }}</td> -->
                                 <td>{{ \Carbon\Carbon::parse($repair->repair_date)->format('d M Y') }}</td>
                                 <!--<td>{{ $repair->buyer ? $repair->buyer->bp_code : 'N/A' }}</td>-->
                                 <td class="fw-semibold text-dark">{{ $repair->product_name }}</td>
@@ -114,11 +119,19 @@
                                     @endif
                                     <span class="text-muted small">{{ Str::limit($repair->repair_details, 50) }}</span>
                                 </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">{{ $repair->order_no }}</span>
-                                </td>
-                                <td>{{ $repair->repair }}</td>
+                                
+                                <!-- <td>{{ $repair->repair }}</td> -->
                                 <td class="text-wrap small text-muted" style="max-width: 180px;">{{ $repair->notes }}</td>
+                                
+                                <td>
+                                    @if($repair->image_proof)
+                                        <a href="{{ asset($repair->image_proof) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 small">
+                                            <i class="bi bi-image me-1"></i>View
+                                        </a>
+                                    @else
+                                        <span class="text-muted small">N/A</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($repair->craftsman_status == 'Pending')
                                         <span class="status-pill bg-warning-subtle text-warning-emphasis">Pending</span>
@@ -130,15 +143,6 @@
                                         <span class="status-pill bg-danger-subtle text-danger">Rejected</span>
                                     @else
                                         <span class="status-pill bg-secondary-subtle text-secondary">{{ $repair->craftsman_status }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($repair->image_proof)
-                                        <a href="{{ asset($repair->image_proof) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 small">
-                                            <i class="bi bi-image me-1"></i>View
-                                        </a>
-                                    @else
-                                        <span class="text-muted small">N/A</span>
                                     @endif
                                 </td>
                                 

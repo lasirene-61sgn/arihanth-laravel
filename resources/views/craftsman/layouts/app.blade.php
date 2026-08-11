@@ -39,6 +39,14 @@
     </style>
 
     <style>
+        @keyframes custom-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .animate-custom-blink {
+            animation: custom-blink 1.2s ease-in-out infinite;
+        }
+
         /* Custom scrollbar for a cleaner look */
         ::-webkit-scrollbar {
             width: 5px;

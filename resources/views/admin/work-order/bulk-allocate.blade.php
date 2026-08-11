@@ -90,6 +90,21 @@
                             </div>
                         </div>
                         
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority">
+                                    <option value="">None (Normal)</option>
+                                    <option value="Normal" {{ old('priority') == 'Normal' ? 'selected' : '' }}>Normal</option>
+                                    <option value="High" {{ old('priority') == 'High' ? 'selected' : '' }}>High</option>
+                                    <option value="Urgent" {{ old('priority') == 'Urgent' ? 'selected' : '' }}>Urgent</option>
+                                </select>
+                                @error('priority')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        
                         <!-- Work Orders Summary -->
                         <div class="card mb-3">
                             <div class="card-header">

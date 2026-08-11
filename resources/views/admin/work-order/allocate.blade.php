@@ -89,6 +89,19 @@
                                     @enderror
                                 </div>
                                 
+                                <div class="mb-4">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority">
+                                        <option value="">None (Normal)</option>
+                                        <option value="Normal" {{ old('priority') == 'Normal' ? 'selected' : '' }}>Normal</option>
+                                        <option value="High" {{ old('priority') == 'High' ? 'selected' : '' }}>High</option>
+                                        <option value="Urgent" {{ old('priority') == 'Urgent' ? 'selected' : '' }}>Urgent</option>
+                                    </select>
+                                    @error('priority')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
                                 <div class="d-flex justify-content-between">
                                     <a href="{{ route('admin.work-order.index', ['tab' => 'new-orders']) }}" class="btn btn-secondary">Cancel</a>
                                     <button type="submit" class="btn btn-success">Allocate Work Order</button>

@@ -109,12 +109,12 @@
                     <table class="table table-custom align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                <!-- <th>ID</th> -->
                                 <th>Created At</th>
                                 <th>Completed At</th>
                                 <th>Product Name</th>
                                 <th>Weight</th>
-                                <th>Item Given To</th>
+                                <!-- <th>Item Given To</th> -->
                                 <th>Status</th>
                                 <th>Rejection Reason</th>
                                 <th>Proof</th>
@@ -124,7 +124,7 @@
                         <tbody>
                             @forelse($repairs as $repair)
                                 <tr>
-                                    <td class="fw-bold text-primary">#{{ $repair->id }}</td>
+                                    <!-- <td class="fw-bold text-primary">#{{ $repair->id }}</td> -->
                                     <td>
                                         <i class="bi bi-calendar3 text-muted me-1 small"></i>
                                         {{ $repair->created_at ? \Carbon\Carbon::parse($repair->created_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') : \Carbon\Carbon::parse($repair->repair_date)->format('d M Y') }}
@@ -134,7 +134,7 @@
                                     </td>
                                     <td class="fw-semibold text-dark">{{ $repair->product_name }}</td>
                                     <td>{{ $repair->weight }}</td>
-                                    <td class="fst-italic text-muted">{{ $repair->item_given_to ?? 'N/A' }}</td>
+                                    <!-- <td class="fst-italic text-muted">{{ $repair->item_given_to ?? 'N/A' }}</td> -->
                                     <td>
                                         @if($repair->status == 'Pending')
                                             <span class="status-pill bg-warning-subtle text-warning-emphasis">Pending</span>

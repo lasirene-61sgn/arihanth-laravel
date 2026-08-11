@@ -321,7 +321,7 @@
                                     $rowStyle = 'background-color: rgba(254, 252, 232, 0.8) !important;'; // yellow
                                 }
 @endphp
-                                <tr class="hover:tw-bg-gray-50 tw-transition-colors  hover:bg-emerald-50/30 transition-colors" style="{{ $rowStyle }}">
+                                <tr class="hover:tw-bg-gray-50 tw-transition-colors  hover:bg-emerald-50/30 transition-colors {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}" style="{{ $rowStyle }}">
                                                     <td class="px-6 py-4 text-center">
                                                         <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="allocated-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
                                                     </td>
@@ -342,7 +342,14 @@
                                                         @endif
                                                     </td>
                                                     <td class="px-6 py-4">
-                                                        <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                        <div class="flex flex-col gap-1">
+                                                            <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                            @if($order->priority)
+                                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                                    {{ strtoupper($order->priority) }}
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                     <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? (is_array($order->product_category) ? implode(', ', $order->product_category) : ($order->product_category ?? '-')) }}</td>
                                                     <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? (is_array($order->subcategory) ? implode(', ', $order->subcategory) : ($order->subcategory ?? '-')) }}</td>
@@ -514,7 +521,7 @@
                                     $rowStyle = 'background-color: rgba(254, 252, 232, 0.8) !important;'; // yellow
                                 }
 @endphp
-                                <tr class="hover:tw-bg-gray-50 tw-transition-colors  hover:bg-emerald-50/30 transition-colors" style="{{ $rowStyle }}">
+                                <tr class="hover:tw-bg-gray-50 tw-transition-colors  hover:bg-emerald-50/30 transition-colors {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}" style="{{ $rowStyle }}">
                                                         <td class="px-6 py-4 text-center">
                                                             <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="in-process-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
                                                         </td>
@@ -535,7 +542,14 @@
                                                             @endif
                                                         </td>
                                                         <td class="px-6 py-4">
-                                                            <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                            <div class="flex flex-col gap-1">
+                                                                <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                                @if($order->priority)
+                                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                                        {{ strtoupper($order->priority) }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>
@@ -620,7 +634,7 @@
                                             </thead>
                                             <tbody class="divide-y divide-emerald-50">
                                                 @foreach($completedOrders as $order)
-                                                    <tr class="hover:bg-emerald-50/30 transition-colors">
+                                                    <tr class="hover:bg-emerald-50/30 transition-colors {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
                                                         <td class="px-6 py-4 text-center">
                                                             <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="completed-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
                                                         </td>
@@ -641,7 +655,14 @@
                                                             @endif
                                                         </td>
                                                         <td class="px-6 py-4">
-                                                            <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                            <div class="flex flex-col gap-1">
+                                                                <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                                @if($order->priority)
+                                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                                        {{ strtoupper($order->priority) }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>
@@ -726,7 +747,7 @@
                                             </thead>
                                             <tbody class="divide-y divide-emerald-50">
                                                 @foreach($rejectedOrders as $order)
-                                                    <tr class="hover:bg-emerald-50/30 transition-colors">
+                                                    <tr class="hover:bg-emerald-50/30 transition-colors {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
                                                         <td class="px-6 py-4 text-center">
                                                             <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="rejected-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
                                                         </td>
@@ -747,7 +768,14 @@
                                                             @endif
                                                         </td>
                                                         <td class="px-6 py-4">
-                                                            <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                            <div class="flex flex-col gap-1">
+                                                                <span class="font-bold text-emerald-900">{{ $order->work_order_number }}</span>
+                                                                @if($order->priority)
+                                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                                        {{ strtoupper($order->priority) }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>
@@ -826,7 +854,7 @@
                                             </thead>
                                             <tbody class="divide-y divide-emerald-50">
                                                 @foreach($overdueOrders as $order)
-                                                    <tr class="hover:bg-emerald-50/30 transition-colors bg-red-50/30">
+                                                    <tr class="hover:bg-emerald-50/30 transition-colors bg-red-50/30 {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
                                                         <td class="px-6 py-4 text-center">
                                                             <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="overdue-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
                                                         </td>
@@ -847,7 +875,14 @@
                                                             @endif
                                                         </td>
                                                         <td class="px-6 py-4">
-                                                            <span class="font-bold text-red-700">{{ $order->work_order_number }}</span>
+                                                            <div class="flex flex-col gap-1">
+                                                                <span class="font-bold text-red-700">{{ $order->work_order_number }}</span>
+                                                                @if($order->priority)
+                                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                                        {{ strtoupper($order->priority) }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>

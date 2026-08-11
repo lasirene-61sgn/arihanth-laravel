@@ -188,15 +188,7 @@ class WorkOrderController extends Controller
             ->whereNotNull('bp_code')
             ->groupBy('bp_code')
             ->get();
-        $categories = ProductCategory::whereIn('id', function ($query) {
-            $query->select('product_category_id')
-                ->from('products')
-                ->whereNull('bp_code');
-        })->orWhereIn('name', function ($query) {
-            $query->select('product_category')
-                ->from('work_orders')
-                ->whereNull('bp_code');
-        })->orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
 
         $craftsmen = Craftman::orderBy('name')->get();
 
@@ -239,10 +231,7 @@ class WorkOrderController extends Controller
     public function create()
     {
         $buyers = Buyer::all();
-        $categories = ProductCategory::whereHas('products')
-            ->orWhereHas('workOrders')
-            ->orderBy('name')
-            ->get();
+        $categories = ProductCategory::orderBy('name')->get();
         return view('admin.work-order.create', compact('buyers', 'categories'));
     }
 
@@ -452,6 +441,7 @@ class WorkOrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'allocated_craftsman_bp_code' => 'required|exists:craftmen,craftman_code',
+            'priority' => 'nullable|string|in:Urgent,High,Normal',
         ]);
 
         if ($validator->fails()) {
@@ -466,6 +456,7 @@ class WorkOrderController extends Controller
             'craftsman_status' => 'allocated', // Set initial craftsman status
             'allocated_by' => Auth::guard('admin')->id(),
             'allocated_at' => now(),
+            'priority' => $request->priority,
         ]);
 
         // Send Notification
@@ -740,11 +731,7 @@ class WorkOrderController extends Controller
     public function edit(WorkOrder $workOrder)
     {
         $workOrder->load(['productCategory', 'subcategoryRelation']);
-        $categories = ProductCategory::whereHas('products')
-            ->orWhereHas('workOrders')
-            ->orWhere('id', $workOrder->product_category_id)
-            ->orderBy('name')
-            ->get();
+        $categories = ProductCategory::orderBy('name')->get();
         $buyers = Buyer::all();
         return view('admin.work-order.edit', compact('workOrder', 'categories', 'buyers'));
     }
@@ -1096,6 +1083,7 @@ class WorkOrderController extends Controller
             'work_order_ids.*' => 'exists:work_orders,id',
             'allocated_craftsman_bp_code' => 'required|exists:craftmen,craftman_code',
             'craftsman_due_date' => 'nullable|date',
+            'priority' => 'nullable|string|in:Urgent,High,Normal',
         ]);
 
         if ($validator->fails()) {
@@ -1114,6 +1102,7 @@ class WorkOrderController extends Controller
             'craftsman_status' => 'allocated',
             'allocated_by' => Auth::id(),
             'allocated_at' => now(),
+            'priority' => $request->priority,
         ];
         
         if ($request->filled('craftsman_due_date')) {

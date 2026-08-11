@@ -38,6 +38,8 @@ class WorkOrder extends Model
     protected $fillable = [
         'work_order_number',
         'product_image',
+        'priority',
+        'customer_notes',
         'bp_code',
         'customer_name',
         'reference_no',

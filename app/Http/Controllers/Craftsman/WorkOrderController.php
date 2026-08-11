@@ -47,6 +47,12 @@ class WorkOrderController extends Controller
         }
 
         // Apply sorting
+        $query->orderByRaw("CASE 
+            WHEN priority = 'Urgent' THEN 1 
+            WHEN priority = 'High' THEN 2 
+            WHEN priority = 'Normal' THEN 3 
+            ELSE 4 END");
+            
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);

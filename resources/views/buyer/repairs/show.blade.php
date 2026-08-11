@@ -222,6 +222,22 @@
 
                        
 
+                        <!-- Craftsman Completed Event -->
+                        @if($repair->craftsman_completed_at)
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background-color: #198754;"></div>
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div>
+                                    <span class="badge bg-success-subtle text-success fw-semibold">Craftsman Completed</span>
+                                    <div class="fw-bold text-dark mt-1">{{ $repair->craftsman->name ?? 'N/A' }}</div>
+                                </div>
+                                <div class="text-muted small">
+                                    {{ \Carbon\Carbon::parse($repair->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Approved Event -->
                         @if($repair->approved_by)
                         <div class="timeline-item">

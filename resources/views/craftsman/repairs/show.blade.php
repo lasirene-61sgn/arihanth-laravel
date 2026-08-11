@@ -276,22 +276,6 @@
                             </div>
                         </div>
                         @endif
-                        
-                        <!-- Buyer Completed Event -->
-                        @if($repair->buyer_accepted_at)
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #0d6efd;"></div>
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                <div>
-                                    <span class="badge bg-primary-subtle text-primary fw-semibold">Buyer Completed</span>
-                                    <div class="fw-bold text-dark mt-1">{{ $repair->buyer->business_name ?? $repair->buyer->name ?? 'N/A' }}</div>
-                                </div>
-                                <div class="text-muted small">
-                                    {{ \Carbon\Carbon::parse($repair->buyer_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                </div>
-                            </div>
-                        </div>
-                        @endif
                     </div>
                 </div>
             </div>
