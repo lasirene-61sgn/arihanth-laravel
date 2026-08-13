@@ -234,9 +234,20 @@
                                 <div>
                                     <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold">Craftsman Accepted</span>
                                     <div class="fw-bold text-dark mt-1">{{ $repair->craftsman->name ?? 'N/A' }}</div>
+                                    @if($repair->acceptedByStaff && $repair->staff_accepted_at)
+                                        <div class="mt-2 pt-2 border-top border-warning-subtle">
+                                            <span class="badge bg-secondary-subtle text-secondary fw-semibold">Staff Accepted</span>
+                                            <div class="fw-bold text-indigo-700 mt-1" style="font-size: 0.85rem;">{{ $repair->acceptedByStaff->staff_code ?? 'N/A' }} - {{ $repair->acceptedByStaff->name ?? 'N/A' }}</div>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="text-muted small">
+                                <div class="text-muted small text-end">
                                     {{ \Carbon\Carbon::parse($repair->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                    @if($repair->acceptedByStaff && $repair->staff_accepted_at)
+                                        <div class="mt-3 pt-2 text-indigo-600">
+                                            {{ \Carbon\Carbon::parse($repair->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -250,9 +261,20 @@
                                 <div>
                                     <span class="badge bg-success-subtle text-success fw-semibold">Craftsman Completed</span>
                                     <div class="fw-bold text-dark mt-1">{{ $repair->craftsman->name ?? 'N/A' }}</div>
+                                    @if($repair->acceptedByStaff && $repair->staff_completed_at)
+                                        <div class="mt-2 pt-2 border-top border-success-subtle">
+                                            <span class="badge bg-secondary-subtle text-secondary fw-semibold">Staff Completed</span>
+                                            <div class="fw-bold text-indigo-700 mt-1" style="font-size: 0.85rem;">{{ $repair->acceptedByStaff->staff_code ?? 'N/A' }} - {{ $repair->acceptedByStaff->name ?? 'N/A' }}</div>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="text-muted small">
+                                <div class="text-muted small text-end">
                                     {{ \Carbon\Carbon::parse($repair->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                    @if($repair->acceptedByStaff && $repair->staff_completed_at)
+                                        <div class="mt-3 pt-2 text-indigo-600">
+                                            {{ \Carbon\Carbon::parse($repair->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

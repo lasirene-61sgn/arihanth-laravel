@@ -164,9 +164,24 @@
                         @if(in_array($purchaseOrder->craftsman_status, ['in_process', 'completed', 'accepted']) && $purchaseOrder->allocated_craftsman_code)
                         <div class="mb-8 ml-6 relative">
                             <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-indigo-500 ring-4 ring-white"></span>
-                            <h3 class="font-semibold text-gray-900 text-sm">Accepted by Craftsman</h3>
-                            <p class="text-xs text-gray-500 mt-1">Accepted By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
-                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                            <h3 class="font-semibold text-gray-900 text-sm">
+                                @if($purchaseOrder->accepted_by_staff_id && $purchaseOrder->staff_accepted_at)
+                                    Accepted by Craftsman Staff
+                                @else
+                                    Accepted by Craftsman
+                                @endif
+                            </h3>
+                            @if($purchaseOrder->accepted_by_staff_id && $purchaseOrder->staff_accepted_at)
+                                {{-- Staff accepted: show staff only --}}
+                                <div style="background:#f0f0ff; padding:6px 10px; border-radius:6px; border-left:3px solid #4f46e5; margin-top:4px;">
+                                    <p class="text-xs font-semibold mb-1" style="color:#4f46e5;"><i class="bi bi-person-badge me-1"></i>Staff Accepted: <span class="px-1.5 py-0.5 rounded text-[10px] font-medium me-1" style="background:#ede9fe; color:#4f46e5;">{{ $purchaseOrder->acceptedByStaff->staff_code ?? 'N/A' }}</span> {{ $purchaseOrder->acceptedByStaff->name ?? 'N/A' }}</p>
+                                    <p class="text-xs flex items-center" style="color:#6d28d9;"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ \Carbon\Carbon::parse($purchaseOrder->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</p>
+                                </div>
+                            @else
+                                {{-- Craftsman accepted: show craftsman only --}}
+                                <p class="text-xs text-gray-500 mt-1">Accepted By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? \Carbon\Carbon::parse($purchaseOrder->updated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                            @endif
                         </div>
                         @endif
 
@@ -174,9 +189,24 @@
                         @if(strtolower($purchaseOrder->craftsman_status) === 'completed' && $purchaseOrder->allocated_craftsman_code)
                         <div class="mb-8 ml-6 relative">
                             <span class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-white"></span>
-                            <h3 class="font-semibold text-gray-900 text-sm">Completed by Craftsman</h3>
-                            <p class="text-xs text-gray-500 mt-1">Completed By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'Craftsman' }}</span></p>
-                            <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                            <h3 class="font-semibold text-gray-900 text-sm">
+                                @if($purchaseOrder->staff_completed_at)
+                                    Completed by Craftsman Staff
+                                @else
+                                    Completed by Craftsman
+                                @endif
+                            </h3>
+                            @if($purchaseOrder->staff_completed_at)
+                                {{-- Staff completed: show staff only --}}
+                                <div style="background:#f0f0ff; padding:6px 10px; border-radius:6px; border-left:3px solid #4f46e5; margin-top:4px;">
+                                    <p class="text-xs font-semibold mb-1" style="color:#4f46e5;"><i class="bi bi-person-badge me-1"></i>Staff Completed: <span class="px-1.5 py-0.5 rounded text-[10px] font-medium me-1" style="background:#ede9fe; color:#4f46e5;">{{ $purchaseOrder->craftsmanStaff->staff_code ?? 'N/A' }}</span> {{ $purchaseOrder->craftsmanStaff->name ?? 'N/A' }}</p>
+                                    <p class="text-xs flex items-center" style="color:#6d28d9;"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ \Carbon\Carbon::parse($purchaseOrder->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</p>
+                                </div>
+                            @else
+                                {{-- Craftsman completed: show craftsman only --}}
+                                <p class="text-xs text-gray-500 mt-1">Completed By: <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800 text-[10px] font-medium">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="font-semibold text-gray-800">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                <p class="text-xs text-gray-400 mt-1 flex items-center"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>{{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? \Carbon\Carbon::parse($purchaseOrder->updated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</p>
+                            @endif
                         </div>
                         @endif
 

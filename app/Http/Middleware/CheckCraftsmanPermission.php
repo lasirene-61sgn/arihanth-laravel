@@ -20,6 +20,13 @@ class CheckCraftsmanPermission
             return $next($request);
         }
 
+        if (auth()->guard('craftsman_staff')->check()) {
+            $staff = auth()->guard('craftsman_staff')->user();
+            if ($staff->is_active && in_array($permission, $staff->permissions ?? [])) {
+                return $next($request);
+            }
+        }
+
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }

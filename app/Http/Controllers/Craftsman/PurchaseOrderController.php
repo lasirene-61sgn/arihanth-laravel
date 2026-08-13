@@ -19,7 +19,10 @@ class PurchaseOrderController extends Controller
      */
     public function bulkAccept(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('po_accept')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         $purchaseOrderIds = $request->input('purchase_order_ids', []);
 
         if (empty($purchaseOrderIds)) {
@@ -32,9 +35,18 @@ class PurchaseOrderController extends Controller
 
             // Security check: Ensure purchase order exists and belongs to this craftsman
             if ($purchaseOrder && $purchaseOrder->allocated_craftsman_code === $craftsman->craftman_code && $purchaseOrder->craftsman_status === 'allocated') {
+                $staffId = null;
+                $staffAcceptedAt = null;
+                if ($this->currentStaff()) {
+                    $staffId = $this->currentStaff()->id;
+                    $staffAcceptedAt = now();
+                }
+
                 $purchaseOrder->update([
                     'craftsman_status' => 'in_process',
                     'craftsman_accepted_at' => now(),
+                    'accepted_by_staff_id' => $staffId,
+                    'staff_accepted_at' => $staffAcceptedAt,
                     'status' => 'in_process'
                 ]);
                 $count++;
@@ -50,7 +62,10 @@ class PurchaseOrderController extends Controller
      */
     public function bulkReject(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('po_reject')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         $purchaseOrderIds = $request->input('purchase_order_ids', []);
 
         if (empty($purchaseOrderIds)) {
@@ -81,7 +96,10 @@ class PurchaseOrderController extends Controller
      */
     public function bulkComplete(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('po_accept')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         $purchaseOrderIds = $request->input('purchase_order_ids', []);
 
         if (empty($purchaseOrderIds)) {
@@ -94,9 +112,21 @@ class PurchaseOrderController extends Controller
 
             // Security check: Ensure purchase order exists and belongs to this craftsman
             if ($purchaseOrder && $purchaseOrder->allocated_craftsman_code === $craftsman->craftman_code && $purchaseOrder->craftsman_status === 'in_process') {
+                $staffId = null;
+                $staffCompletedAt = null;
+                if ($this->currentStaff()) {
+                    $staffId = $this->currentStaff()->id;
+                    // If it was already accepted by a staff, preserve it, or we overwrite the completed part
+                    if (!$purchaseOrder->accepted_by_staff_id) {
+                        $purchaseOrder->accepted_by_staff_id = $staffId;
+                    }
+                    $staffCompletedAt = now();
+                }
+
                 $purchaseOrder->update([
                     'craftsman_status' => 'completed',
                     'craftsman_completed_at' => now(),
+                    'staff_completed_at' => $staffCompletedAt,
                     'status' => 'for_approval'
                 ]);
                 $count++;
@@ -112,7 +142,12 @@ class PurchaseOrderController extends Controller
      */
     public function index(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('po_view') && !$staff->hasPermission('po_accept') && !$staff->hasPermission('po_reject')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        $craftsman = $this->currentCraftsman();
         
         $query = PurchaseOrder::where('allocated_craftsman_code', $craftsman->craftman_code);
 
@@ -187,7 +222,7 @@ class PurchaseOrderController extends Controller
             return redirect()->back()->with('error', 'No purchase orders selected for printing.');
         }
 
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $purchaseOrders = PurchaseOrder::whereIn('id', $purchaseOrderIds)
             ->where('allocated_craftsman_code', $craftsman->craftman_code)
             ->get();
@@ -282,7 +317,7 @@ class PurchaseOrderController extends Controller
      */
     public function show(PurchaseOrder $purchaseOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Ensure the purchase order is allocated to this craftsman
         if ($purchaseOrder->allocated_craftsman_code !== $craftsman->craftman_code) {
@@ -414,7 +449,7 @@ class PurchaseOrderController extends Controller
      */
     public function print(PurchaseOrder $purchaseOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Ensure the purchase order is allocated to this craftsman
         if ($purchaseOrder->allocated_craftsman_code !== $craftsman->craftman_code) {
@@ -482,7 +517,7 @@ class PurchaseOrderController extends Controller
 
     public function processItems(Request $request, PurchaseOrder $purchaseOrder)
 {
-    $craftsman = Auth::guard('craftsman')->user();
+    $craftsman = $this->currentCraftsman();
     
     if ($purchaseOrder->allocated_craftsman_code !== $craftsman->craftman_code) {
         return redirect()->route('craftsman.purchase-order.index')->with('error', 'Unauthorized.');
@@ -583,7 +618,7 @@ class PurchaseOrderController extends Controller
      */
     public function completeItems(Request $request, PurchaseOrder $purchaseOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Ensure the purchase order is allocated to this craftsman
         if ($purchaseOrder->allocated_craftsman_code !== $craftsman->craftman_code) {

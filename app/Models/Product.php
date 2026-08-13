@@ -35,6 +35,7 @@ class Product extends Model
         'design_view_unlocked_until',
         'is_locked', // Added for image locking feature
         'description', // Added if missing from store method in DesignController
+        'craftsman_staff_id',
         'qr_code',
     ];
 
@@ -189,6 +190,11 @@ class Product extends Model
     public function craftsman()
     {
         return $this->belongsTo(Craftman::class, 'bp_code', 'craftman_code');
+    }
+
+    public function craftsmanStaff()
+    {
+        return $this->belongsTo(CraftsmanStaff::class, 'craftsman_staff_id');
     }
 
     /**

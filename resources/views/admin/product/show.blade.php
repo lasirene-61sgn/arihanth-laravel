@@ -141,8 +141,13 @@
                                 <p class="mt-1 text-xs text-gray-600">{{ $product->created_at->format('d M, Y') }}</p>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Last Update</label>
-                                <p class="mt-1 text-xs text-gray-600">{{ $product->updated_at->diffForHumans() }}</p>
+                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Craftsman Info</label>
+                                <p class="mt-1 text-xs text-gray-900 font-medium">
+                                    {{ $product->craftsman->craftman_code ?? 'N/A' }}
+                                    @if($product->craftsmanStaff)
+                                        <br><span class="text-[10px] text-indigo-600">(Created By Staff: {{ $product->craftsmanStaff->staff_code ?? '' }} - {{ $product->craftsmanStaff->name ?? '' }})</span>
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>

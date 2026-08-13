@@ -35,6 +35,10 @@ class Repair extends Model
         'approved_at',
         'buyer_accepted_at',
         'due_date',
+        'craftsman_staff_id',
+        'accepted_by_staff_id',
+        'staff_accepted_at',
+        'staff_completed_at'
     ];
 
     protected $appends = ['creator_details', 'approver_details', 'allocator_details'];
@@ -56,6 +60,16 @@ class Repair extends Model
     public function craftsman()
     {
         return $this->belongsTo(Craftman::class, 'allocated_craftsman_code', 'craftman_code');
+    }
+
+    public function craftsmanStaff()
+    {
+        return $this->belongsTo(CraftsmanStaff::class, 'craftsman_staff_id');
+    }
+
+    public function acceptedByStaff()
+    {
+        return $this->belongsTo(CraftsmanStaff::class, 'accepted_by_staff_id');
     }
 
     public function getCreatorDetailsAttribute()

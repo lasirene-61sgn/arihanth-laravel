@@ -70,7 +70,7 @@ public function index(Request $request)
     {
         $product = Product::with(['category', 'subcategory', 'images'])->findOrFail($id);
 
-        if ($product->isDesignLocked(\Illuminate\Support\Facades\Auth::guard('craftsman')->user())) {
+        if ($product->isDesignLocked(\Illuminate\Support\Facades\$this->currentCraftsman())) {
              abort(403, 'This design is currently locked.');
         }
 

@@ -19,7 +19,12 @@ class WorkOrderController extends Controller
      */
     public function index(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('wo_view') && !$staff->hasPermission('wo_accept') && !$staff->hasPermission('wo_reject')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        $craftsman = $this->currentCraftsman();
         
         $query = WorkOrder::with(['buyer', 'product.images', 'productCategory', 'subcategoryRelation'])
             ->where('allocated_craftsman_bp_code', $craftsman->craftman_code);
@@ -117,7 +122,7 @@ class WorkOrderController extends Controller
             return redirect()->back()->with('error', 'No work orders selected for printing.');
         }
 
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $workOrders = WorkOrder::with(['buyer', 'product.images', 'productCategory', 'subcategoryRelation', 'craftsman'])
             ->whereIn('id', $workOrderIds)
             ->where('allocated_craftsman_bp_code', $craftsman->craftman_code)
@@ -131,7 +136,12 @@ class WorkOrderController extends Controller
      */
     public function show(WorkOrder $workOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('wo_view') && !$staff->hasPermission('wo_accept') && !$staff->hasPermission('wo_reject')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        $craftsman = $this->currentCraftsman();
         
         // Log for debugging
         Log::info('Craftsman trying to access work order', [
@@ -159,7 +169,7 @@ class WorkOrderController extends Controller
      */
     public function print(WorkOrder $workOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Log for debugging
         Log::info('Craftsman trying to print work order', [
@@ -187,7 +197,10 @@ class WorkOrderController extends Controller
      */
     public function accept(WorkOrder $workOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('wo_accept')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         
         // Log for debugging
         Log::info('Craftsman trying to accept work order', [
@@ -212,10 +225,15 @@ class WorkOrderController extends Controller
             return redirect()->back()->with('error', 'Work order cannot be accepted at this time. Current status: ' . $workOrder->craftsman_status);
         }
         
-        $workOrder->update([
-            'craftsman_status' => 'in_process', // Move directly to in process
+        $updateData = [
+            'craftsman_status' => 'in_process',
             'craftsman_accepted_at' => now(),
-        ]);
+        ];
+        if ($staff = $this->currentStaff()) {
+            $updateData['accepted_by_staff_id'] = $staff->id;
+            $updateData['staff_accepted_at'] = now();
+        }
+        $workOrder->update($updateData);
         
         // Redirect to the work order index page with a parameter to show the in-process tab
         return redirect()->route('craftsman.work-order.index', ['tab' => 'in-process'])
@@ -227,7 +245,10 @@ class WorkOrderController extends Controller
      */
     public function bulkAccept(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('wo_accept')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         $workOrderIds = $request->input('work_order_ids', []);
 
         if (empty($workOrderIds)) {
@@ -240,10 +261,15 @@ class WorkOrderController extends Controller
 
             // Security check: Ensure work order exists and belongs to this craftsman
             if ($workOrder && $workOrder->allocated_craftsman_bp_code === $craftsman->craftman_code && $workOrder->craftsman_status === 'allocated') {
-                $workOrder->update([
+                $updateData = [
                     'craftsman_status' => 'in_process',
                     'craftsman_accepted_at' => now(),
-                ]);
+                ];
+                if ($staff = $this->currentStaff()) {
+                    $updateData['accepted_by_staff_id'] = $staff->id;
+                    $updateData['staff_accepted_at'] = now();
+                }
+                $workOrder->update($updateData);
                 $count++;
             }
         }
@@ -257,7 +283,7 @@ class WorkOrderController extends Controller
      */
     public function bulkReject(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $workOrderIds = $request->input('work_order_ids', []);
 
         if (empty($workOrderIds)) {
@@ -287,7 +313,11 @@ class WorkOrderController extends Controller
      */
     public function bulkComplete(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            // Bulk complete requires wo_accept implicitly or wo_view? They accepted it, so maybe wo_accept.
+            if (!$staff->hasPermission('wo_accept')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         $workOrderIds = $request->input('work_order_ids', []);
 
         if (empty($workOrderIds)) {
@@ -309,11 +339,15 @@ class WorkOrderController extends Controller
 
             // Security check: Ensure work order exists and belongs to this craftsman
             if ($workOrder && $workOrder->allocated_craftsman_bp_code === $craftsman->craftman_code && $workOrder->craftsman_status === 'in_process') {
-               $workOrder->update([
+               $updateData = [
                     'craftsman_status' => 'completed',
                     'craftsman_completed_at' => now(),
-                    'status' => 'for_approval', // Assuming this is the status flow
-                ]);
+                    'status' => 'for_approval',
+                ];
+                if ($staff = $this->currentStaff()) {
+                    $updateData['staff_completed_at'] = now();
+                }
+                $workOrder->update($updateData);
 
                 // Associate uploaded images
                 foreach ($uploadedImages as $path) {
@@ -335,7 +369,7 @@ class WorkOrderController extends Controller
      */
     public function reject(WorkOrder $workOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Log for debugging
         Log::info('Craftsman trying to reject work order', [
@@ -374,7 +408,7 @@ class WorkOrderController extends Controller
      */
     public function complete(Request $request, WorkOrder $workOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         // Log for debugging
         Log::info('Craftsman trying to complete work order', [
@@ -388,7 +422,7 @@ class WorkOrderController extends Controller
         // Ensure the work order is allocated to this craftsman
         if ($workOrder->allocated_craftsman_bp_code !== $craftsman->craftman_code) {
             Log::warning('Unauthorized complete attempt', [
-                'craftsman_code' => $craftsman->craftman_code,
+                'craftsman_code' => $craftsman->craft_code,
                 'work_order_craftsman_code' => $workOrder->allocated_craftsman_bp_code
             ]);
             abort(403, 'Unauthorized access to this work order. Work order is allocated to craftsman code: ' . $workOrder->allocated_craftsman_bp_code . ', but you are logged in as: ' . $craftsman->craftman_code);
@@ -413,11 +447,15 @@ class WorkOrderController extends Controller
             }
         }
         
-        $workOrder->update([
+        $updateData = [
             'craftsman_status' => 'completed',
             'craftsman_completed_at' => now(),
-            'status' => 'for_approval', // Notify super admin for approval
-        ]);
+            'status' => 'for_approval',
+        ];
+        if ($staff = $this->currentStaff()) {
+            $updateData['staff_completed_at'] = now();
+        }
+        $workOrder->update($updateData);
         
         // Redirect to the work order index page with a parameter to show the completed tab
         return redirect()->route('craftsman.work-order.index', ['tab' => 'completed'])

@@ -161,9 +161,24 @@
                                 @if(in_array($purchaseOrder->craftsman_status, ['in_process', 'completed', 'accepted']) && $purchaseOrder->allocated_craftsman_code)
                                 <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
                                     <span class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
-                                    <h6 class="mb-1">Accepted by Craftsman</h6>
-                                    <p class="mb-0 text-muted small">Accepted By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
-                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                    <h6 class="mb-1">
+                                        @if($purchaseOrder->accepted_by_staff_id && $purchaseOrder->staff_accepted_at)
+                                            Accepted by Craftsman Staff
+                                        @else
+                                            Accepted by Craftsman
+                                        @endif
+                                    </h6>
+                                    @if($purchaseOrder->accepted_by_staff_id && $purchaseOrder->staff_accepted_at)
+                                        {{-- Staff accepted: show staff only --}}
+                                        <div style="background:#f0f0ff; padding:6px 10px; border-radius:6px; border-left:3px solid #4f46e5; margin-top:4px;">
+                                            <p class="mb-1 small fw-semibold" style="color:#4f46e5;"><i class="bi bi-person-badge me-1"></i>Staff Accepted: <span class="badge me-1" style="background:#ede9fe; color:#4f46e5;">{{ $purchaseOrder->acceptedByStaff->staff_code ?? 'N/A' }}</span> {{ $purchaseOrder->acceptedByStaff->name ?? 'N/A' }}</p>
+                                            <small class="d-inline-flex align-items-center gap-1" style="color:#6d28d9;"><i class="bi bi-clock"></i> {{ \Carbon\Carbon::parse($purchaseOrder->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</small>
+                                        </div>
+                                    @else
+                                        {{-- Craftsman accepted: show craftsman only --}}
+                                        <p class="mb-0 text-muted small">Accepted By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                        <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? \Carbon\Carbon::parse($purchaseOrder->updated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                    @endif
                                 </div>
                                 @endif
 
@@ -171,9 +186,24 @@
                                 @if(strtolower($purchaseOrder->craftsman_status) === 'completed' && $purchaseOrder->allocated_craftsman_code)
                                 <div class="timeline-item position-relative mb-4" style="padding-left: 20px;">
                                     <span class="position-absolute bg-info rounded-circle" style="width: 12px; height: 12px; left: -23px; top: 5px;"></span>
-                                    <h6 class="mb-1">Completed by Craftsman</h6>
-                                    <p class="mb-0 text-muted small">Completed By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'Craftsman' }}</span></p>
-                                    <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? $purchaseOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                    <h6 class="mb-1">
+                                        @if($purchaseOrder->staff_completed_at)
+                                            Completed by Craftsman Staff
+                                        @else
+                                            Completed by Craftsman
+                                        @endif
+                                    </h6>
+                                    @if($purchaseOrder->staff_completed_at)
+                                        {{-- Staff completed: show staff only --}}
+                                        <div style="background:#f0f0ff; padding:6px 10px; border-radius:6px; border-left:3px solid #4f46e5; margin-top:4px;">
+                                            <p class="mb-1 small fw-semibold" style="color:#4f46e5;"><i class="bi bi-person-badge me-1"></i>Staff Completed: <span class="badge me-1" style="background:#ede9fe; color:#4f46e5;">{{ $purchaseOrder->craftsmanStaff->staff_code ?? 'N/A' }}</span> {{ $purchaseOrder->craftsmanStaff->name ?? 'N/A' }}</p>
+                                            <small class="d-inline-flex align-items-center gap-1" style="color:#6d28d9;"><i class="bi bi-clock"></i> {{ \Carbon\Carbon::parse($purchaseOrder->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</small>
+                                        </div>
+                                    @else
+                                        {{-- Craftsman completed: show craftsman only --}}
+                                        <p class="mb-0 text-muted small">Completed By: <span class="badge bg-secondary">{{ $purchaseOrder->craftsman->craftman_code ?? 'N/A' }}</span> <span class="fw-bold text-dark">{{ $purchaseOrder->craftsman->full_name ?? $purchaseOrder->craftsman->name ?? 'N/A' }}</span></p>
+                                        <small class="text-secondary"><i class="bi bi-clock me-1"></i> {{ $purchaseOrder->craftsman_completed_at ? \Carbon\Carbon::parse($purchaseOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($purchaseOrder->updated_at ? \Carbon\Carbon::parse($purchaseOrder->updated_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                                    @endif
                                 </div>
                                 @endif
 

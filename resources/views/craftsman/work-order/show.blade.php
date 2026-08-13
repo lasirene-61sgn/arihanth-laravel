@@ -358,6 +358,10 @@
                             <span class="position-absolute bg-primary rounded-circle shadow-sm" style="width: 14px; height: 14px; left: -32px; top: 4px;"></span>
                             <h6 class="mb-1 fw-bold text-dark">Accepted by Craftsman</h6>
                             <small class="text-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $workOrder->craftsman_accepted_at ? \Carbon\Carbon::parse($workOrder->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($workOrder->updated_at ? $workOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                              @if($workOrder->acceptedByStaff && $workOrder->staff_accepted_at)
+                                  <p class="mb-1 text-muted small mt-2">Accepted By Staff: <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $workOrder->acceptedByStaff->staff_code ?? 'N/A' }}</span> <span class="fw-semibold text-dark">{{ $workOrder->acceptedByStaff->name ?? 'N/A' }}</span></p>
+                                  <small class="text-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ \Carbon\Carbon::parse($workOrder->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</small>
+                              @endif
                         </div>
                         @endif
 
@@ -367,6 +371,10 @@
                             <span class="position-absolute bg-success rounded-circle shadow-sm" style="width: 14px; height: 14px; left: -32px; top: 4px;"></span>
                             <h6 class="mb-1 fw-bold text-dark">Completed by Craftsman</h6>
                             <small class="text-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $workOrder->craftsman_completed_at ? \Carbon\Carbon::parse($workOrder->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') : ($workOrder->updated_at ? $workOrder->updated_at->timezone('Asia/Kolkata')->format('d M Y h:i A') : 'N/A') }}</small>
+                              @if($workOrder->craftsmanStaff && $workOrder->staff_completed_at)
+                                  <p class="mb-1 text-muted small mt-2">Completed By Staff: <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $workOrder->craftsmanStaff->staff_code ?? 'N/A' }}</span> <span class="fw-semibold text-dark">{{ $workOrder->craftsmanStaff->name ?? 'N/A' }}</span></p>
+                                  <small class="text-secondary d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ \Carbon\Carbon::parse($workOrder->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y h:i A') }}</small>
+                              @endif
                         </div>
                         @endif
 

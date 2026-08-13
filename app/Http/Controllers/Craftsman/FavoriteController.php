@@ -12,7 +12,7 @@ class FavoriteController extends Controller
 {
     public function index()
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $favorites = Favorite::where('user_id', $craftsman->id)
             ->where('user_type', 'craftsman')
             ->with(['product.category', 'product.images'])
@@ -28,7 +28,7 @@ class FavoriteController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
 
         // Check if already favorited
         $exists = Favorite::where('user_id', $craftsman->id)
@@ -51,7 +51,7 @@ class FavoriteController extends Controller
 
     public function destroy($id)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $favorite = Favorite::where('user_id', $craftsman->id)
             ->where('user_type', 'craftsman')
             ->where('id', $id)

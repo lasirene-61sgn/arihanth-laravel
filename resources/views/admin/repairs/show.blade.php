@@ -336,12 +336,33 @@
                             <div class="timeline-dot" style="background-color: #ffc107;"></div>
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold">Craftsman Accepted</span>
-                                    <div class="fw-bold text-dark mt-1">{{ $repair->craftsman->name ?? 'N/A' }}</div>
+                                    <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold">
+                                        @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
+                                            Craftsman Staff Accepted
+                                        @else
+                                            Craftsman Accepted
+                                        @endif
+                                    </span>
+                                    @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
+                                        {{-- Staff accepted: show staff only --}}
+                                        <div class="mt-1" style="background:#f0f0ff; padding:5px 9px; border-radius:6px; border-left:3px solid #4f46e5;">
+                                            <div class="fw-semibold" style="color:#4f46e5; font-size:0.85rem;"><i class="bi bi-person-badge me-1"></i>{{ $repair->acceptedByStaff->staff_code ?? 'N/A' }} - {{ $repair->acceptedByStaff->name ?? 'N/A' }}</div>
+                                        </div>
+                                    @else
+                                        {{-- Craftsman accepted: show craftsman only --}}
+                                        <div class="mt-1">
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $repair->craftsman->craftman_code ?? 'N/A' }}</span>
+                                            <span class="fw-bold text-dark">{{ $repair->craftsman->full_name ?? $repair->craftsman->name ?? 'N/A' }}</span>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="text-muted small">
-                                    @if(!empty($repair->craftsman_accepted_at))
+                                <div class="text-muted small text-end">
+                                    @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
+                                        <span style="color:#6d28d9;"><i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}</span>
+                                    @elseif(!empty($repair->craftsman_accepted_at))
                                         <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                    @elseif(!empty($repair->updated_at))
+                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->updated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
                                     @else
                                         N/A
                                     @endif
@@ -356,12 +377,33 @@
                             <div class="timeline-dot" style="background-color: #198754;"></div>
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
-                                    <span class="badge bg-success-subtle text-success fw-semibold">Craftsman Completed</span>
-                                    <div class="fw-bold text-dark mt-1">{{ $repair->craftsman->name ?? 'N/A' }}</div>
+                                    <span class="badge bg-success-subtle text-success fw-semibold">
+                                        @if($repair->staff_completed_at)
+                                            Craftsman Staff Completed
+                                        @else
+                                            Craftsman Completed
+                                        @endif
+                                    </span>
+                                    @if($repair->staff_completed_at)
+                                        {{-- Staff completed: show staff only --}}
+                                        <div class="mt-1" style="background:#f0f0ff; padding:5px 9px; border-radius:6px; border-left:3px solid #4f46e5;">
+                                            <div class="fw-semibold" style="color:#4f46e5; font-size:0.85rem;"><i class="bi bi-person-badge me-1"></i>{{ $repair->craftsmanStaff->staff_code ?? 'N/A' }} - {{ $repair->craftsmanStaff->name ?? 'N/A' }}</div>
+                                        </div>
+                                    @else
+                                        {{-- Craftsman completed: show craftsman only --}}
+                                        <div class="mt-1">
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $repair->craftsman->craftman_code ?? 'N/A' }}</span>
+                                            <span class="fw-bold text-dark">{{ $repair->craftsman->full_name ?? $repair->craftsman->name ?? 'N/A' }}</span>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="text-muted small">
-                                    @if(!empty($repair->craftsman_completed_at))
+                                <div class="text-muted small text-end">
+                                    @if($repair->staff_completed_at)
+                                        <span style="color:#6d28d9;"><i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}</span>
+                                    @elseif(!empty($repair->craftsman_completed_at))
                                         <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                    @elseif(!empty($repair->updated_at))
+                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->updated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
                                     @else
                                         N/A
                                     @endif

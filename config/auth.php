@@ -75,6 +75,11 @@ return [
             'driver' => 'session',
             'provider' => 'buyers',
         ],
+
+        'craftsman_staff' => [
+            'driver' => 'session',
+            'provider' => 'craftsman_staff',
+        ],
     ],
 
     /*
@@ -118,6 +123,11 @@ return [
         'buyers' => [
             'driver' => 'eloquent',
             'model' => App\Models\Buyer::class,
+        ],
+
+        'craftsman_staff' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\CraftsmanStaff::class,
         ],
     ],
 

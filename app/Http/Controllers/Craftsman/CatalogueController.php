@@ -16,7 +16,7 @@ class CatalogueController extends Controller
 
 public function index(Request $request)
 {
-    $craftsman = Auth::guard('craftsman')->user();
+    $craftsman = $this->currentCraftsman();
     
     // Query: Must be mine (bp_code matches) AND Accepted AND have a Design Code
     $query = Product::with(['category', 'subcategory'])
@@ -61,7 +61,7 @@ public function index(Request $request)
     $designs = $query->paginate(15);
 
     // Attach creator info (Current Craftsman)
-    $craftsman = Auth::guard('craftsman')->user();
+    $craftsman = $this->currentCraftsman();
     foreach($designs as $design) {
         $design->creator_name = $craftsman->full_name ?? $craftsman->name ?? 'Craftsman';
         $design->creator_bp_code = $craftsman->craftman_code ?? 'N/A';
@@ -77,7 +77,7 @@ public function index(Request $request)
      */
     public function show($id)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
 
         $design = Product::with(['category', 'subcategory', 'images'])
             ->where('bp_code', $craftsman->craftman_code)

@@ -16,7 +16,7 @@ class ProfileController extends Controller
 {
     public function edit()
     {
-        $craftman = Auth::guard('craftsman')->user()->load(['aadharDetails', 'panDetails', 'bankDetails', 'workers']);
+        $craftman = $this->currentCraftsman()->load(['aadharDetails', 'panDetails', 'bankDetails', 'workers']);
         
         // Determine if profile is read-only based on KYC status
         $isReadOnly = $craftman->kyc_status === 'approved';
@@ -26,7 +26,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $craftman = Auth::guard('craftsman')->user();
+        $craftman = $this->currentCraftsman();
 
         // If KYC is approved, prevent updates
         if ($craftman->kyc_status === 'approved') {

@@ -57,6 +57,15 @@
                         <tr><th class="bg-light">Size / Length</th><td>{{ $product->size ?? 'N/A' }} / {{ $product->length ?? 'N/A' }}</td></tr>
                         <tr><th class="bg-light">Stone / Enamel</th><td>{{ $product->stone ?? 'N/A' }} / {{ $product->enamel ?? 'N/A' }}</td></tr>
                         <tr><th class="bg-light">Rodium / HUID</th><td>{{ $product->rodium ?? 'N/A' }} / {{ $product->hallmark ?? 'N/A' }}</td></tr>
+                        <tr>
+                            <th class="bg-light">Craftsman</th>
+                            <td>
+                                {{ $product->craftsman->craftman_code ?? 'N/A' }} 
+                                @if($product->craftsmanStaff)
+                                    <br><span class="text-[10px] text-indigo-600">(Created By Staff: {{ $product->craftsmanStaff->staff_code ?? '' }} - {{ $product->craftsmanStaff->name ?? '' }})</span>
+                                @endif
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

@@ -965,7 +965,7 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
     Route::post('/reset-password', [ForgotPasswordController::class, 'updatePassword'])->name('password.update')->defaults('role', 'craftsman');
 
     // Protected Routes
-    Route::middleware(['auth:craftsman', 'check.account.frozen'])->group(function () {
+    Route::middleware(['auth:craftsman,craftsman_staff', 'check.account.frozen'])->group(function () {
         Route::get('/dashboard', [CraftsmanLoginController::class, 'dashboard'])
             ->name('dashboard')
             ->middleware('craftsman.permission:dashboard');
@@ -975,6 +975,15 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         // Profile Routes (No permission check needed as it's personal)
         Route::get('/profile', [App\Http\Controllers\Craftsman\ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [App\Http\Controllers\Craftsman\ProfileController::class, 'update'])->name('profile.update');
+
+        // Staff Routes
+        Route::prefix('staff')->name('staff.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Craftsman\StaffController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Craftsman\StaffController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Craftsman\StaffController::class, 'store'])->name('store');
+            Route::get('/{staff}/edit', [App\Http\Controllers\Craftsman\StaffController::class, 'edit'])->name('edit');
+            Route::put('/{staff}', [App\Http\Controllers\Craftsman\StaffController::class, 'update'])->name('update');
+        });
 
         // Work Order Routes for Craftsmen
         Route::prefix('work-order')->middleware('craftsman.permission:work_order')->group(function () {
@@ -1495,4 +1504,63 @@ Route::middleware(['auth:super_admin'])->prefix('super-admin')->name('super-admi
     Route::get('/registrations/{id}', [SuperAdminRegistrationController::class, 'show'])->name('registrations.show');
     Route::post('/registrations/{id}/approve', [SuperAdminRegistrationController::class, 'approve'])->name('registrations.approve');
     Route::post('/registrations/{id}/reject', [SuperAdminRegistrationController::class, 'reject'])->name('registrations.reject');
+});
+
+// Craftsman Staff Routes
+Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
+    // Login Routes
+    Route::get('/login', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'login']);
+
+    // Protected Routes
+    Route::middleware(['auth:craftsman_staff'])->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'dashboard'])->name('dashboard');
+        Route::post('/logout', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'logout'])->name('logout');
+
+        // Work Orders
+        Route::resource('work-order', App\Http\Controllers\CraftsmanStaff\WorkOrderController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
+        Route::get('work-order/export', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'export'])->name('work-order.export');
+        Route::post('work-order/bulk-accept', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'bulkAccept'])->name('work-order.bulk-accept');
+        Route::post('work-order/bulk-reject', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'bulkReject'])->name('work-order.bulk-reject');
+        Route::post('work-order/bulk-complete', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'bulkComplete'])->name('work-order.bulk-complete');
+        Route::post('work-order/print-selected', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'printSelected'])->name('work-order.print-selected');
+        Route::post('work-order/{workOrder}/accept', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'accept'])->name('work-order.accept');
+        Route::post('work-order/{workOrder}/reject', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'reject'])->name('work-order.reject');
+        Route::post('work-order/{workOrder}/complete', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'complete'])->name('work-order.complete');
+        Route::get('work-order/{workOrder}/print', [App\Http\Controllers\CraftsmanStaff\WorkOrderController::class, 'print'])->name('work-order.print');
+
+        // Purchase Orders
+        Route::resource('purchase-order', App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
+        Route::get('purchase-order/export', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'export'])->name('purchase-order.export');
+        Route::post('purchase-order/bulk-accept', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'bulkAccept'])->name('purchase-order.bulk-accept');
+        Route::post('purchase-order/bulk-reject', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'bulkReject'])->name('purchase-order.bulk-reject');
+        Route::post('purchase-order/bulk-complete', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'bulkComplete'])->name('purchase-order.bulk-complete');
+        Route::post('purchase-order/print-selected', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'printSelected'])->name('purchase-order.print-selected');
+        Route::post('purchase-order/{purchaseOrder}/accept', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'accept'])->name('purchase-order.accept');
+        Route::post('purchase-order/{purchaseOrder}/reject', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'reject'])->name('purchase-order.reject');
+        Route::post('purchase-order/{purchaseOrder}/complete', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'complete'])->name('purchase-order.complete');
+        Route::post('purchase-order/{purchaseOrder}/complete-items', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'completeItems'])->name('purchase-order.complete-items');
+        Route::get('purchase-order/{purchaseOrder}/print', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'print'])->name('purchase-order.print');
+        
+        // Repairs
+        Route::resource('repairs', App\Http\Controllers\CraftsmanStaff\RepairController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
+        Route::get('repairs/export', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'export'])->name('repairs.export');
+        Route::post('repairs/{id}/accept', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'accept'])->name('repairs.accept');
+        Route::post('repairs/{id}/reject', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'reject'])->name('repairs.reject');
+        Route::post('repairs/{id}/complete', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'complete'])->name('repairs.complete');
+
+        // Products
+        Route::get('product/export', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'export'])->name('product.export');
+        Route::resource('product', App\Http\Controllers\CraftsmanStaff\ProductController::class);
+        Route::post('product/bulk-upload', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'bulkUpload'])->name('product.bulk-upload');
+        Route::post('product/print-selected', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'printSelected'])->name('product.print-selected');
+        
+        // Designs
+        Route::get('design/export', [App\Http\Controllers\CraftsmanStaff\DesignController::class, 'export'])->name('design.export');
+        Route::resource('design', App\Http\Controllers\CraftsmanStaff\DesignController::class);
+        
+        // Catalogue
+        Route::get('catalogue/export', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'export'])->name('catalogue.export');
+        Route::resource('catalogue', App\Http\Controllers\CraftsmanStaff\CatalogueController::class);
+    });
 });

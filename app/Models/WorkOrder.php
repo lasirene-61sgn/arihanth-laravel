@@ -86,7 +86,11 @@ class WorkOrder extends Model
         'return_note',
         'rejection_reason',
         'damaged_image',
-        'screw_name'
+        'screw_name',
+        'craftsman_staff_id',
+        'accepted_by_staff_id',
+        'staff_accepted_at',
+        'staff_completed_at'
     ];
 
     /**
@@ -447,6 +451,16 @@ class WorkOrder extends Model
     public function craftsman()
     {
         return $this->belongsTo(Craftman::class, 'allocated_craftsman_bp_code', 'craftman_code');
+    }
+
+    public function craftsmanStaff()
+    {
+        return $this->belongsTo(CraftsmanStaff::class, 'craftsman_staff_id');
+    }
+
+    public function acceptedByStaff()
+    {
+        return $this->belongsTo(CraftsmanStaff::class, 'accepted_by_staff_id');
     }
 
     /**

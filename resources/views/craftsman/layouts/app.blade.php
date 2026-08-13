@@ -185,12 +185,14 @@
                 </li>
                 @endif
 
+                @if(auth()->guard('craftsman')->user()->hasPermission('repair'))
                 <li>
                     <a href="{{ route('craftsman.repairs.index') }}"
                         class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.repairs.*') ? 'active bg-emerald-800' : '' }}">
                         <span><i class="bi bi-tools mr-3"></i> Samples/Repairs</span>
                     </a>
                 </li>
+                @endif
 
                 @if(auth()->guard('craftsman')->user()->hasPermission('product'))
                 <li>
@@ -233,6 +235,15 @@
                     <a href="{{ route('craftsman.finance.index') }}"
                         class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.finance.*') ? 'active bg-emerald-800' : '' }}">
                         <span><i class="bi bi-currency-dollar mr-3"></i> Finance</span>
+                    </a>
+                </li>
+                @endif
+                
+                @if(auth()->guard('craftsman')->user()->hasPermission('craftsman_staff'))
+                <li>
+                    <a href="{{ route('craftsman.staff.index') }}"
+                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.staff.*') ? 'active bg-emerald-800' : '' }}">
+                        <span><i class="bi bi-people mr-3"></i> Craftsman Staff</span>
                     </a>
                 </li>
                 @endif

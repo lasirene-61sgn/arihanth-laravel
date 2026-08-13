@@ -64,7 +64,10 @@
                                     ];
                                     $color = $statusColors[$purchaseOrder->craftsman_status] ?? 'secondary';
                                 @endphp
-                                <span class="badge bg-{{ $color }} fs-6">{{ ucfirst(str_replace('_', ' ', $purchaseOrder->craftsman_status)) }}</span>
+                                <span class="badge bg-{{ $color }} fs-6">{{ ucfirst(str_replace('_', ' ', $purchaseOrder->craftsman_status)) }}
+    @if($purchaseOrder->craftsmanStaff)
+        <br><span class="text-[10px] text-indigo-600">(Staff: {{ $purchaseOrder->craftsmanStaff->name }})</span>
+    @endif</span>
                             </p>
                         </div>
                         <div class="col-md-3 mb-3 text-md-end">

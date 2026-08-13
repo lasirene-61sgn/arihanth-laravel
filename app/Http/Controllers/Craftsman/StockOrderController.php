@@ -11,7 +11,7 @@ class StockOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $activeTab = $request->get('tab', 'allocated-orders');
         $perPage = 15;
 
@@ -68,7 +68,7 @@ class StockOrderController extends Controller
 
     public function show(StockOrder $stockOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         $hasItems = $stockOrder->items()->where('craftsman_id', $craftsman->id)->exists();
         
@@ -85,7 +85,7 @@ class StockOrderController extends Controller
 
     public function updateStatus(Request $request, StockOrder $stockOrder)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         
         if ($stockOrder->craftsman_id !== $craftsman->id) {
             abort(403);
@@ -101,7 +101,7 @@ class StockOrderController extends Controller
     }
     public function updateItemStatus(Request $request, $stockOrder, $itemId)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $item = \App\Models\StockOrderItem::where('id', $itemId)
             ->where('craftsman_id', $craftsman->id)
             ->firstOrFail();
@@ -121,7 +121,7 @@ class StockOrderController extends Controller
 
     public function bulkAccept(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $request->validate([
             'order_ids' => 'required|array',
             'order_ids.*' => 'exists:stock_orders,id',
@@ -137,7 +137,7 @@ class StockOrderController extends Controller
 
     public function bulkReject(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $request->validate([
             'order_ids' => 'required|array',
             'order_ids.*' => 'exists:stock_orders,id',

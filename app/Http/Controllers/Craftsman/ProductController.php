@@ -24,7 +24,12 @@ class ProductController extends Controller
 
 public function index(Request $request)
 {
-    $craftsman = Auth::guard('craftsman')->user();
+    if ($staff = $this->currentStaff()) {
+        if (!$staff->hasPermission('product_view') && !$staff->hasPermission('product_create') && !$staff->hasPermission('product_edit')) {
+            abort(403, 'Unauthorized action.');
+        }
+    }
+    $craftsman = $this->currentCraftsman();
     
     $query = Product::with(['category', 'subcategory', 'images', 'creator'])
         ->where('bp_code', $craftsman->craftman_code)
@@ -67,13 +72,19 @@ public function index(Request $request)
 
     public function create()
     {
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_create')) abort(403, 'Unauthorized action.');
+        }
         $categories = ProductCategory::all();
         return view('craftsman.product.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_create')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
 
         if (empty($request->product_code)) {
             $request->merge(['product_code' => Product::generateProductCode()]);
@@ -134,7 +145,12 @@ public function index(Request $request)
 
     public function show(Product $product)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_view') && !$staff->hasPermission('product_create') && !$staff->hasPermission('product_edit')) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+        $craftsman = $this->currentCraftsman();
         if ($product->bp_code != $craftsman->craftman_code) abort(403);
         $product->load(['category', 'subcategory', 'images', 'creator']);
         return view('craftsman.product.show', compact('product'));
@@ -142,7 +158,10 @@ public function index(Request $request)
 
     public function edit(Product $product)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_edit')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         if ($product->bp_code != $craftsman->craftman_code) abort(403);
         $categories = ProductCategory::all();
         $subcategories = ProductSubcategory::where('product_category_id', $product->product_category_id)->get();
@@ -152,7 +171,10 @@ public function index(Request $request)
 
     public function update(Request $request, Product $product)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_edit')) abort(403, 'Unauthorized action.');
+        }
+        $craftsman = $this->currentCraftsman();
         if ($product->bp_code != $craftsman->craftman_code) abort(403);
 
         $request->validate([
@@ -203,7 +225,10 @@ public function index(Request $request)
 
     public function destroy(Product $product)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_edit')) abort(403, 'Unauthorized action.'); // Assuming product_edit covers delete too, or we can use product_create
+        }
+        $craftsman = $this->currentCraftsman();
         if ($product->bp_code != $craftsman->craftman_code) abort(403);
         
         // Delete image files and records
@@ -237,7 +262,7 @@ public function index(Request $request)
     }
 
     public function bulkUpload(Request $request){
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
         $request->validate([
             'zip_file' => 'required|mimes:zip|max:10400',
         ]);
