@@ -446,7 +446,7 @@
 
                     <div class="text-start mb-3">
                         <label class="form-label small fw-semibold text-secondary">Damaged Image</label>
-                        <input type="file" name="damaged_image" accept="image/*" class="form-control rounded-3">
+                        <input type="file" name="damaged_image" required accept="image/*" class="form-control rounded-3">
                     </div>
 
                     <div id="adminReturnOtpSection" class="text-start border-top pt-3 mt-3" style="display: none;">

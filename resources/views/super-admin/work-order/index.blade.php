@@ -100,8 +100,10 @@
                 </form>
             </div>
 
+            
             <!-- Category Filter -->
-            <div>
+            <div class="">
+                
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -111,17 +113,37 @@
                     <input type="hidden" name="bp_code_filter" value="{{ request('bp_code_filter') }}">
                     <input type="hidden" name="subcategory_filter" value="{{ request('subcategory_filter') }}">
                     <input type="hidden" name="craftsman_filter" value="{{ request('craftsman_filter') }}">
-                    <select name="category_filter" onchange="this.form.submit()" class="tw-w-full tw-text-sm tw-border-gray-300 tw-rounded-lg focus:tw-ring-primary focus:tw-border-primary tw-py-2 tw-pl-3 tw-pr-8">
-                        <option value="">{{ __('messages.all_categories') }}</option>
-                        @foreach($categories as $category)
-                        <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
+                    <input type="hidden" name="product_code_filter" value="{{ request('product_code_filter') }}">
+                    <input type="hidden" name="return_filter" value="{{ request('return_filter') }}">
+                    <div class="tw-relative tw-w-full" id="category_filter_container">
+                        <div class="tw-w-full tw-min-h-[38px] tw-px-3 tw-py-2 tw-bg-white tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-flex tw-justify-between tw-items-center tw-cursor-pointer" id="category_filter_display">All Categorys</div>
+                        <div class="tw-absolute tw-top-full tw-left-0 tw-w-full tw-bg-white tw-border tw-border-gray-300 tw-rounded-b-lg tw-shadow-lg tw-z-50 tw-hidden tw-p-2" id="category_filter_menu">
+                            <input type="text" class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-200 tw-rounded-lg tw-mb-2 focus:tw-outline-none tw-text-sm" id="category_filter_search" placeholder="Search for an item...">
+                            <ul class="tw-max-h-60 tw-overflow-y-auto tw-list-none tw-p-0 tw-m-0" id="category_filter_list">
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="">All Categorys</li>
+                                @foreach($categories as $item)
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="{{ $item->id }}" {{ request('category_filter') == $item->id ? 'selected' : '' }}>
+                                    {{ $item->name }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <select name="category_filter" id="category_filter_select" style="display: none;">
+                            <option value="">All Categorys</option>
+                            @foreach($categories as $item)
+                            <option value="{{ $item->id }}" {{ request('category_filter') == $item->id ? 'selected' : '' }}>
+                                {{ $item->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </form>
             </div>
 
             <!-- Subcategory Filter -->
-            <div>
+            <div class="">
+                
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -131,14 +153,138 @@
                     <input type="hidden" name="bp_code_filter" value="{{ request('bp_code_filter') }}">
                     <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
                     <input type="hidden" name="craftsman_filter" value="{{ request('craftsman_filter') }}">
-                    <select name="subcategory_filter" onchange="this.form.submit()" class="tw-w-full tw-text-sm tw-border-gray-300 tw-rounded-lg focus:tw-ring-primary focus:tw-border-primary tw-py-2 tw-pl-3 tw-pr-8">
-                        <option value="">All Subcategories</option>
-                        @foreach($subcategories as $subcategory)
-                        <option value="{{ $subcategory->id }}" {{ request('subcategory_filter') == $subcategory->id ? 'selected' : '' }}>{{ $subcategory->name }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
+                    <input type="hidden" name="product_code_filter" value="{{ request('product_code_filter') }}">
+                    <input type="hidden" name="return_filter" value="{{ request('return_filter') }}">
+                    <div class="tw-relative tw-w-full" id="subcategory_filter_container">
+                        <div class="tw-w-full tw-min-h-[38px] tw-px-3 tw-py-2 tw-bg-white tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-flex tw-justify-between tw-items-center tw-cursor-pointer" id="subcategory_filter_display">All Subcategorys</div>
+                        <div class="tw-absolute tw-top-full tw-left-0 tw-w-full tw-bg-white tw-border tw-border-gray-300 tw-rounded-b-lg tw-shadow-lg tw-z-50 tw-hidden tw-p-2" id="subcategory_filter_menu">
+                            <input type="text" class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-200 tw-rounded-lg tw-mb-2 focus:tw-outline-none tw-text-sm" id="subcategory_filter_search" placeholder="Search for an item...">
+                            <ul class="tw-max-h-60 tw-overflow-y-auto tw-list-none tw-p-0 tw-m-0" id="subcategory_filter_list">
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="">All Subcategorys</li>
+                                @foreach($subcategories as $item)
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="{{ $item->id }}" {{ request('subcategory_filter') == $item->id ? 'selected' : '' }}>
+                                    {{ $item->name }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <select name="subcategory_filter" id="subcategory_filter_select" style="display: none;">
+                            <option value="">All Subcategorys</option>
+                            @foreach($subcategories as $item)
+                            <option value="{{ $item->id }}" {{ request('subcategory_filter') == $item->id ? 'selected' : '' }}>
+                                {{ $item->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </form>
             </div>
+
+            <!-- Design Code Filter -->
+            <div class="">
+                
+                <form method="GET">
+                    <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                    <input type="hidden" name="sort_by" value="{{ request('sort_by', 'id') }}">
+                    <input type="hidden" name="sort_order" value="{{ request('sort_order', 'desc') }}">
+                    <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                    <input type="hidden" name="bp_code_filter" value="{{ request('bp_code_filter') }}">
+                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
+                    <input type="hidden" name="subcategory_filter" value="{{ request('subcategory_filter') }}">
+                    <input type="hidden" name="craftsman_filter" value="{{ request('craftsman_filter') }}">
+                    <input type="hidden" name="product_code_filter" value="{{ request('product_code_filter') }}">
+                    <input type="hidden" name="return_filter" value="{{ request('return_filter') }}">
+                    <div class="tw-relative tw-w-full" id="design_code_filter_container">
+                        <div class="tw-w-full tw-min-h-[38px] tw-px-3 tw-py-2 tw-bg-white tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-flex tw-justify-between tw-items-center tw-cursor-pointer" id="design_code_filter_display">All Design Codes</div>
+                        <div class="tw-absolute tw-top-full tw-left-0 tw-w-full tw-bg-white tw-border tw-border-gray-300 tw-rounded-b-lg tw-shadow-lg tw-z-50 tw-hidden tw-p-2" id="design_code_filter_menu">
+                            <input type="text" class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-200 tw-rounded-lg tw-mb-2 focus:tw-outline-none tw-text-sm" id="design_code_filter_search" placeholder="Search for an item...">
+                            <ul class="tw-max-h-60 tw-overflow-y-auto tw-list-none tw-p-0 tw-m-0" id="design_code_filter_list">
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="">All Design Codes</li>
+                                @foreach($designCodes as $item)
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="{{ $item }}" {{ request('design_code_filter') == $item ? 'selected' : '' }}>
+                                    {{ $item }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <select name="design_code_filter" id="design_code_filter_select" style="display: none;">
+                            <option value="">All Design Codes</option>
+                            @foreach($designCodes as $item)
+                            <option value="{{ $item }}" {{ request('design_code_filter') == $item ? 'selected' : '' }}>
+                                {{ $item }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Product Code Filter -->
+            <div class="">
+                
+                <form method="GET">
+                    <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                    <input type="hidden" name="sort_by" value="{{ request('sort_by', 'id') }}">
+                    <input type="hidden" name="sort_order" value="{{ request('sort_order', 'desc') }}">
+                    <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                    <input type="hidden" name="bp_code_filter" value="{{ request('bp_code_filter') }}">
+                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
+                    <input type="hidden" name="subcategory_filter" value="{{ request('subcategory_filter') }}">
+                    <input type="hidden" name="craftsman_filter" value="{{ request('craftsman_filter') }}">
+                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
+                    <input type="hidden" name="return_filter" value="{{ request('return_filter') }}">
+                    <div class="tw-relative tw-w-full" id="product_code_filter_container">
+                        <div class="tw-w-full tw-min-h-[38px] tw-px-3 tw-py-2 tw-bg-white tw-border tw-border-gray-300 tw-rounded-lg tw-text-sm tw-flex tw-justify-between tw-items-center tw-cursor-pointer" id="product_code_filter_display">All Product Codes</div>
+                        <div class="tw-absolute tw-top-full tw-left-0 tw-w-full tw-bg-white tw-border tw-border-gray-300 tw-rounded-b-lg tw-shadow-lg tw-z-50 tw-hidden tw-p-2" id="product_code_filter_menu">
+                            <input type="text" class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-200 tw-rounded-lg tw-mb-2 focus:tw-outline-none tw-text-sm" id="product_code_filter_search" placeholder="Search for an item...">
+                            <ul class="tw-max-h-60 tw-overflow-y-auto tw-list-none tw-p-0 tw-m-0" id="product_code_filter_list">
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="">All Product Codes</li>
+                                @foreach($productCodes as $item)
+                                <li class="tw-px-3 tw-py-2 hover:tw-bg-gray-50 tw-cursor-pointer tw-text-sm tw-rounded" data-value="{{ $item }}" {{ request('product_code_filter') == $item ? 'selected' : '' }}>
+                                    {{ $item }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <select name="product_code_filter" id="product_code_filter_select" style="display: none;">
+                            <option value="">All Product Codes</option>
+                            @foreach($productCodes as $item)
+                            <option value="{{ $item }}" {{ request('product_code_filter') == $item ? 'selected' : '' }}>
+                                {{ $item }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Return Status Filter -->
+            <div class="">
+                
+                <form method="GET">
+                    <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                    <input type="hidden" name="sort_by" value="{{ request('sort_by', 'id') }}">
+                    <input type="hidden" name="sort_order" value="{{ request('sort_order', 'desc') }}">
+                    <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                    <input type="hidden" name="bp_code_filter" value="{{ request('bp_code_filter') }}">
+                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
+                    <input type="hidden" name="subcategory_filter" value="{{ request('subcategory_filter') }}">
+                    <input type="hidden" name="craftsman_filter" value="{{ request('craftsman_filter') }}">
+                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
+                    <input type="hidden" name="product_code_filter" value="{{ request('product_code_filter') }}">
+                    <div class="tw-relative">
+                        <select name="return_filter" class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-200 tw-rounded-lg tw-text-sm focus:tw-outline-none" onchange="this.form.submit()">
+                            <option value="">All Orders</option>
+                            <option value="returned" {{ request('return_filter') == 'returned' ? 'selected' : '' }}>Returned Orders Only</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
 
             <!-- Craftsman Filter -->
             <div>
@@ -846,7 +992,23 @@
                                                         "{{ $order->narration_craftsman ?: '-' }}"
                                                     </div>
                                                 </div>
+                                                @if($order->return_note)
+<div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
+    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
+    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
+        "{{ $order->return_note }}"
+    </div>
+</div>
+@endif
 
+@if($order->return_due_date)
+<div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
+    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
+    <span class="tw-text-rose-600 tw-font-semibold">
+        {{ $order->return_due_date->format('d M, Y') }}
+    </span>
+</div>
+@endif
                                             </div>
                                         </td>
                                         <!-- <td class="tw-px-4 tw-py-4">
@@ -1171,7 +1333,23 @@
                                                         "{{ $order->narration_craftsman ?: '-' }}"
                                                     </div>
                                                 </div>
+@if($order->return_note)
+<div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
+    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
+    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
+        "{{ $order->return_note }}"
+    </div>
+</div>
+@endif
 
+@if($order->return_due_date)
+<div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
+    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
+    <span class="tw-text-rose-600 tw-font-semibold">
+        {{ $order->return_due_date->format('d M, Y') }}
+    </span>
+</div>
+@endif
                                             </div>
                                         </td>
                                         <!--<td class="tw-px-4 tw-py-4">-->
@@ -2566,6 +2744,11 @@
         // Initialize Searchable Dropdowns
         initSearchableDropdown('bp_code_filter_container', 'bp_code_filter_display', 'bp_code_filter_menu', 'bp_code_filter_search', 'bp_code_filter_list', 'bp_code_filter_select', '{{ __("messages.all_bp_codes") }}');
         initSearchableDropdown('craftsman_filter_container', 'craftsman_filter_display', 'craftsman_filter_menu', 'craftsman_filter_search', 'craftsman_filter_list', 'craftsman_filter_select', '{{ __("messages.all_craftsmen") }}');
+
+        initSearchableDropdown('category_filter_container', 'category_filter_display', 'category_filter_menu', 'category_filter_search', 'category_filter_list', 'category_filter_select', 'All Categories');
+        initSearchableDropdown('subcategory_filter_container', 'subcategory_filter_display', 'subcategory_filter_menu', 'subcategory_filter_search', 'subcategory_filter_list', 'subcategory_filter_select', 'All Subcategories');
+        initSearchableDropdown('design_code_filter_container', 'design_code_filter_display', 'design_code_filter_menu', 'design_code_filter_search', 'design_code_filter_list', 'design_code_filter_select', 'All Design Codes');
+        initSearchableDropdown('product_code_filter_container', 'product_code_filter_display', 'product_code_filter_menu', 'product_code_filter_search', 'product_code_filter_list', 'product_code_filter_select', 'All Product Codes');
     });
 
     // GENERIC SEARCHABLE DROPDOWN

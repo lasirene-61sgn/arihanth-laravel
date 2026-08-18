@@ -303,7 +303,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="quantity" class="form-label">Quantity *</label>
-                                <input type="number" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required>
+                                <input type="text" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="type" class="form-label">Type</label>

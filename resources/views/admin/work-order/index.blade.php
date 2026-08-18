@@ -96,16 +96,126 @@
                 </div>
             </div>
 
-            <!-- Category -->
-            <div>
+
+            <!-- Category Filter -->
+            <div class="relative">
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Category</label>
-                <select name="category_filter" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat transition-all">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                    @endforeach
-                </select>
+                <div class="relative w-full" id="category_filter_container">
+                    <div class="w-full min-h-[40px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm flex justify-between items-center cursor-pointer" id="category_filter_display">All Categorys</div>
+                    <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-b-lg shadow-lg z-50 hidden p-2" id="category_filter_menu">
+                        <input type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg mb-2 focus:outline-none text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500" id="category_filter_search" placeholder="Search for an item...">
+                        <ul class="max-h-60 overflow-y-auto list-none p-0 m-0" id="category_filter_list">
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="">All Categorys</li>
+                            @foreach($categories as $item)
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="{{ $item->id }}" {{ request('category_filter') == $item->id ? 'selected' : '' }}>
+                                {{ $item->name }}
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <select name="category_filter" id="category_filter_select" style="display: none;">
+                        <option value="">All Categorys</option>
+                        @foreach($categories as $item)
+                        <option value="{{ $item->id }}" {{ request('category_filter') == $item->id ? 'selected' : '' }}>
+                            {{ $item->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
+
+            <!-- Subcategory Filter -->
+            <div class="relative">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Subcategory</label>
+                <div class="relative w-full" id="subcategory_filter_container">
+                    <div class="w-full min-h-[40px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm flex justify-between items-center cursor-pointer" id="subcategory_filter_display">All Subcategorys</div>
+                    <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-b-lg shadow-lg z-50 hidden p-2" id="subcategory_filter_menu">
+                        <input type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg mb-2 focus:outline-none text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500" id="subcategory_filter_search" placeholder="Search for an item...">
+                        <ul class="max-h-60 overflow-y-auto list-none p-0 m-0" id="subcategory_filter_list">
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="">All Subcategorys</li>
+                            @foreach($subcategories as $item)
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="{{ $item->id }}" {{ request('subcategory_filter') == $item->id ? 'selected' : '' }}>
+                                {{ $item->name }}
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <select name="subcategory_filter" id="subcategory_filter_select" style="display: none;">
+                        <option value="">All Subcategorys</option>
+                        @foreach($subcategories as $item)
+                        <option value="{{ $item->id }}" {{ request('subcategory_filter') == $item->id ? 'selected' : '' }}>
+                            {{ $item->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Design Code Filter -->
+            <div class="relative">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Design Code</label>
+                <div class="relative w-full" id="design_code_filter_container">
+                    <div class="w-full min-h-[40px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm flex justify-between items-center cursor-pointer" id="design_code_filter_display">All Design Codes</div>
+                    <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-b-lg shadow-lg z-50 hidden p-2" id="design_code_filter_menu">
+                        <input type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg mb-2 focus:outline-none text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500" id="design_code_filter_search" placeholder="Search for an item...">
+                        <ul class="max-h-60 overflow-y-auto list-none p-0 m-0" id="design_code_filter_list">
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="">All Design Codes</li>
+                            @foreach($designCodes as $item)
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="{{ $item }}" {{ request('design_code_filter') == $item ? 'selected' : '' }}>
+                                {{ $item }}
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <select name="design_code_filter" id="design_code_filter_select" style="display: none;">
+                        <option value="">All Design Codes</option>
+                        @foreach($designCodes as $item)
+                        <option value="{{ $item }}" {{ request('design_code_filter') == $item ? 'selected' : '' }}>
+                            {{ $item }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Product Code Filter -->
+            <div class="relative">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Product Code</label>
+                <div class="relative w-full" id="product_code_filter_container">
+                    <div class="w-full min-h-[40px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm flex justify-between items-center cursor-pointer" id="product_code_filter_display">All Product Codes</div>
+                    <div class="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-b-lg shadow-lg z-50 hidden p-2" id="product_code_filter_menu">
+                        <input type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg mb-2 focus:outline-none text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500" id="product_code_filter_search" placeholder="Search for an item...">
+                        <ul class="max-h-60 overflow-y-auto list-none p-0 m-0" id="product_code_filter_list">
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="">All Product Codes</li>
+                            @foreach($productCodes as $item)
+                            <li class="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm rounded" data-value="{{ $item }}" {{ request('product_code_filter') == $item ? 'selected' : '' }}>
+                                {{ $item }}
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <select name="product_code_filter" id="product_code_filter_select" style="display: none;">
+                        <option value="">All Product Codes</option>
+                        @foreach($productCodes as $item)
+                        <option value="{{ $item }}" {{ request('product_code_filter') == $item ? 'selected' : '' }}>
+                            {{ $item }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Return Status Filter -->
+            <div class="relative">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Return Status</label>
+                <div class="relative">
+                    <select name="return_filter" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" onchange="this.form.submit()">
+                        <option value="">All Orders</option>
+                        <option value="returned" {{ request('return_filter') == 'returned' ? 'selected' : '' }}>Returned Orders Only</option>
+                    </select>
+                </div>
+            </div>
+
 
             <!-- Craftsman -->
             <div class="relative">
@@ -945,12 +1055,26 @@
                             @if($order->size)
                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                             @endif
-                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
+                            <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                         </div>
                         <br>
                         <div class="flex flex-wrap gap-1">
                             @if($order->narration_craftsman)
                             <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[12px] font-bold uppercase">Craftsman Notes: {{ $order->narration_craftsman }}</span>
+                            @endif
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            @if($order->return_note)
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded text-[12px] font-bold">
+                                Return Notes: <span class="font-normal italic">"{{ $order->return_note }}"</span>
+                            </span>
+                            @endif
+
+                            @if($order->return_due_date)
+                            <div class="text-sm font-bold text-rose-600 flex items-center gap-1">
+                                <i class="bi bi-calendar-event text-xs"></i>
+                                <span>{{ $order->return_due_date->format('d M, Y') }}</span>
+                            </div>
                             @endif
                         </div>
                     </td>
@@ -1213,12 +1337,26 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
-                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
+                                            <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
                                             @if($order->narration_craftsman)
                                             <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[12px] font-bold uppercase">Craftsman Notes: {{ $order->narration_craftsman }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="flex flex-wrap gap-2 items-center">
+                                            @if($order->return_note)
+                                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded text-[12px] font-bold">
+                                                Return Notes: <span class="font-normal italic">"{{ $order->return_note }}"</span>
+                                            </span>
+                                            @endif
+
+                                            @if($order->return_due_date)
+                                            <div class="text-sm font-bold text-rose-600 flex items-center gap-1">
+                                                <i class="bi bi-calendar-event text-xs"></i>
+                                                <span>{{ $order->return_due_date->format('d M, Y') }}</span>
+                                            </div>
                                             @endif
                                         </div>
                                     </td>
@@ -1477,7 +1615,7 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
-                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
+                                            <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
@@ -2030,7 +2168,7 @@
                                             @if($order->size)
                                             <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Size: {{ $order->size }}</span>
                                             @endif
-                                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
+                                            <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[12px] font-bold">Length: {{ $order->length ?: 'N/A' }}</span>
                                         </div>
                                         <br>
                                         <div class="flex flex-wrap gap-1">
@@ -2539,6 +2677,11 @@
     document.addEventListener('DOMContentLoaded', function() {
         initSearchableDropdown('bp_code_filter_container', 'bp_code_filter_display', 'bp_code_filter_menu', 'bp_code_filter_search', 'bp_code_filter_list', 'bp_code_filter_select', 'All BP Codes');
         initSearchableDropdown('craftsman_filter_container', 'craftsman_filter_display', 'craftsman_filter_menu', 'craftsman_filter_search', 'craftsman_filter_list', 'craftsman_filter_select', 'All Craftsmen');
+
+        initSearchableDropdown('category_filter_container', 'category_filter_display', 'category_filter_menu', 'category_filter_search', 'category_filter_list', 'category_filter_select', 'All Categories');
+        initSearchableDropdown('subcategory_filter_container', 'subcategory_filter_display', 'subcategory_filter_menu', 'subcategory_filter_search', 'subcategory_filter_list', 'subcategory_filter_select', 'All Subcategories');
+        initSearchableDropdown('design_code_filter_container', 'design_code_filter_display', 'design_code_filter_menu', 'design_code_filter_search', 'design_code_filter_list', 'design_code_filter_select', 'All Design Codes');
+        initSearchableDropdown('product_code_filter_container', 'product_code_filter_display', 'product_code_filter_menu', 'product_code_filter_search', 'product_code_filter_list', 'product_code_filter_select', 'All Product Codes');
     });
 
     // GENERIC SEARCHABLE DROPDOWN
@@ -2781,16 +2924,16 @@
         <div class="inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative">
             <h3 class="text-lg font-bold text-slate-900 mb-4">Undo Work Order Status</h3>
             <p class="text-sm text-slate-500 mb-4" id="adminUndoModalMsg"></p>
-            
+
             <form id="adminUndoForm" method="POST" action="">
                 @csrf
-                
+
                 <div id="adminUndoOtpSection" class="hidden">
                     <div class="mb-4 text-left">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Select SuperAdmin to Receive OTP</label>
                         <select id="superAdminSelect" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm mb-2">
                             @foreach($superAdmins as $sa)
-                                <option value="{{ $sa->id }}">{{ $sa->user_code }} - {{ $sa->name }} - {{ $sa->mobile_no }}</option>
+                            <option value="{{ $sa->id }}">{{ $sa->user_code }} - {{ $sa->name }} - {{ $sa->mobile_no }}</option>
                             @endforeach
                         </select>
                         <div class="flex items-center gap-2">
@@ -2803,7 +2946,7 @@
                             <span id="adminOtpStatus" class="ml-2 text-xs text-green-600 hidden">OTP Sent!</span>
                         </div>
                     </div>
-                    
+
                     <div class="mb-4 text-left">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Enter OTP</label>
                         <input type="text" name="otp" id="adminUndoOtpInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="6-digit OTP">
@@ -2820,63 +2963,63 @@
 </div>
 
 <script>
-let currentUndoWoId = null;
+    let currentUndoWoId = null;
 
-function openAdminUndoModal(woId, undoCount) {
-    currentUndoWoId = woId;
-    document.getElementById('adminUndoForm').action = `/admin/work-order/${woId}/undo`;
-    
-    if (undoCount >= 1) {
-        document.getElementById('adminUndoOtpSection').classList.remove('hidden');
-        document.getElementById('adminUndoOtpInput').required = true;
-        document.getElementById('adminUndoModalMsg').innerText = "You have already undone this work order once. OTP is required to undo again.";
-    } else {
-        document.getElementById('adminUndoOtpSection').classList.add('hidden');
-        document.getElementById('adminUndoOtpInput').required = false;
-        document.getElementById('adminUndoModalMsg').innerText = "Are you sure you want to undo the status of this work order?";
-    }
-    
-    document.getElementById('adminUndoModal').classList.remove('hidden');
-}
+    function openAdminUndoModal(woId, undoCount) {
+        currentUndoWoId = woId;
+        document.getElementById('adminUndoForm').action = `/admin/work-order/${woId}/undo`;
 
-function closeAdminUndoModal() {
-    document.getElementById('adminUndoModal').classList.add('hidden');
-}
-
-function sendAdminUndoOtp(method) {
-    const superAdminId = document.getElementById('superAdminSelect').value;
-    if (!superAdminId) return;
-    
-    document.getElementById('adminOtpStatus').classList.remove('hidden');
-    document.getElementById('adminOtpStatus').innerText = "Sending...";
-    document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-amber-600";
-    
-    fetch(`/admin/work-order/${currentUndoWoId}/send-undo-otp`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ superadmin_id: superAdminId, delivery_method: method })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('adminOtpStatus').innerText = "OTP Sent!";
-            document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-emerald-600";
+        if (undoCount >= 1) {
+            document.getElementById('adminUndoOtpSection').classList.remove('hidden');
+            document.getElementById('adminUndoOtpInput').required = true;
+            document.getElementById('adminUndoModalMsg').innerText = "You have already undone this work order once. OTP is required to undo again.";
         } else {
-            document.getElementById('adminOtpStatus').innerText = "Failed: " + data.message;
-            document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
+            document.getElementById('adminUndoOtpSection').classList.add('hidden');
+            document.getElementById('adminUndoOtpInput').required = false;
+            document.getElementById('adminUndoModalMsg').innerText = "Are you sure you want to undo the status of this work order?";
         }
-    })
-    .catch(err => {
-        document.getElementById('adminOtpStatus').innerText = "Error sending OTP";
-        document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
-    });
-}
+
+        document.getElementById('adminUndoModal').classList.remove('hidden');
+    }
+
+    function closeAdminUndoModal() {
+        document.getElementById('adminUndoModal').classList.add('hidden');
+    }
+
+    function sendAdminUndoOtp(method) {
+        const superAdminId = document.getElementById('superAdminSelect').value;
+        if (!superAdminId) return;
+
+        document.getElementById('adminOtpStatus').classList.remove('hidden');
+        document.getElementById('adminOtpStatus').innerText = "Sending...";
+        document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-amber-600";
+
+        fetch(`/admin/work-order/${currentUndoWoId}/send-undo-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    superadmin_id: superAdminId,
+                    delivery_method: method
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('adminOtpStatus').innerText = "OTP Sent!";
+                    document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-emerald-600";
+                } else {
+                    document.getElementById('adminOtpStatus').innerText = "Failed: " + data.message;
+                    document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
+                }
+            })
+            .catch(err => {
+                document.getElementById('adminOtpStatus').innerText = "Error sending OTP";
+                document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
+            });
+    }
 </script>
 
 @endsection
-
-
-

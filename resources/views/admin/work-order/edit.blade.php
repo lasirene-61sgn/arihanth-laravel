@@ -3,6 +3,21 @@
 @section('title', 'Edit Work Order')
 
 @section('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.375rem !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px !important;
+        padding-left: 12px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+    }
+</style>
 <style>
     /* Multiple Image Preview Style */
     #multi_image_preview_container {
@@ -185,7 +200,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 <label for="quantity" class="form-label">Quantity *</label>
-                                <input type="number" class="form-control @error('quantity') is-invalid @enderror" 
+                                <input type="text" class="form-control @error('quantity') is-invalid @enderror" 
                                        id="quantity" name="quantity" value="{{ old('quantity', $workOrder->quantity) }}" required>
                                 @error('quantity')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -538,6 +553,24 @@
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if ($('#bp_code').length) {
+            $('#bp_code').select2({
+                placeholder: "Select BP Code",
+                allowClear: true,
+                width: '100%'
+            });
+            
+            // If there's an existing onchange listener, select2 might not trigger it properly unless we do this
+            $('#bp_code').on('select2:select', function (e) {
+                this.dispatchEvent(new Event('change'));
+            });
+        }
+    });
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // GENERIC SEARCHABLE DROPDOWN

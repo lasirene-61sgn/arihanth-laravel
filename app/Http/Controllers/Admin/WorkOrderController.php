@@ -45,6 +45,9 @@ class WorkOrderController extends Controller
         $categoryFilter = $request->get('category_filter');
         $subcategoryFilter = $request->get('subcategory_filter');
         $craftsmanFilter = $request->get('craftsman_filter');
+        $designCodeFilter = $request->get('design_code_filter');
+        $productCodeFilter = $request->get('product_code_filter');
+        $returnFilter = $request->get('return_filter');
 
         // Validate sort parameters
         $allowedSortColumns = ['id', 'work_order_number', 'customer_name', 'product_name', 'quantity', 'due_date', 'status', 'bp_code', 'product_category', 'reference_no', 'type', 'size', 'length', 'weight_from', 'weight_to', 'hallmark', 'rodium', 'hook', 'stone', 'enamel', 'craftsman_due_date', 'created_at'];
@@ -170,6 +173,28 @@ class WorkOrderController extends Controller
                 $query->where('allocated_craftsman_bp_code', $craftsmanFilter);
             }
 
+            if ($designCodeFilter) {
+                $query->where(function($q) use ($designCodeFilter) {
+                    $q->where('design_code', $designCodeFilter)
+                      ->orWhere('product_code', $designCodeFilter);
+                });
+            }
+
+            if ($productCodeFilter) {
+                $query->where(function($q) use ($productCodeFilter) {
+                    $q->where('product_code', $productCodeFilter)
+                      ->orWhere('design_code', $productCodeFilter);
+                });
+            }
+
+            if ($returnFilter === 'returned') {
+                $query->where(function($q) {
+                    $q->where('admin_return_count', '>', 0)
+                      ->orWhere('superadmin_return_count', '>', 0)
+                      ->orWhereNotNull('return_note');
+                });
+            }
+
             // Apply sorting
             $query->orderBy($sortBy, $sortOrder);
         }
@@ -199,6 +224,9 @@ class WorkOrderController extends Controller
             $subcategories = ProductSubcategory::orderBy('name')->get();
         }
 
+        $designCodes = DB::table('products')->whereNotNull('design_code')->where('design_code', '!=', '')->distinct()->orderBy('design_code')->pluck('design_code');
+        $productCodes = DB::table('products')->whereNotNull('product_code')->where('product_code', '!=', '')->distinct()->orderBy('product_code')->pluck('product_code');
+
         $superAdmins = \App\Models\ProcessOwner::where('role', 'super_admin')->get();
 
         return view('admin.work-order.index', compact(
@@ -221,6 +249,10 @@ class WorkOrderController extends Controller
             'categoryFilter',
             'subcategoryFilter',
             'craftsmanFilter',
+            'designCodeFilter',
+            'productCodeFilter',
+            'designCodes',
+            'productCodes',
             'superAdmins'
         ));
     }
@@ -961,6 +993,9 @@ class WorkOrderController extends Controller
         $categoryFilter = $request->get('category_filter');
         $subcategoryFilter = $request->get('subcategory_filter');
         $craftsmanFilter = $request->get('craftsman_filter');
+        $designCodeFilter = $request->get('design_code_filter');
+        $productCodeFilter = $request->get('product_code_filter');
+        $returnFilter = $request->get('return_filter');
 
         // Validate page size
         if (!in_array($perPage, self::PAGE_SIZE_OPTIONS)) {

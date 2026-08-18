@@ -325,7 +325,12 @@
                                             <td><span class="badge bg-dark rounded-pill">{{ count($po->items ?? []) }}</span></td>
                                             <td>{{ number_format(collect($po->items)->sum('total'), 2) }}g</td>
                                             @if($tab['id'] != 'created')
-                                            <td>{{ $po->allocated_craftsman_code ?? 'N/A' }}</td>
+                                            <td>{{ $po->allocated_craftsman_code ?? 'N/A' }}
+@if(isset($po) && $po->staff_completed_at && $po->craftsmanStaff)
+    <br><span style="font-size: 11px; color: #7e22ce; font-weight: bold;">Staff(C): {{ $po->craftsmanStaff->name }}</span>
+@elseif(isset($po) && $po->staff_accepted_at && $po->acceptedByStaff)
+    <br><span style="font-size: 11px; color: #2563eb; font-weight: bold;">Staff(A): {{ $po->acceptedByStaff->name }}</span>
+@endif</td>
                                             @endif
                                             <td>
                                                 <div class="btn-group btn-group-sm">

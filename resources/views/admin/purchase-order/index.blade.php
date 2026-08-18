@@ -380,6 +380,11 @@
                                     <td class="px-4 py-3">
                                         <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">
                                             {{ $po->allocated_craftsman_code ?? 'N/A' }}
+@if(isset($po) && $po->staff_completed_at && $po->craftsmanStaff)
+    <br><span style="font-size: 11px; color: #7e22ce; font-weight: bold;">Staff(C): {{ $po->craftsmanStaff->name }}</span>
+@elseif(isset($po) && $po->staff_accepted_at && $po->acceptedByStaff)
+    <br><span style="font-size: 11px; color: #2563eb; font-weight: bold;">Staff(A): {{ $po->acceptedByStaff->name }}</span>
+@endif
                                         </span>
                                     </td>
                                 @endif
