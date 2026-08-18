@@ -142,11 +142,11 @@
                             <i class="bi bi-lock-fill"></i> LOCKED
                         </button>
                         @endif
-
+<!-- 
                         <button onclick="addToFavorite({{ $design->id }})" 
                             class="p-2 bg-pink-50 text-pink-600 border border-pink-100 rounded-xl hover:bg-pink-100 transition-colors shadow-sm" title="Add to Favorites">
                             <i class="bi bi-heart"></i>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -165,32 +165,5 @@
         @endif
     </div>
 </div>
-<script>
-function addToFavorite(productId) {
-    fetch("{{ route('craftsman_staff.favorites.store') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-        },
-        body: JSON.stringify({ product_id: productId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
-}
 
-function addToCart(productId) {
-    alert("Added to cart (Dummy)!");
-}
-</script>
 @endsection

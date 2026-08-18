@@ -188,6 +188,8 @@ class ProcessOwner extends Authenticatable
             'finance',
             'meetings',
             'messages',
+            'can_create_craftsman',
+            'can_create_staff',
         ];
     }
 

@@ -18,7 +18,7 @@
         <div class="flex items-center gap-3 bg-rose-50 border border-rose-100 px-4 py-2 rounded-2xl">
             <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
             <span class="text-rose-900 font-bold text-sm">
-                {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }} 
+                {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenCraftsmanStaff->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }} 
                 Accounts Currently Frozen
             </span>
         </div>
@@ -48,16 +48,16 @@
     <div x-data="{ tab: 'buyers' }" class="space-y-6">
         <div class="flex flex-wrap items-center gap-2 p-1.5 bg-gray-50 w-fit rounded-2xl border border-gray-100">
             <button @click="tab = 'buyers'" :class="tab === 'buyers' ? 'bg-white text-magenta-800 shadow-sm' : 'text-gray-500 hover:text-gray-900'" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                <i class="bi bi-person"></i> Buyers ({{ $allBuyers->count() }})
+                <i class="bi bi-person"></i> Buyers ({{ $allBuyers->total() }})
             </button>
             <button @click="tab = 'craftsmen'" :class="tab === 'craftsmen' ? 'bg-white text-magenta-800 shadow-sm' : 'text-gray-500 hover:text-gray-900'" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                <i class="bi bi-person-workspace"></i> Craftsmen ({{ $allCraftsmen->count() }})
+                <i class="bi bi-person-workspace"></i> Craftsmen ({{ $allCraftsmen->total() }})
             </button>
             <button @click="tab = 'key-users'" :class="tab === 'key-users' ? 'bg-white text-magenta-800 shadow-sm' : 'text-gray-500 hover:text-gray-900'" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                <i class="bi bi-key"></i> Key Users ({{ $allKeyUsers->count() }})
+                <i class="bi bi-key"></i> Key Users ({{ $allKeyUsers->total() }})
             </button>
             <button @click="tab = 'users'" :class="tab === 'users' ? 'bg-white text-magenta-800 shadow-sm' : 'text-gray-500 hover:text-gray-900'" class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                <i class="bi bi-person-circle"></i> Users ({{ $allUsers->count() }})
+                <i class="bi bi-person-circle"></i> Users ({{ $allUsers->total() }})
             </button>
         </div>
 
@@ -325,7 +325,7 @@
         <div class="lg:col-span-2 bg-rose-900 rounded-3xl p-6 text-white shadow-xl shadow-rose-200 border border-rose-800 flex items-center justify-between overflow-hidden relative group">
             <div class="relative z-10">
                 <span class="text-[10px] font-bold text-rose-300 uppercase tracking-widest">Platform Health</span>
-                <h3 class="text-3xl font-black mt-1">{{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }}</h3>
+                <h3 class="text-3xl font-black mt-1">{{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenCraftsmanStaff->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }}</h3>
                 <p class="text-xs font-bold text-rose-100 uppercase tracking-tight mt-1">Total Frozen Accounts</p>
             </div>
             <i class="bi bi-shield-lock-fill text-6xl text-white/10 absolute -right-2 transform group-hover:scale-110 transition-transform"></i>
@@ -338,7 +338,7 @@
                 <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-tighter">Buyers</span>
             </div>
             <div class="mt-4">
-                <h4 class="text-2xl font-black text-indigo-900">{{ $allBuyers->count() }}</h4>
+                <h4 class="text-2xl font-black text-indigo-900">{{ $allBuyers->total() }}</h4>
                 <div class="flex items-center gap-1.5 mt-1">
                     <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">{{ $frozenBuyers->count() }} Frozen</span>
                 </div>
@@ -352,9 +352,9 @@
                 <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-tighter">Craftsmen</span>
             </div>
             <div class="mt-4">
-                <h4 class="text-2xl font-black text-emerald-900">{{ $allCraftsmen->count() }}</h4>
+                <h4 class="text-2xl font-black text-emerald-900">{{ $allCraftsmen->total() }}</h4>
                 <div class="flex items-center gap-1.5 mt-1">
-                    <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">{{ $frozenCraftsmen->count() }} Frozen</span>
+                    <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">{{ $frozenCraftsmen->count() + $frozenCraftsmanStaff->count() }} Frozen</span>
                 </div>
             </div>
         </div>
@@ -366,7 +366,7 @@
                 <span class="text-[10px] font-extrabold text-amber-400 uppercase tracking-tighter">Key Users</span>
             </div>
             <div class="mt-4">
-                <h4 class="text-2xl font-black text-amber-900">{{ $allKeyUsers->count() }}</h4>
+                <h4 class="text-2xl font-black text-amber-900">{{ $allKeyUsers->total() }}</h4>
                 <div class="flex items-center gap-1.5 mt-1">
                     <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">{{ $frozenKeyUsers->count() }} Frozen</span>
                 </div>

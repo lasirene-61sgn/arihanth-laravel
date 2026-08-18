@@ -5,7 +5,10 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Exports\ProductExport;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Buyer;
+use App\Models\Craftman;
 use App\Models\ProductCategory;
+use App\Models\ProductSubcategory;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -59,13 +62,25 @@ class CatalogueController extends Controller
     $categories = ProductCategory::orderBy('name')->get();
     $bpCodes = Product::whereNotNull('bp_code')->where('bp_code', '!=', '')->distinct()->orderBy('bp_code')->pluck('bp_code');
 
-    return view('super-admin.catalogue.index', compact('products', 'categories', 'bpCodes'));
+    
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('super-admin.catalogue.index', compact('products', 'categories', 'bpCodes', 'buyers', 'craftsmen', 'subCategories'));
 }
 
     public function printSelected(Request $request)
     {
         $ids = $request->input('selected_products', []);
         $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
-        return view('super-admin.catalogue.print-selected', compact('products'));
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('super-admin.catalogue.print-selected', compact('products', 'buyers', 'craftsmen', 'subCategories', 'categories'));
     }
 }

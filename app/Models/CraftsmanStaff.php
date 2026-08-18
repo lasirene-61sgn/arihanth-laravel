@@ -41,6 +41,19 @@ class CraftsmanStaff extends Authenticatable
         return $this->belongsTo(Craftman::class, 'craftsman_id');
     }
 
+    public function getPermissionsArray(): array
+    {
+        if (is_array($this->permissions)) {
+            return $this->permissions;
+        }
+
+        if (is_string($this->permissions)) {
+            return json_decode($this->permissions, true) ?: [];
+        }
+
+        return [];
+    }
+
     public function hasPermission($permission)
     {
         $perms = $this->permissions ?? [];

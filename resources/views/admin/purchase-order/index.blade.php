@@ -99,6 +99,29 @@
                                placeholder="e.g. DS0001">
                     </div>
 
+                    
+                    <!-- Category Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Category</label>
+                        <select name="category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Sub Category Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Sub Category</label>
+                        <select name="sub_category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                            <option value="">All Sub Categories</option>
+                            @foreach($subCategories as $subCategory)
+                                <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <!-- Craftsman Filter -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Craftsman Code</label>
@@ -122,6 +145,7 @@
                             <option value="for_approval" {{ request('filter_status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
                             <option value="completed" {{ request('filter_status') == 'completed' ? 'selected' : '' }}>Completed</option>
                             <option value="rejected" {{ request('filter_status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            <option value="overdue" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                         </select>
                     </div>
 

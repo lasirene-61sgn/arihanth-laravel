@@ -162,7 +162,7 @@
                                         <i class="bi bi-circle text-[0.4rem]"></i>
                                         <span>Overview</span>
                                     </a>
-                                </li>
+                                
                                 <li>
                                     <a class="submenu-item justify-between {{ request()->routeIs('admin.business-partner.buyer') ? 'submenu-active' : '' }}"
                                         href="{{ route('admin.business-partner.buyer') }}">
@@ -214,6 +214,19 @@
                     </li>
                     @endif
 
+                    @if(Auth::guard('admin')->user()->hasPermission('can_create_staff'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.business-partner.craftsman-staff*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.business-partner.craftsman-staff') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-person-badge text-lg"></i>
+                                <span class="text-sm font-medium">Craftsman Staff</span>
+                            </div>
+                            <!-- <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['usersCount'] }}</span> -->
+                        </a>
+                    </li>
+                    @endif
+
                     @if(Auth::guard('admin')->user()->hasPermission('work_order'))
                     <li class="px-3">
                         <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.work-order.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
@@ -233,7 +246,7 @@
                             href="{{ route('admin.repairs.index') }}">
                             <div class="flex items-center gap-3">
                                 <i class="bi bi-tools text-lg"></i>
-                                <span class="text-sm font-medium">{{ __('messages.repairs') }}</span>
+                                <span class="text-sm font-medium">Repairs</span>
                             </div>
                             <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['repairsCount'] }}</span>
                         </a>

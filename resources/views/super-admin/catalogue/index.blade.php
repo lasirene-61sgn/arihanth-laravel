@@ -76,7 +76,6 @@
                     @endif
                 </div>
             </form>
-        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">

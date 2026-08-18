@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Buyer;
+use App\Models\Craftman;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
 use App\Models\ProductSubcategory;
@@ -59,6 +61,16 @@ class ProductController extends Controller
             $query->where('bp_code', 'like', '%' . $request->filter_bp_code . '%');
         }
 
+                if ($request->filled('filter_design_code')) {
+            $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+        }
+        if ($request->filled('filter_craftsman')) {
+            $query->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
+        }
+        if ($request->filled('filter_product_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+        }
+
         // --- SORTING ---
         $sort = $request->get('sort', 'latest');
         if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
@@ -74,7 +86,13 @@ class ProductController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.product.index', compact('products', 'all_categories'));
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('admin.product.index', compact('products', 'all_categories', 'buyers', 'craftsmen', 'subCategories', 'categories'));
     }
 
 
@@ -85,6 +103,12 @@ class ProductController extends Controller
     public function create()
     {
         $categories = ProductCategory::orderBy('name')->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.product.create', compact('categories'));
     }
 
@@ -167,6 +191,12 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'subcategory', 'images']);
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.product.show', compact('product'));
     }
 
@@ -188,6 +218,12 @@ class ProductController extends Controller
         })->orderBy('name')->get();
         $subcategories = $product->product_category_id ? ProductSubcategory::where('product_category_id', $product->product_category_id)->get() : collect();
         $product->load('images');
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.product.edit', compact('product', 'categories', 'subcategories'));
     }
 
@@ -336,6 +372,12 @@ class ProductController extends Controller
     {
         $ids = $request->input('selected_products', []);
         $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.product.print-selected', compact('products'));
     }
 

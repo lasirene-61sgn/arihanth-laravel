@@ -26,6 +26,8 @@ class PurchaseOrderController extends Controller
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
         $categoryFilter = $request->get('category_filter');
+        $subCategoryFilter = $request->get('sub_category_filter');
+        $filterStatus = $request->get('filter_status');
         $filterCraftsman = $request->get('filter_craftsman');
         $designCodeFilter = $request->get('design_code_filter');
 
@@ -71,7 +73,7 @@ class PurchaseOrderController extends Controller
         });
 
         // Apply Overdue filter
-        if ($request->get('overdue') == 1) {
+        if ($request->get('overdue') == 1 || $filterStatus == 'overdue') {
             $createdOrdersQuery->where('due_date', '<', now());
             $allocatedOrdersQuery->where('due_date', '<', now());
             $inProcessOrdersQuery->where('due_date', '<', now());
@@ -105,6 +107,14 @@ class PurchaseOrderController extends Controller
             }
 
             // Apply Craftsman filter
+            if ($subCategoryFilter) {
+                $query->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$subCategoryFilter])]);
+            }
+            
+            if ($filterStatus && $filterStatus != 'overdue') {
+                $query->where('status', $filterStatus); // Though tabs do this anyway, added just in case
+            }
+            
             if ($filterCraftsman) {
                 $query->where('allocated_craftsman_code', 'LIKE', '%' . $filterCraftsman . '%');
             }
@@ -127,6 +137,7 @@ class PurchaseOrderController extends Controller
 
         // Get unique categories for filters
         $categories = ProductCategory::orderBy('name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
 
         $craftsmen = Craftman::all();
 
@@ -142,6 +153,7 @@ class PurchaseOrderController extends Controller
             'sortBy',
             'sortOrder',
             'categories',
+            'subCategories',
             'categoryFilter',
             'filterCraftsman'
         ));
@@ -164,7 +176,8 @@ class PurchaseOrderController extends Controller
             )
             ->unique('design_code')
             ->values();
-        return view('super-admin.purchase-order.create', compact('categories', 'products', 'designs'));
+        return view('super-admin.purchase-order.create', compact('categories',
+            'subCategories', 'products', 'designs'));
     }
 
     /**
@@ -471,7 +484,8 @@ class PurchaseOrderController extends Controller
             }
         }
 
-        return view('super-admin.purchase-order.edit', compact('purchaseOrder', 'categories', 'products', 'itemsWithDetails', 'designs'));
+        return view('super-admin.purchase-order.edit', compact('purchaseOrder', 'categories',
+            'subCategories', 'products', 'itemsWithDetails', 'designs'));
     }
 
     /**

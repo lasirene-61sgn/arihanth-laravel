@@ -69,64 +69,116 @@
             <!-- Filter Section -->
             <div class="row mb-3">
                 <div class="col-md-12">
-                        <div id="filterSection" class="row mb-3" style="display: none;">
-                            <!-- Search -->
-                            <div class="col-md-3 mb-2">
-                                <form method="GET" class="d-flex">
-                                    <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
-                                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
-                                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
-                                    <input type="hidden" name="filter_craftsman" value="{{ request('filter_craftsman') }}">
-                                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search PO / Notes..." class="form-control me-2">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm">Search</button>
-                                </form>
-                            </div>
+                                                    <div id="filterSection" class="bg-white tw-border tw-border-slate-200 tw-rounded-xl tw-shadow-sm tw-mb-6 tw-overflow-hidden" style="display: {{ request()->anyFilled(['search', 'filter_po_code', 'filter_craftsman', 'filter_design_code', 'filter_status', 'category_filter', 'sub_category_filter', 'filter_date_from', 'filter_date_to']) ? 'block' : 'none' }};">
+                                <div class="tw-p-6">
+                                    <h3 class="tw-text-sm tw-font-bold tw-text-slate-800 tw-uppercase tw-tracking-wider tw-mb-4">Advanced Filters</h3>
+                                    <form action="{{ route('super-admin.purchase-order.index') }}" method="GET">
+                                        <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
+                                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 lg:tw-grid-cols-4 tw-gap-6">
+                                            <!-- Search -->
+                                            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-1">
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Search Orders</label>
+                                                <div class="tw-relative">
+                                                    <span class="tw-absolute tw-inset-y-0 tw-left-0 tw-pl-3 tw-flex tw-items-center tw-text-slate-400">
+                                                        <i class="bi bi-search"></i>
+                                                    </span>
+                                                    <input type="text" name="search" value="{{ request('search') }}" 
+                                                           class="tw-block tw-w-full tw-pl-10 tw-pr-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all" 
+                                                           placeholder="PO Code / Items...">
+                                                </div>
+                                            </div>
 
-                            <!-- Category -->
-                            <div class="col-md-3 mb-2">
-                                <form method="GET">
-                                    <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
-                                    <input type="hidden" name="search" value="{{ request('search') }}">
-                                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
-                                    <input type="hidden" name="filter_craftsman" value="{{ request('filter_craftsman') }}">
-                                    <select name="category_filter" onchange="this.form.submit()" class="form-select">
-                                        <option value="">All Categories</option>
-                                        @foreach($categories as $category)
-                                        <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </form>
-                            </div>
+                                            <!-- PO Code Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">PO Code</label>
+                                                <input type="text" name="filter_po_code" value="{{ request('filter_po_code') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
 
-                            <!-- Design Code -->
-                            <div class="col-md-3 mb-2">
-                                <form method="GET" class="d-flex">
-                                    <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
-                                    <input type="hidden" name="search" value="{{ request('search') }}">
-                                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
-                                    <input type="hidden" name="filter_craftsman" value="{{ request('filter_craftsman') }}">
-                                    <input type="text" name="design_code_filter" value="{{ request('design_code_filter') }}" placeholder="Design Code..." class="form-control me-2">
-                                    <button type="submit" class="btn btn-outline-primary">Filter</button>
-                                </form>
-                            </div>
+                                            <!-- Design Code Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Design Code</label>
+                                                <input type="text" name="design_code_filter" value="{{ request('design_code_filter') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all"
+                                                       placeholder="e.g. DS0001">
+                                            </div>
 
-                            <!-- Craftsman -->
-                            <div class="col-md-3 mb-2">
-                                <form method="GET">
-                                    <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
-                                    <input type="hidden" name="search" value="{{ request('search') }}">
-                                    <input type="hidden" name="category_filter" value="{{ request('category_filter') }}">
-                                    <input type="hidden" name="design_code_filter" value="{{ request('design_code_filter') }}">
-                                    <div class="d-flex">
-                                        <select name="filter_craftsman" onchange="this.form.submit()" class="form-select me-2">
-                                            <option value="">All Craftsmen</option>
-                                            @foreach($craftsmen as $c)
-                                            <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <a href="{{ route('super-admin.purchase-order.index', ['tab' => request('tab', 'created')]) }}" class="btn btn-outline-secondary text-nowrap">Clear</a>
-                                    </div>
-                                </form>
+                                            <!-- Category Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Category</label>
+                                                <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Categories</option>
+                                                    @foreach($categories as $category)
+                                                        <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Sub Category Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Sub Category</label>
+                                                <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Sub Categories</option>
+                                                    @foreach($subCategories as $subCategory)
+                                                        <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Craftsman Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Craftsman Code</label>
+                                                <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Craftsmen</option>
+                                                    @foreach($craftsmen as $c)
+                                                        <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Status Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Status</label>
+                                                <select name="filter_status" 
+                                                        class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Statuses</option>
+                                                    <option value="created" {{ request('filter_status') == 'created' ? 'selected' : '' }}>Created</option>
+                                                    <option value="allocated" {{ request('filter_status') == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                                    <option value="in_process" {{ request('filter_status') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                                    <option value="for_approval" {{ request('filter_status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                                                    <option value="completed" {{ request('filter_status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                                    <option value="rejected" {{ request('filter_status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                                    <option value="overdue" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Date From -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">From Date</label>
+                                                <input type="date" name="filter_date_from" value="{{ request('filter_date_from') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
+
+                                            <!-- Date To -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">To Date</label>
+                                                <input type="date" name="filter_date_to" value="{{ request('filter_date_to') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="tw-col-span-1 lg:tw-col-span-2 tw-flex tw-items-end tw-gap-3 tw-pt-2">
+                                                <button type="submit" class="tw-flex-1 tw-bg-maroon hover:tw-bg-maroon-dark tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-shadow-sm">
+                                                    Apply Filters
+                                                </button>
+                                                <a href="{{ route('super-admin.purchase-order.index', ['tab' => request('tab', 'created')]) }}" 
+                                                   class="tw-flex-1 tw-bg-slate-100 hover:tw-bg-slate-200 tw-text-slate-700 tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-text-center tw-border tw-border-slate-200 tw-no-underline">
+                                                    Reset
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                 </div>

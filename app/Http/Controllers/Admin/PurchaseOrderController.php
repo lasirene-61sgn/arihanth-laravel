@@ -30,6 +30,8 @@ class PurchaseOrderController extends Controller
         $filterPoCode = $request->get('filter_po_code');
         $filterCraftsman = $request->get('filter_craftsman');
         $filterDesignCode = $request->get('filter_design_code');
+        $filterCategory = $request->get('category_filter');
+        $filterSubCategory = $request->get('sub_category_filter');
         $filterStatus = $request->get('filter_status');
         $filterDateFrom = $request->get('filter_date_from');
         $filterDateTo = $request->get('filter_date_to');
@@ -119,6 +121,24 @@ class PurchaseOrderController extends Controller
             $rejectedOrdersQuery->where('allocated_craftsman_code', 'LIKE', $filterTerm);
         }
 
+        if ($filterCategory) {
+            $createdOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+            $allocatedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+            $inProcessOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+            $forApprovalOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+            $completedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+            $rejectedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+        }
+        
+        if ($filterSubCategory) {
+            $createdOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+            $allocatedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+            $inProcessOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+            $forApprovalOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+            $completedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+            $rejectedOrdersQuery->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
+        }
+        
         if ($filterDesignCode) {
             $filterTerm = '%' . $filterDesignCode . '%';
             $createdOrdersQuery->whereRaw("JSON_SEARCH(items, 'one', ?) IS NOT NULL", [$filterTerm]);
@@ -172,7 +192,7 @@ class PurchaseOrderController extends Controller
         }
         
         // Apply Overdue filter
-        if ($request->get('overdue') == 1) {
+        if ($request->get('overdue') == 1 || $filterStatus == 'overdue') {
             $createdOrdersQuery->where('due_date', '<', now());
             $allocatedOrdersQuery->where('due_date', '<', now());
             $inProcessOrdersQuery->where('due_date', '<', now());
@@ -250,9 +270,13 @@ class PurchaseOrderController extends Controller
         
         $craftsmen = Craftman::all();
         
+        
+        $categories = ProductCategory::orderBy('name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+
         return view('admin.purchase-order.index', compact(
             'createdOrders', 'allocatedOrders', 'inProcessOrders', 
-            'forApprovalOrders', 'completedOrders', 'rejectedOrders', 'craftsmen',
+            'forApprovalOrders', 'completedOrders', 'rejectedOrders', 'craftsmen', 'categories', 'subCategories',
             'search', 'filterPoCode', 'filterCraftsman', 'filterStatus', 'filterDateFrom', 'filterDateTo', 'sort'
         ));
     }
@@ -812,7 +836,7 @@ class PurchaseOrderController extends Controller
             }
         }
         $craftsmen = Craftman::all();
-        return view('admin.purchase-order.allocate', compact('purchaseOrder', 'itemsWithDetails', 'craftsmen'));
+        return view('admin.purchase-order.allocate', compact('purchaseOrder', 'itemsWithDetails', 'craftsmen', 'categories', 'subCategories'));
     }
 
     public function allocateStore(Request $request, PurchaseOrder $purchaseOrder)

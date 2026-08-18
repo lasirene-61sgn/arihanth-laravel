@@ -4,6 +4,9 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Buyer;
+use App\Models\Craftman;
+use App\Models\ProductSubcategory;
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -108,7 +111,13 @@ class DesignController extends Controller
             $q->withCount('products');
         }])->withCount('products')->orderBy('name')->get();
 
-        return view('super-admin.design.index', compact('products', 'categories', 'statusCounts', 'activeTab'));
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('super-admin.design.index', compact('products', 'categories', 'statusCounts', 'activeTab', 'buyers', 'craftsmen', 'subCategories'));
     }
 
     /**
@@ -119,6 +128,12 @@ class DesignController extends Controller
         $product = $design;
         $product->load(['category', 'subcategory', 'images', 'creator', 'designs']);
         $categories = \App\Models\ProductCategory::orderBy('name')->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('super-admin.design.show', compact('product', 'categories'));
     }
 
@@ -298,6 +313,12 @@ class DesignController extends Controller
     {
         $ids = $request->input('selected_designs', []);
         $designs = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('super-admin.design.print-selected', compact('designs'));
     }
 
@@ -537,6 +558,12 @@ class DesignController extends Controller
         }
 
         $designs = Product::whereIn('id', $ids)->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('super-admin.design.print-80x40', compact('designs'));
     }
 

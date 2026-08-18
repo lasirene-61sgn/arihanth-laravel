@@ -281,6 +281,16 @@ class Product extends Model
         return $this->hasMany(Favorite::class, 'product_id');
     }
 
+    protected static function booted()
+    {
+        static::creating(function ($product) {
+            // If product_code is not passed, null, or empty string from any panel/form
+            if (empty($product->product_code)) {
+                $product->product_code = self::generateProductCode();
+            }
+        });
+    }
+
     /**
      * Generate auto-generated design code
      */

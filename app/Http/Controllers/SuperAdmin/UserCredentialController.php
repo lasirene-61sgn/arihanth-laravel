@@ -69,7 +69,23 @@ class UserCredentialController extends Controller
         });
         $allUsers = $allUsers->concat($craftsmen);
 
-        // 4. Key Users
+        // 4. Craftsman Staff
+        $craftsmanStaffs = \App\Models\CraftsmanStaff::with('craftsman')->get()->map(function ($item) {
+            return (object) [
+                'id' => $item->id,
+                'name' => $item->name,
+                'code' => $item->staff_code,
+                'bp_code' => $item->craftsman ? $item->craftsman->craftman_code : 'N/A', // Using BP code to show Craftsman code
+                'role' => 'Craftsman Staff',
+                'business_name' => $item->craftsman ? $item->craftsman->name : 'N/A', // Using business name to show Craftsman Name
+                'city' => 'N/A',
+                'password' => $item->password_plain ?? 'Not Captured',
+                'permissions' => $item->permissions ?? []
+            ];
+        });
+        $allUsers = $allUsers->concat($craftsmanStaffs);
+
+        // 5. Key Users
         $keyUsers = KeyUser::all()->map(function ($item) {
             return (object) [
                 'id' => $item->id,
@@ -83,7 +99,7 @@ class UserCredentialController extends Controller
         });
         $allUsers = $allUsers->concat($keyUsers);
 
-        // 5. Users
+        // 6. Users
         $regularUsers = User::all()->map(function ($item) {
             return (object) [
                 'id' => $item->id,
@@ -110,7 +126,8 @@ class UserCredentialController extends Controller
                 return str_contains(strtolower($user->name), $search) ||
                     str_contains(strtolower($user->code), $search) ||
                     str_contains(strtolower($user->bp_code), $search) ||
-                    str_contains(strtolower($user->role), $search);
+                    str_contains(strtolower($user->role), $search) ||
+                    (isset($user->business_name) && str_contains(strtolower($user->business_name), $search));
             });
         }
 
@@ -151,6 +168,13 @@ class UserCredentialController extends Controller
                 $user = Craftman::find($id);
                 $user->role_display = 'Craftsman';
                 break;
+            case 'craftsman-staff':
+                $user = \App\Models\CraftsmanStaff::with('craftsman')->find($id);
+                if ($user) {
+                    $user->role_display = 'Craftsman Staff';
+                    $user->bp_code = $user->craftsman ? $user->craftsman->craftman_code : 'N/A'; // Provide BP code like variable
+                }
+                break;
             case 'key-user':
                 $user = KeyUser::find($id);
                 $user->role_display = 'Key User';
@@ -167,7 +191,7 @@ class UserCredentialController extends Controller
 
         // Standardize some fields for the view
         $user->display_name = $user->full_name ?? $user->name;
-        $user->display_code = $user->user_code ?? $user->craftman_code ?? 'N/A';
+        $user->display_code = $user->user_code ?? $user->craftman_code ?? $user->staff_code ?? 'N/A';
         $user->display_bp_code = $user->bp_code ?? 'N/A';
 
         // Fetch login history

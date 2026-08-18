@@ -91,35 +91,54 @@
                         style="display: none;">
 
                         <form action="{{ route('admin.design.index') }}" method="GET" class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
+                                                        <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Product Name</label>
-                                    <input type="text" name="filter_name" value="{{ request('filter_name') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                    <input type="text" name="filter_name" value="{{ request('filter_name') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Product Code</label>
-                                    <input type="text" name="filter_code" value="{{ request('filter_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                    <input type="text" name="filter_code" value="{{ request('filter_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Design Code</label>
-                                    <input type="text" name="filter_design_code" value="{{ request('filter_design_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">BP Code</label>
-                                    <input type="text" name="filter_bp_code" value="{{ request('filter_bp_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                    <input type="text" name="filter_design_code" value="{{ request('filter_design_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Category</label>
-                                    <select name="filter_category" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                    <select name="filter_category" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                         <option value="">All Categories</option>
                                         @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                            <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Subcategory</label>
-                                    <input type="text" name="filter_subcategory" value="{{ request('filter_subcategory') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                    <select name="filter_subcategory" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Subcategories</option>
+                                        @foreach($subCategories as $sub)
+                                            <option value="{{ $sub->id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-span-2 space-y-1">
+                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">BP Code (Buyer)</label>
+                                    <select name="filter_bp_code" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Buyers</option>
+                                        @foreach($buyers as $buyer)
+                                            <option value="{{ $buyer->bp_code }}" {{ request('filter_bp_code') == $buyer->bp_code ? 'selected' : '' }}>{{ $buyer->bp_code }} - {{ $buyer->business_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-span-2 space-y-1">
+                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Craftsman Code</label>
+                                    <select name="filter_craftsman" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Craftsmen</option>
+                                        @foreach($craftsmen as $craftsman)
+                                            <option value="{{ $craftsman->craftman_code }}" {{ request('filter_craftsman') == $craftsman->craftman_code ? 'selected' : '' }}>{{ $craftsman->craftman_code }} - {{ $craftsman->business_name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                             <div class="flex gap-3 pt-4 border-t border-gray-100">

@@ -87,6 +87,7 @@
                                     {{ __('messages.overview') }}
                                 </a>
                             </li>
+                    
                             <li>
                                 <a href="{{ route('super-admin.business-partner.buyer') }}"
                                     class="tw-flex tw-items-center tw-justify-between tw-py-2 tw-text-[13px] tw-no-underline tw-transition-all hover:tw-text-white {{ request()->routeIs('super-admin.business-partner.buyer') ? 'tw-text-white tw-font-bold' : 'tw-text-white/60' }}">
@@ -116,8 +117,10 @@
                 ['perm' => 'admin_management', 'route' => 'super-admin.admin.index', 'icon' => 'bi-person-badge', 'label' => __('messages.admin_users'), 'count' => $sidebarCounts['adminsCount']],
                 ['perm' => 'admin_management', 'route' => 'super-admin.registrations.index', 'icon' => 'bi-person-plus', 'label' => __('messages.registrations'), 'count' => $sidebarCounts['pendingRegistrationsCount']],
                 ['perm' => 'key_user_management', 'route' => 'super-admin.key-user.index', 'icon' => 'bi-key', 'label' => __('messages.key_users'), 'count' => $sidebarCounts['keyUsersCount']],
+                ['perm' => 'can_create_staff', 'route' => 'super-admin.business-partner.craftsman-staff', 'icon' => 'bi-people', 'label' => 'Craftsman Staff', 'count' => null],
                 ['perm' => 'user_management', 'route' => 'super-admin.user.index', 'icon' => 'bi-person-circle', 'label' => 'Users', 'count' => null],
                 ['perm' => 'user_management', 'route' => 'super-admin.user-credentials.index', 'icon' => 'bi-shield-lock', 'label' => 'Credentials', 'count' => null],
+                ['perm' => 'admin_management', 'route' => 'super-admin.freeze-account.index', 'icon' => 'bi-snow', 'label' => 'Freeze Accounts', 'count' => null],
                 ];
                 @endphp
 

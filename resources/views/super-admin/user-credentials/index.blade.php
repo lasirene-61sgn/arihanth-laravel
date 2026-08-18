@@ -30,6 +30,7 @@
                         <option value="Admin" {{ request('role') == 'Admin' ? 'selected' : '' }}>Admin</option>
                         <option value="Buyer" {{ request('role') == 'Buyer' ? 'selected' : '' }}>Buyer</option>
                         <option value="Craftsman" {{ request('role') == 'Craftsman' ? 'selected' : '' }}>Craftsman</option>
+                        <option value="Craftsman Staff" {{ request('role') == 'Craftsman Staff' ? 'selected' : '' }}>Craftsman Staff</option>
                         <option value="Key User" {{ request('role') == 'Key User' ? 'selected' : '' }}>Key User</option>
                         <option value="User" {{ request('role') == 'User' ? 'selected' : '' }}>User</option>
                     </select>
@@ -80,6 +81,7 @@
                                 {{ $user->role == 'Admin' ? 'tw-bg-purple-50 tw-text-purple-700 tw-border-purple-100' : '' }}
                                 {{ $user->role == 'Buyer' ? 'tw-bg-blue-50 tw-text-blue-700 tw-border-blue-100' : '' }}
                                 {{ $user->role == 'Craftsman' ? 'tw-bg-orange-50 tw-text-orange-700 tw-border-orange-100' : '' }}
+                                {{ $user->role == 'Craftsman Staff' ? 'tw-bg-amber-50 tw-text-amber-700 tw-border-amber-100' : '' }}
                                 {{ $user->role == 'Key User' ? 'tw-bg-cyan-50 tw-text-cyan-700 tw-border-cyan-100' : '' }}
                                 {{ $user->role == 'User' ? 'tw-bg-green-50 tw-text-green-700 tw-border-green-100' : '' }}">
                                 {{ $user->role }}

@@ -19,7 +19,7 @@
             <div class="tw-bg-red-50 tw-px-4 tw-py-2 tw-rounded-full tw-border tw-border-red-100">
                 <span class="tw-text-red-600 tw-font-semibold tw-text-sm">
                     <i class="bi bi-shield-lock tw-mr-2"></i>
-                    {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }} {{ __('messages.accounts_frozen') }}
+                    {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenCraftsmanStaff->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }} {{ __('messages.accounts_frozen') }}
                 </span>
             </div>
         </div>
@@ -53,11 +53,12 @@
             <ul class="tw-flex tw-flex-wrap tw-list-none tw-mb-0" id="freezeTabs" role="tablist">
                 @php
                     $tabs = [
-                        ['id' => 'buyers', 'label' => __('messages.buyers'), 'icon' => 'bi-person', 'count' => $allBuyers->count()],
-                        ['id' => 'craftsmen', 'label' => __('messages.craftsmen'), 'icon' => 'bi-person-workspace', 'count' => $allCraftsmen->count()],
-                        ['id' => 'admins', 'label' => __('messages.admins'), 'icon' => 'bi-person-badge', 'count' => $allAdmins->count()],
-                        ['id' => 'key-users', 'label' => __('messages.key_users_tab'), 'icon' => 'bi-key', 'count' => $allKeyUsers->count()],
-                        ['id' => 'users', 'label' => __('messages.users'), 'icon' => 'bi-person-circle', 'count' => $allUsers->count()],
+                        ['id' => 'buyers', 'label' => __('messages.buyers'), 'icon' => 'bi-person', 'count' => $allBuyers->total()],
+                                                ['id' => 'craftsman-staff', 'label' => 'Craftsman Staff', 'icon' => 'bi-people', 'count' => $allCraftsmanStaff->total()],
+                        ['id' => 'craftsmen', 'label' => __('messages.craftsmen'), 'icon' => 'bi-person-workspace', 'count' => $allCraftsmen->total()],
+                        ['id' => 'admins', 'label' => __('messages.admins'), 'icon' => 'bi-person-badge', 'count' => $allAdmins->total()],
+                        ['id' => 'key-users', 'label' => __('messages.key_users_tab'), 'icon' => 'bi-key', 'count' => $allKeyUsers->total()],
+                        ['id' => 'users', 'label' => __('messages.users'), 'icon' => 'bi-person-circle', 'count' => $allUsers->total()],
                     ];
                 @endphp
                 @foreach($tabs as $index => $tab)
@@ -141,6 +142,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allBuyers->links("pagination::bootstrap-5") }}
+                </div>
             </div>
 
             <!-- Craftsmen Tab -->
@@ -207,8 +211,76 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allCraftsmen->links("pagination::bootstrap-5") }}
+                </div>
             </div>
 
+                        <!-- Craftsman Staff Tab -->
+            <div class="tab-pane fade" id="craftsman-staff" role="tabpanel">
+                <div class="tw-overflow-x-auto">
+                    <table class="tw-w-full tw-text-left tw-border-collapse">
+                        <thead>
+                            <tr class="tw-bg-gray-50/50">
+                                <th class="tw-px-6 tw-py-4 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-border-b tw-border-gray-100">Code</th>
+                                <th class="tw-px-6 tw-py-4 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-border-b tw-border-gray-100">Name</th>
+                                <th class="tw-px-6 tw-py-4 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-border-b tw-border-gray-100">Contact</th>
+                                <th class="tw-px-6 tw-py-4 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-border-b tw-border-gray-100">Status</th>
+                                <th class="tw-px-6 tw-py-4 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-border-b tw-border-gray-100 tw-text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="tw-divide-y tw-divide-gray-100">
+                            @forelse($allCraftsmanStaff as $staff)
+                                <tr class="hover:tw-bg-gray-50/50 tw-transition-colors">
+                                    <td class="tw-px-6 tw-py-4">
+                                        <span class="tw-font-bold tw-text-gray-900 tw-bg-gray-100 tw-px-2 tw-py-1 tw-rounded tw-text-xs">{{ $staff->staff_code ?? 'N/A' }}</span>
+                                    </td>
+                                    <td class="tw-px-6 tw-py-4">
+                                        <div class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $staff->name ?? 'N/A' }}</div>
+                                    </td>
+                                    <td class="tw-px-6 tw-py-4">
+                                        <div class="tw-text-sm tw-text-gray-900">{{ $staff->email ?? 'N/A' }}</div>
+                                        <div class="tw-text-xs tw-text-gray-500">{{ $staff->mobile ?? 'N/A' }}</div>
+                                    </td>
+                                    <td class="tw-px-6 tw-py-4">
+                                        @if(!$staff->is_active)
+                                            <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-red-100 tw-text-red-800">
+                                                <i class="bi bi-snow tw-mr-1"></i> Frozen
+                                            </span>
+                                        @else
+                                            <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-medium tw-bg-green-100 tw-text-green-800">
+                                                <i class="bi bi-check-circle tw-mr-1"></i> {{ __('messages.active') }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="tw-px-6 tw-py-4 tw-text-right">
+                                        @if(!$staff->is_active)
+                                            <button class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-bg-green-600 tw-text-white tw-text-xs tw-font-medium tw-rounded-md hover:tw-bg-green-700 tw-transition-colors unfreeze-btn" 
+                                                    data-model-type="craftsman_staff" 
+                                                    data-model-id="{{ $staff->id }}">
+                                                <i class="bi bi-unlock"></i> {{ __('messages.unfreeze') }}
+                                            </button>
+                                        @else
+                                            <button class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-bg-amber-500 tw-text-white tw-text-xs tw-font-medium tw-rounded-md hover:tw-bg-amber-600 tw-transition-colors freeze-btn" 
+                                                    data-model-type="craftsman_staff" 
+                                                    data-model-id="{{ $staff->id }}">
+                                                <i class="bi bi-lock"></i> {{ __('messages.freeze') }}
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="tw-px-6 tw-py-8 tw-text-center tw-text-gray-500 tw-text-sm">No craftsman staff in system</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allCraftsmanStaff->links("pagination::bootstrap-5") }}
+                </div>
+            </div>
             <!-- Admins Tab -->
             <div class="tab-pane fade" id="admins" role="tabpanel">
                 <div class="tw-overflow-x-auto">
@@ -271,6 +343,9 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allAdmins->links("pagination::bootstrap-5") }}
                 </div>
             </div>
 
@@ -335,6 +410,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allKeyUsers->links("pagination::bootstrap-5") }}
+                </div>
             </div>
 
             <!-- Users Tab -->
@@ -398,6 +476,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="tw-mt-4 tw-px-6">
+                    {{ $allUsers->links("pagination::bootstrap-5") }}
+                </div>
             </div>
         </div>
     </div>
@@ -406,11 +487,12 @@
     <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4 tw-mt-8">
         @php
             $stats = [
-                ['label' => 'Total Buyers', 'val' => $allBuyers->count(), 'frozen' => $frozenBuyers->count(), 'icon' => 'bi-person', 'color' => 'blue'],
-                ['label' => 'Total Craftsmen', 'val' => $allCraftsmen->count(), 'frozen' => $frozenCraftsmen->count(), 'icon' => 'bi-person-workspace', 'color' => 'indigo'],
-                ['label' => 'Total Admins', 'val' => $allAdmins->count(), 'frozen' => $frozenAdmins->count(), 'icon' => 'bi-person-badge', 'color' => 'purple'],
-                ['label' => 'Total Key Users', 'val' => $allKeyUsers->count(), 'frozen' => $frozenKeyUsers->count(), 'icon' => 'bi-key', 'color' => 'teal'],
-                ['label' => 'Total Users', 'val' => $allUsers->count(), 'frozen' => $frozenUsers->count(), 'icon' => 'bi-person-circle', 'color' => 'cyan'],
+                ['label' => 'Total Buyers', 'val' => $allBuyers->total(), 'frozen' => $frozenBuyers->count(), 'icon' => 'bi-person', 'color' => 'blue'],
+                                ['label' => 'Total Staff', 'val' => $allCraftsmanStaff->total(), 'frozen' => $frozenCraftsmanStaff->count(), 'icon' => 'bi-people', 'color' => 'orange'],
+                ['label' => 'Total Craftsmen', 'val' => $allCraftsmen->total(), 'frozen' => $frozenCraftsmen->count() + $frozenCraftsmanStaff->count(), 'icon' => 'bi-person-workspace', 'color' => 'indigo'],
+                ['label' => 'Total Admins', 'val' => $allAdmins->total(), 'frozen' => $frozenAdmins->count(), 'icon' => 'bi-person-badge', 'color' => 'purple'],
+                ['label' => 'Total Key Users', 'val' => $allKeyUsers->total(), 'frozen' => $frozenKeyUsers->count(), 'icon' => 'bi-key', 'color' => 'teal'],
+                ['label' => 'Total Users', 'val' => $allUsers->total(), 'frozen' => $frozenUsers->count(), 'icon' => 'bi-person-circle', 'color' => 'cyan'],
             ];
         @endphp
 
@@ -444,7 +526,7 @@
             </div>
         </div>
         <div class="tw-text-4xl tw-font-bold">
-            {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }}
+            {{ $frozenBuyers->count() + $frozenCraftsmen->count() + $frozenCraftsmanStaff->count() + $frozenAdmins->count() + $frozenKeyUsers->count() + $frozenUsers->count() }}
         </div>
     </div>
     

@@ -1,84 +1,190 @@
 <?php
 
-function get_filter_html($label, $id_prefix, $loop_var, $value_key, $text_key, $request_var, $is_superadmin) {
-    $tw = $is_superadmin ? "tw-" : "";
-    
-    return "
-            <!-- $label Filter -->
-            <div>
-                <form method=\"GET\">
-                    <input type=\"hidden\" name=\"tab\" value=\"{{ request('tab', 'new-orders') }}\">
-                    <input type=\"hidden\" name=\"search\" value=\"{{ request('search') }}\">
-                    <input type=\"hidden\" name=\"sort_by\" value=\"{{ request('sort_by', 'id') }}\">
-                    <input type=\"hidden\" name=\"sort_order\" value=\"{{ request('sort_order', 'desc') }}\">
-                    <input type=\"hidden\" name=\"per_page\" value=\"{{ request('per_page', 10) }}\">
-                    <input type=\"hidden\" name=\"bp_code_filter\" value=\"{{ request('bp_code_filter') }}\">
-                    <input type=\"hidden\" name=\"category_filter\" value=\"{{ request('category_filter') }}\">
-                    <input type=\"hidden\" name=\"subcategory_filter\" value=\"{{ request('subcategory_filter') }}\">
-                    <input type=\"hidden\" name=\"craftsman_filter\" value=\"{{ request('craftsman_filter') }}\">
-                    <input type=\"hidden\" name=\"design_code_filter\" value=\"{{ request('design_code_filter') }}\">
-                    <input type=\"hidden\" name=\"product_code_filter\" value=\"{{ request('product_code_filter') }}\">
+// 1. Update Admin index.blade.php
+$adminFile = 'd:/pulic_html/resources/views/admin/purchase-order/index.blade.php';
+$adminContent = file_get_contents($adminFile);
 
-                    <div class=\"{$tw}relative {$tw}w-full\" id=\"{$id_prefix}_container\">
-                        <div class=\"{$tw}w-full {$tw}min-h-[38px] {$tw}px-3 {$tw}py-2 {$tw}bg-white {$tw}border {$tw}border-gray-300 {$tw}rounded-lg {$tw}text-sm {$tw}flex {$tw}justify-between {$tw}items-center {$tw}cursor-pointer\" id=\"{$id_prefix}_display\">All {$label}s</div>
-                        <div class=\"{$tw}absolute {$tw}top-full {$tw}left-0 {$tw}w-full {$tw}bg-white {$tw}border {$tw}border-gray-300 {$tw}rounded-b-lg {$tw}shadow-lg {$tw}z-50 {$tw}hidden {$tw}p-2\" id=\"{$id_prefix}_menu\">
-                            <input type=\"text\" class=\"{$tw}w-full {$tw}px-3 {$tw}py-2 {$tw}border {$tw}border-gray-200 {$tw}rounded-lg {$tw}mb-2 focus:{$tw}outline-none {$tw}text-sm\" id=\"{$id_prefix}_search\" placeholder=\"Search for an item...\">
-                            <ul class=\"{$tw}max-h-60 {$tw}overflow-y-auto {$tw}list-none {$tw}p-0 {$tw}m-0\" id=\"{$id_prefix}_list\">
-                                <li class=\"{$tw}px-3 {$tw}py-2 hover:{$tw}bg-gray-50 {$tw}cursor-pointer {$tw}text-sm {$tw}rounded\" data-value=\"\">All {$label}s</li>
-                                @foreach(\${$loop_var} as \$item)
-                                <li class=\"{$tw}px-3 {$tw}py-2 hover:{$tw}bg-gray-50 {$tw}cursor-pointer {$tw}text-sm {$tw}rounded\" data-value=\"{{ \$item{$value_key} }}\" {{ request('{$request_var}') == \$item{$value_key} ? 'selected' : '' }}>
-                                    {{ \$item{$text_key} }}
-                                </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        <select name=\"{$request_var}\" id=\"{$id_prefix}_select\" style=\"display: none;\">
-                            <option value=\"\">All {$label}s</option>
-                            @foreach(\${$loop_var} as \$item)
-                            <option value=\"{{ \$item{$value_key} }}\" {{ request('{$request_var}') == \$item{$value_key} ? 'selected' : '' }}>
-                                {{ \$item{$text_key} }}
-                            </option>
+$categoryFields = <<<EOT
+
+                    <!-- Category Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Category</label>
+                        <select name="category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                            <option value="">All Categories</option>
+                            @foreach(\$categories as \$category)
+                                <option value="{{ \$category->id }}" {{ request('category_filter') == \$category->id ? 'selected' : '' }}>{{ \$category->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                </form>
-            </div>
-";
+
+                    <!-- Sub Category Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Sub Category</label>
+                        <select name="sub_category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                            <option value="">All Sub Categories</option>
+                            @foreach(\$subCategories as \$subCategory)
+                                <option value="{{ \$subCategory->id }}" {{ request('sub_category_filter') == \$subCategory->id ? 'selected' : '' }}>{{ \$subCategory->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+EOT;
+
+// Insert category and sub category filters after Design Code Filter
+if (strpos($adminContent, '<!-- Category Filter -->') === false) {
+    $insertPos = strpos($adminContent, '<!-- Craftsman Filter -->');
+    if ($insertPos !== false) {
+        $adminContent = substr_replace($adminContent, $categoryFields . "\n\n                    ", $insertPos, 0);
+    }
 }
 
-function process_blade($filepath, $is_superadmin) {
-    if (!file_exists($filepath)) return;
-    $content = file_get_contents($filepath);
-    
-    // Add hidden inputs to all existing hidden input groups
-    $content = preg_replace('/(<input type="hidden" name="craftsman_filter"[^>]*>)/', "$1\n                    <input type=\"hidden\" name=\"design_code_filter\" value=\"{{ request('design_code_filter') }}\">\n                    <input type=\"hidden\" name=\"product_code_filter\" value=\"{{ request('product_code_filter') }}\">", $content);
-    
-    // Generate new html blocks
-    $cat_html = get_filter_html('Category', 'category_filter', 'categories', '->id', '->name', 'category_filter', $is_superadmin);
-    $subcat_html = get_filter_html('Subcategory', 'subcategory_filter', 'subcategories', '->id', '->name', 'subcategory_filter', $is_superadmin);
-    $design_html = get_filter_html('Design Code', 'design_code_filter', 'designCodes', '', '', 'design_code_filter', $is_superadmin);
-    $product_html = get_filter_html('Product Code', 'product_code_filter', 'productCodes', '', '', 'product_code_filter', $is_superadmin);
-    
-    $replacement = $cat_html . $subcat_html . $design_html . $product_html;
-    
-    // Replace Category Filter up to the end of Subcategory Filter
-    $pattern = '/<!-- Category Filter -->.*?<\/div>\s*<!-- Subcategory Filter -->.*?<\/div>/s';
-    $content = preg_replace($pattern, $replacement, $content);
-    
-    // Add JS initialization
-    $js_init = "
-        initSearchableDropdown('category_filter_container', 'category_filter_display', 'category_filter_menu', 'category_filter_search', 'category_filter_list', 'category_filter_select', 'All Categories');
-        initSearchableDropdown('subcategory_filter_container', 'subcategory_filter_display', 'subcategory_filter_menu', 'subcategory_filter_search', 'subcategory_filter_list', 'subcategory_filter_select', 'All Subcategories');
-        initSearchableDropdown('design_code_filter_container', 'design_code_filter_display', 'design_code_filter_menu', 'design_code_filter_search', 'design_code_filter_list', 'design_code_filter_select', 'All Design Codes');
-        initSearchableDropdown('product_code_filter_container', 'product_code_filter_display', 'product_code_filter_menu', 'product_code_filter_search', 'product_code_filter_list', 'product_code_filter_select', 'All Product Codes');
-    ";
-    
-    $content = preg_replace('/(initSearchableDropdown\([\'"]craftsman_filter_container.*?;\n)/', "$1" . $js_init, $content);
-    
-    file_put_contents($filepath, $content);
+// Add overdue option to Status Filter
+if (strpos($adminContent, '<option value="overdue"') === false) {
+    $adminContent = str_replace('<option value="rejected" {{ request(\'filter_status\') == \'rejected\' ? \'selected\' : \'\' }}>Rejected</option>', '<option value="rejected" {{ request(\'filter_status\') == \'rejected\' ? \'selected\' : \'\' }}>Rejected</option>' . "\n                            <option value=\"overdue\" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>", $adminContent);
 }
 
-process_blade('d:\pulic_html\resources\views\super-admin\work-order\index.blade.php', true);
-process_blade('d:\pulic_html\resources\views\admin\work-order\index.blade.php', false);
+file_put_contents($adminFile, $adminContent);
+echo "Admin view updated.\n";
 
-echo "done\n";
+
+// 2. Update SuperAdmin index.blade.php
+$superAdminFile = 'd:/pulic_html/resources/views/super-admin/purchase-order/index.blade.php';
+$superAdminContent = file_get_contents($superAdminFile);
+
+$superAdminFilterDesign = <<<EOT
+                            <div id="filterSection" class="bg-white tw-border tw-border-slate-200 tw-rounded-xl tw-shadow-sm tw-mb-6 tw-overflow-hidden" style="display: {{ request()->anyFilled(['search', 'filter_po_code', 'filter_craftsman', 'filter_design_code', 'filter_status', 'category_filter', 'sub_category_filter', 'filter_date_from', 'filter_date_to']) ? 'block' : 'none' }};">
+                                <div class="tw-p-6">
+                                    <h3 class="tw-text-sm tw-font-bold tw-text-slate-800 tw-uppercase tw-tracking-wider tw-mb-4">Advanced Filters</h3>
+                                    <form action="{{ route('super-admin.purchase-order.index') }}" method="GET">
+                                        <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
+                                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 lg:tw-grid-cols-4 tw-gap-6">
+                                            <!-- Search -->
+                                            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-1">
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Search Orders</label>
+                                                <div class="tw-relative">
+                                                    <span class="tw-absolute tw-inset-y-0 tw-left-0 tw-pl-3 tw-flex tw-items-center tw-text-slate-400">
+                                                        <i class="bi bi-search"></i>
+                                                    </span>
+                                                    <input type="text" name="search" value="{{ request('search') }}" 
+                                                           class="tw-block tw-w-full tw-pl-10 tw-pr-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all" 
+                                                           placeholder="PO Code / Items...">
+                                                </div>
+                                            </div>
+
+                                            <!-- PO Code Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">PO Code</label>
+                                                <input type="text" name="filter_po_code" value="{{ request('filter_po_code') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
+
+                                            <!-- Design Code Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Design Code</label>
+                                                <input type="text" name="design_code_filter" value="{{ request('design_code_filter') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all"
+                                                       placeholder="e.g. DS0001">
+                                            </div>
+
+                                            <!-- Category Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Category</label>
+                                                <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Categories</option>
+                                                    @foreach(\$categories as \$category)
+                                                        <option value="{{ \$category->id }}" {{ request('category_filter') == \$category->id ? 'selected' : '' }}>{{ \$category->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Sub Category Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Sub Category</label>
+                                                <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Sub Categories</option>
+                                                    @foreach(\$subCategories as \$subCategory)
+                                                        <option value="{{ \$subCategory->id }}" {{ request('sub_category_filter') == \$subCategory->id ? 'selected' : '' }}>{{ \$subCategory->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Craftsman Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Craftsman Code</label>
+                                                <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Craftsmen</option>
+                                                    @foreach(\$craftsmen as \$c)
+                                                        <option value="{{ \$c->craftman_code }}" {{ request('filter_craftsman') == \$c->craftman_code ? 'selected' : '' }}>{{ \$c->craftman_code }} - {{ \$c->business_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <!-- Status Filter -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Status</label>
+                                                <select name="filter_status" 
+                                                        class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                                    <option value="">All Statuses</option>
+                                                    <option value="created" {{ request('filter_status') == 'created' ? 'selected' : '' }}>Created</option>
+                                                    <option value="allocated" {{ request('filter_status') == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                                    <option value="in_process" {{ request('filter_status') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                                    <option value="for_approval" {{ request('filter_status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                                                    <option value="completed" {{ request('filter_status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                                    <option value="rejected" {{ request('filter_status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                                    <option value="overdue" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Date From -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">From Date</label>
+                                                <input type="date" name="filter_date_from" value="{{ request('filter_date_from') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
+
+                                            <!-- Date To -->
+                                            <div>
+                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">To Date</label>
+                                                <input type="date" name="filter_date_to" value="{{ request('filter_date_to') }}" 
+                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="tw-col-span-1 lg:tw-col-span-2 tw-flex tw-items-end tw-gap-3 tw-pt-2">
+                                                <button type="submit" class="tw-flex-1 tw-bg-maroon hover:tw-bg-maroon-dark tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-shadow-sm">
+                                                    Apply Filters
+                                                </button>
+                                                <a href="{{ route('super-admin.purchase-order.index', ['tab' => request('tab', 'created')]) }}" 
+                                                   class="tw-flex-1 tw-bg-slate-100 hover:tw-bg-slate-200 tw-text-slate-700 tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-text-center tw-border tw-border-slate-200 tw-no-underline">
+                                                    Reset
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+EOT;
+
+$startPos = strpos($superAdminContent, '<div id="filterSection" class="row mb-3" style="display: none;">');
+$endPos = strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', strpos($superAdminContent, '<div id="filterSection" class="row mb-3" style="display: none;">') + 5) + 5) + 5) + 6;
+// The existing filter section is a massive nested div, so I will find the exact bounds.
+if ($startPos !== false) {
+    // Actually, let's just find '<div id="filterSection"' and end at the exact '<!-- Filter Section -->' closing
+    // I can do a preg_replace or more exact replace.
+    // Let's use preg_replace
+    $superAdminContent = preg_replace('/<div id="filterSection".*?<\/form>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/is', $superAdminFilterDesign . "\n                        </div>\n                </div>", $superAdminContent);
+    // Let me do a safer approach, I will just replace from `<div id="filterSection" class="row mb-3"` to the end of that row block.
+}
+
+// Safer approach: 
+$start = strpos($superAdminContent, '<div id="filterSection" class="row mb-3" style="display: none;">');
+$end = strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', strpos($superAdminContent, '</div>', $start) + 1) + 1) + 1) + 1) + 6;
+
+if ($start !== false) {
+    $superAdminContent = substr_replace($superAdminContent, $superAdminFilterDesign, $start, $end - $start);
+}
+
+// Ensure JS toggle is correct
+$superAdminContent = str_replace("$('#filterSection').slideToggle();", "var el = document.getElementById('filterSection'); if(el.style.display === 'none') { el.style.display = 'block'; } else { el.style.display = 'none'; }", $superAdminContent);
+
+file_put_contents($superAdminFile, $superAdminContent);
+echo "SuperAdmin view updated.\n";

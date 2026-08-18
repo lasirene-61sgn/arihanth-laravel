@@ -19,12 +19,14 @@ class FreezeAccountController extends Controller
 
         $frozenBuyers = Buyer::where('is_frozen', true);
         $frozenCraftsmen = Craftman::where('is_frozen', true);
+        $frozenCraftsmanStaff = \App\Models\CraftsmanStaff::where('is_active', false);
         $frozenAdmins = ProcessOwner::where('is_frozen', true);
         $frozenKeyUsers = KeyUser::where('is_frozen', true);
         $frozenUsers = User::where('is_frozen', true);
 
         $allBuyers = Buyer::query();
         $allCraftsmen = Craftman::query();
+        $allCraftsmanStaff = \App\Models\CraftsmanStaff::query();
         $allAdmins = ProcessOwner::query();
         $allKeyUsers = KeyUser::query();
         $allUsers = User::query();
@@ -47,6 +49,15 @@ class FreezeAccountController extends Controller
             });
             $allCraftsmen->where(function($q) use ($search) {
                 $q->where('craftman_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+
+            $frozenCraftsmanStaff->where(function($q) use ($search) {
+                $q->where('staff_code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+            $allCraftsmanStaff->where(function($q) use ($search) {
+                $q->where('staff_code', 'like', "%{$search}%")
                   ->orWhere('name', 'like', "%{$search}%");
             });
 
@@ -84,26 +95,28 @@ class FreezeAccountController extends Controller
 
         $frozenBuyers = $frozenBuyers->get();
         $frozenCraftsmen = $frozenCraftsmen->get();
+        $frozenCraftsmanStaff = $frozenCraftsmanStaff->get();
         $frozenAdmins = $frozenAdmins->get();
         $frozenKeyUsers = $frozenKeyUsers->get();
         $frozenUsers = $frozenUsers->get();
 
-        $allBuyers = $allBuyers->get();
-        $allCraftsmen = $allCraftsmen->get();
-        $allAdmins = $allAdmins->get();
-        $allKeyUsers = $allKeyUsers->get();
-        $allUsers = $allUsers->get();
+        $allBuyers = $allBuyers->paginate(10, ['*'], 'buyersPage')->appends(request()->query());
+        $allCraftsmen = $allCraftsmen->paginate(10, ['*'], 'craftsmenPage')->appends(request()->query());
+        $allCraftsmanStaff = $allCraftsmanStaff->paginate(10, ['*'], 'staffPage')->appends(request()->query());
+        $allAdmins = $allAdmins->paginate(10, ['*'], 'adminsPage')->appends(request()->query());
+        $allKeyUsers = $allKeyUsers->paginate(10, ['*'], 'keyUsersPage')->appends(request()->query());
+        $allUsers = $allUsers->paginate(10, ['*'], 'usersPage')->appends(request()->query());
 
         return view('admin.freeze-account.index', compact(
-            'frozenBuyers', 'frozenCraftsmen', 'frozenAdmins', 'frozenKeyUsers', 'frozenUsers',
-            'allBuyers', 'allCraftsmen', 'allAdmins', 'allKeyUsers', 'allUsers', 'search'
+            'frozenBuyers', 'frozenCraftsmen', 'frozenCraftsmanStaff', 'frozenAdmins', 'frozenKeyUsers', 'frozenUsers',
+            'allBuyers', 'allCraftsmen', 'allCraftsmanStaff', 'allAdmins', 'allKeyUsers', 'allUsers', 'search'
         ));
     }
 
     public function toggleFreeze(Request $request)
     {
         $request->validate([
-            'model_type' => 'required|in:buyer,craftsman,admin,key_user,user',
+            'model_type' => 'required|in:buyer,craftsman,craftsman_staff,admin,key_user,user',
             'model_id' => 'required|integer',
             'action' => 'required|in:freeze,unfreeze'
         ]);
@@ -124,6 +137,9 @@ class FreezeAccountController extends Controller
                 case 'craftsman':
                     $model = Craftman::findOrFail($modelId);
                     break;
+                case 'craftsman_staff':
+                    $model = \App\Models\CraftsmanStaff::findOrFail($modelId);
+                    break;
                 case 'admin':
                     $model = ProcessOwner::findOrFail($modelId);
                     break;
@@ -136,7 +152,11 @@ class FreezeAccountController extends Controller
             }
 
             if ($model) {
-                $model->is_frozen = ($action === 'freeze');
+                if ($modelType === 'craftsman_staff') {
+                    $model->is_active = ($action === 'unfreeze');
+                } else {
+                    $model->is_frozen = ($action === 'freeze');
+                }
                 $model->save();
             }
 

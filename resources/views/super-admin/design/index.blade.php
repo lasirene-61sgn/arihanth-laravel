@@ -79,36 +79,73 @@
         </div>
     </div>
 
-    <div id="filterSection" class="hidden mb-4">
-        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input type="hidden" name="search" value="{{ request('search') }}">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">{{ __('messages.category') }}</label>
-                    <select name="category_filter" class="w-full mt-1 border border-slate-200 rounded-md p-2 text-sm">
-                        <option value="">All Categories ({{ $categories->count() }})</option>
-                        @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}">
-                            {{ $cat->name }}
-                        </option>
-                        @endforeach
-                    </select>
-
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">{{ __('messages.sort_by') }}</label>
-                    <select name="sort_by" class="w-full mt-1 border border-slate-200 rounded-md p-2 text-sm">
-                        <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>{{ __('messages.date_created') }}</option>
-                        <option value="product_code" {{ request('sort_by') == 'product_code' ? 'selected' : '' }}>Product Code</option>
-                        <option value="product_name" {{ request('sort_by') == 'product_name' ? 'selected' : '' }}>{{ __('messages.name') }}</option>
-                        <option value="design_code" {{ request('sort_by') == 'design_code' ? 'selected' : '' }}>{{ __('messages.design_code') }}</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded-md font-bold text-sm hover:bg-slate-900 transition">{{ __('messages.apply_filters') }}</button>
-                </div>
-            </form>
+        <div id="filterSection" class="tw-hidden tw-mb-6 tw-p-6 tw-bg-white dark:tw-bg-gray-800 tw-rounded-2xl tw-border tw-border-gray-100 dark:tw-border-gray-700 tw-shadow-sm">
+        <div class="tw-mb-4 tw-flex tw-justify-between tw-items-center">
+            <h3 class="tw-text-sm tw-font-black tw-text-gray-800 dark:tw-text-white tw-uppercase tw-tracking-wider">Advanced Filters</h3>
+            <button onclick="toggleSection('filterSection')" class="tw-text-gray-400 hover:tw-text-gray-600"><i class="bi bi-x-lg"></i></button>
         </div>
+        <form method="GET" action="{{ url()->current() }}" class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4">
+            
+            <div class="tw-space-y-1">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Product Name</label>
+                <input type="text" name="filter_name" value="{{ request('filter_name') }}" class="form-control tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+            </div>
+            
+            <div class="tw-space-y-1">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Product Code</label>
+                <input type="text" name="filter_code" value="{{ request('filter_code') }}" class="form-control tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+            </div>
+            
+            <div class="tw-space-y-1">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Design Code</label>
+                <input type="text" name="filter_design_code" value="{{ request('filter_design_code') }}" class="form-control tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+            </div>
+
+            <div class="tw-space-y-1">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Category</label>
+                <select name="filter_category" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tw-space-y-1">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Sub Category</label>
+                <select name="filter_subcategory" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                    <option value="">All Sub Categories</option>
+                    @foreach($subCategories as $sub)
+                        <option value="{{ $sub->id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tw-space-y-1 lg:tw-col-span-2">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">BP Code (Buyer)</label>
+                <select name="filter_bp_code" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                    <option value="">All Buyers</option>
+                    @foreach($buyers as $buyer)
+                        <option value="{{ $buyer->bp_code }}" {{ request('filter_bp_code') == $buyer->bp_code ? 'selected' : '' }}>{{ $buyer->bp_code }} - {{ $buyer->business_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="tw-space-y-1 lg:tw-col-span-2">
+                <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Craftsman Code</label>
+                <select name="filter_craftsman" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                    <option value="">All Craftsmen</option>
+                    @foreach($craftsmen as $craftsman)
+                        <option value="{{ $craftsman->craftman_code }}" {{ request('filter_craftsman') == $craftsman->craftman_code ? 'selected' : '' }}>{{ $craftsman->craftman_code }} - {{ $craftsman->business_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            
+            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-4 tw-flex tw-justify-end tw-gap-2 tw-mt-2">
+                <a href="{{ url()->current() }}" class="tw-px-6 tw-py-2 tw-rounded-xl tw-bg-gray-100 hover:tw-bg-gray-200 tw-text-gray-700 tw-text-xs tw-font-bold tw-no-underline">RESET</a>
+                <button type="submit" class="tw-bg-brand tw-text-white tw-px-6 tw-py-2 tw-rounded-xl tw-text-xs tw-font-bold">APPLY FILTERS</button>
+            </div>
+        </form>
     </div>
 
     <div class="flex border-b border-slate-200 mb-6 gap-8 overflow-x-auto no-scrollbar">
@@ -337,7 +374,11 @@
         <script>
             function toggleSection(id) {
                 const el = document.getElementById(id);
-                el.classList.toggle('hidden');
+                if (el.classList.contains('hidden') || el.classList.contains('tw-hidden')) {
+                    el.classList.remove('hidden', 'tw-hidden');
+                } else {
+                    el.classList.add('hidden', 'tw-hidden');
+                }
             }
 
 
@@ -746,4 +787,7 @@
                 }
             }
         </style>
-        @endsection
+        <?php if(request()->anyFilled(['filter_name', 'filter_code', 'filter_design_code', 'filter_category', 'filter_subcategory', 'filter_bp_code', 'filter_craftsman'])): ?>
+<script>document.addEventListener('DOMContentLoaded', function() { document.getElementById('filterSection').classList.remove('tw-hidden'); });</script>
+<?php endif; ?>
+@endsection

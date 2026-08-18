@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Buyer;
+use App\Models\Craftman;
+use App\Models\ProductCategory;
+use App\Models\ProductSubcategory;
 use App\Exports\AdminCatalogueExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
@@ -67,7 +71,13 @@ class CatalogueController extends Controller
     }
 
     $products = $query->paginate(15)->withQueryString();
-    return view('admin.catalogue.index', compact('products'));
+    
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('admin.catalogue.index', compact('products', 'buyers', 'craftsmen', 'subCategories', 'categories'));
 }
 
 public function export(Request $request) 
@@ -80,6 +90,12 @@ public function export(Request $request)
     {
         $ids = $request->input('selected_products', []);
         $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
-        return view('admin.catalogue.print-selected', compact('products'));
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('admin.catalogue.print-selected', compact('products', 'buyers', 'craftsmen', 'subCategories', 'categories'));
     }
 }

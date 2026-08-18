@@ -19,17 +19,20 @@ use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\ForgotPasswordController;
 use App\Http\Controllers\Admin\BuyerController as AdminBuyerController;
 use App\Http\Controllers\Admin\CraftmanController as AdminCraftmanController;
+use App\Http\Controllers\Admin\CraftsmanStaffController as AdminCraftsmanStaffController;
 use App\Http\Controllers\Admin\KeyUserController as AdminKeyUserController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\DesignController as AdminDesignController;
 use App\Http\Controllers\Admin\CatalogueController as AdminCatalogueController;
 use App\Http\Controllers\Admin\WorkOrderController as AdminWorkOrderController;
+use App\Http\Controllers\Admin\AdminChatController;
 
 // Super Admin Controllers
 use App\Http\Controllers\SuperAdmin\LoginController as SuperAdminLoginController;
 use App\Http\Controllers\SuperAdmin\BuyerController;
 use App\Http\Controllers\SuperAdmin\CraftmanController;
+use App\Http\Controllers\SuperAdmin\CraftsmanStaffController;
 use App\Http\Controllers\SuperAdmin\AdminController;
 use App\Http\Controllers\SuperAdmin\KeyUserController;
 use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
@@ -39,6 +42,7 @@ use App\Http\Controllers\SuperAdmin\WorkOrderController;
 use App\Http\Controllers\SuperAdmin\PurchaseOrderController as SuperAdminPurchaseOrderController;
 use App\Http\Controllers\SuperAdmin\ProductController as SuperAdminProductController;
 use App\Http\Controllers\SuperAdmin\UserCredentialController;
+use App\Http\Controllers\SuperAdmin\SuperAdminChatController;
 
 // Craftsman Controllers
 use App\Http\Controllers\Craftsman\LoginController as CraftsmanLoginController;
@@ -114,27 +118,27 @@ Route::get('/account-frozen', function () {
 })->name('account-frozen');
 
 // --- BUYER PANEL ---
-Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-    Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+// Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {
+//     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+//     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+//     Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
 
-    // ADD THIS LINE
-    Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-    Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-});
+//     // ADD THIS LINE
+//     Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
+//     Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
+// });
 
 // --- CRAFTSMAN PANEL ---
-Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-    Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+// Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {
+//     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+//     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+//     Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
 
 
-    // ADD THIS LINE
-    Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-    Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-});
+//     // ADD THIS LINE
+//     Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
+//     Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
+// });
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -195,7 +199,21 @@ Route::get('/test-craftsman-catalogue', function () {
         })
     ]);
 });
-
+// Chat System Routes 
+// Super Admin Routes
+Route::prefix('super-admin')->name('super-admin.')->middleware(['auth:super_admin'])->group(function () {
+    Route::get('/chat', [SuperAdminChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{conversation}', [SuperAdminChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/send', [SuperAdminChatController::class, 'store'])->name('chat.send');
+    Route::get('/chat/start/{receiverId}/{type?}', [SuperAdminChatController::class, 'startChat'])->name('chat.start');
+});
+// Admin Routes
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin'])->group(function () {
+    Route::get('/chat', [AdminChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{conversation}', [AdminChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/send', [AdminChatController::class, 'store'])->name('chat.send');
+    Route::get('/chat/start/{receiverId}/{type?}', [AdminChatController::class, 'startChat'])->name('chat.start');
+});
 // Test route for design functionality
 Route::get('/test-design', [SuperAdminDesignController::class, 'test']);
 
@@ -236,10 +254,10 @@ Route::prefix('process-owner')->name('process-owner.')->group(function () {
 
     // Protected Routes
     Route::middleware(['auth:process_owner', 'check.account.frozen'])->group(function () {
-        
+
         // FIXED: Combined into one authoritative dashboard path that executes RegistrationController@index
         Route::get('/dashboard', [RegistrationController::class, 'index'])->name('dashboard');
-        
+
         Route::post('/logout', [ProcessOwnerLoginController::class, 'logout'])->name('logout');
 
         // Super Admin Creation Route (only for process owners)
@@ -363,6 +381,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Craftsman Approval Routes
             Route::post('/craftman/{craftman}/approve', [AdminCraftmanController::class, 'approve'])->name('business-partner.craftman.approve');
             Route::post('/craftman/{craftman}/unlock', [AdminCraftmanController::class, 'unlock'])->name('business-partner.craftman.unlock');
+
+            // Craftsman Staff Routes (Full CRUD for Admins)
+            Route::get('/craftsman-staff', [AdminCraftsmanStaffController::class, 'index'])->name('business-partner.craftsman-staff');
+            Route::get('/craftsman-staff/create', [AdminCraftsmanStaffController::class, 'create'])->name('business-partner.craftsman-staff.create');
+            Route::post('/craftsman-staff', [AdminCraftsmanStaffController::class, 'store'])->name('business-partner.craftsman-staff.store');
+            Route::get('/craftsman-staff/{staff}', [AdminCraftsmanStaffController::class, 'show'])->name('business-partner.craftsman-staff.show');
+            Route::get('/craftsman-staff/{staff}/edit', [AdminCraftsmanStaffController::class, 'edit'])->name('business-partner.craftsman-staff.edit');
+            Route::put('/craftsman-staff/{staff}', [AdminCraftsmanStaffController::class, 'update'])->name('business-partner.craftsman-staff.update');
+            Route::delete('/craftsman-staff/{staff}', [AdminCraftsmanStaffController::class, 'destroy'])->name('business-partner.craftsman-staff.destroy');
+            Route::post('/craftsman-staff/print-selected', [AdminCraftsmanStaffController::class, 'printSelected'])->name('business-partner.craftsman-staff.print-selected');
         });
 
         // Key User Routes (Full CRUD for Admins)
@@ -437,7 +465,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{meeting}/approve', [AdminMeetingController::class, 'approve'])->name('approve');
             Route::post('/{meeting}/cancel', [AdminMeetingController::class, 'cancel'])->name('cancel');
             Route::post('/{meeting_id}/answer', [AdminMeetingController::class, 'answerMeeting'])
-         ->name('answer');
+                ->name('answer');
         });
         // Catalogue Routes (Read-only for Admins)
         Route::prefix('catalogue')->group(function () {
@@ -522,11 +550,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{workOrder}/reallocate', [AdminWorkOrderController::class, 'reallocateForm'])->name('work-order.reallocate.form');
             Route::post('/{workOrder}/reallocate', [AdminWorkOrderController::class, 'reallocate'])->name('work-order.reallocate');
             Route::get('/{workOrder}/copy', [AdminWorkOrderController::class, 'copy'])->name('work-order.copy');
-            
+
             // Undo Flow
             Route::post('/{workOrder}/undo', [AdminWorkOrderController::class, 'undo'])->name('work-order.undo');
             Route::post('/{workOrder}/send-undo-otp', [AdminWorkOrderController::class, 'sendUndoOtp'])->name('work-order.send-undo-otp');
-            
+
             // Return Flow
             Route::post('/{workOrder}/return', [AdminWorkOrderController::class, 'processReturn'])->name('work-order.return');
             Route::post('/{workOrder}/send-return-otp', [AdminWorkOrderController::class, 'sendReturnOtp'])->name('work-order.send-return-otp');
@@ -576,13 +604,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         // Chat Routes
-        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-        Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-        Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-        Route::delete('/chat/message/{id}', [ChatController::class, 'destroy'])->name('chat.message.destroy');
-        Route::delete('/chat/conversation/{id}', [ChatController::class, 'destroyConversation'])->name('chat.conversation.destroy');
+        // Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+        // Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+        // Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+        // Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
+        // Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
+        // Route::delete('/chat/message/{id}', [ChatController::class, 'destroy'])->name('chat.message.destroy');
+        // Route::delete('/chat/conversation/{id}', [ChatController::class, 'destroyConversation'])->name('chat.conversation.destroy');
     });
 });
 
@@ -615,13 +643,13 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::post('/logout', [SuperAdminLoginController::class, 'logout'])->name('logout');
         Route::post('/fcm-token', [App\Http\Controllers\Admin\FcmTokenController::class, 'saveSuperAdminToken'])->name('fcm-token.save');
 
-        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-        Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-        Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-        Route::delete('/chat/message/{id}', [ChatController::class, 'destroy'])->name('chat.message.destroy');
-        Route::delete('/chat/conversation/{id}', [ChatController::class, 'destroyConversation'])->name('chat.conversation.destroy');
+        // Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+        // Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+        // Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+        // Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
+        // Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
+        // Route::delete('/chat/message/{id}', [ChatController::class, 'destroy'])->name('chat.message.destroy');
+        // Route::delete('/chat/conversation/{id}', [ChatController::class, 'destroyConversation'])->name('chat.conversation.destroy');
 
         // KYC Pending Route
         Route::get('/kyc-pending', [App\Http\Controllers\SuperAdmin\KycPendingController::class, 'index'])->name('kyc-pending.index');
@@ -712,6 +740,16 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             // Craftsman Approval Routes
             Route::post('/craftman/{craftman}/approve', [CraftmanController::class, 'approve'])->name('business-partner.craftman.approve');
             Route::post('/craftman/{craftman}/unlock', [CraftmanController::class, 'unlock'])->name('business-partner.craftman.unlock');
+
+            // Craftsman Staff Routes (Full CRUD for SuperAdmins)
+            Route::get('/craftsman-staff', [CraftsmanStaffController::class, 'index'])->name('business-partner.craftsman-staff');
+            Route::get('/craftsman-staff/create', [CraftsmanStaffController::class, 'create'])->name('business-partner.craftsman-staff.create');
+            Route::post('/craftsman-staff', [CraftsmanStaffController::class, 'store'])->name('business-partner.craftsman-staff.store');
+            Route::get('/craftsman-staff/{staff}', [CraftsmanStaffController::class, 'show'])->name('business-partner.craftsman-staff.show');
+            Route::get('/craftsman-staff/{staff}/edit', [CraftsmanStaffController::class, 'edit'])->name('business-partner.craftsman-staff.edit');
+            Route::put('/craftsman-staff/{staff}', [CraftsmanStaffController::class, 'update'])->name('business-partner.craftsman-staff.update');
+            Route::delete('/craftsman-staff/{staff}', [CraftsmanStaffController::class, 'destroy'])->name('business-partner.craftsman-staff.destroy');
+            Route::post('/craftsman-staff/print-selected', [CraftsmanStaffController::class, 'printSelected'])->name('business-partner.craftsman-staff.print-selected');
         });
 
         // Admin Routes
@@ -915,11 +953,11 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('/bulk-complete', [WorkOrderController::class, 'bulkComplete'])->name('work-order.bulk-complete');
             Route::get('/{workOrder}/reallocate', [WorkOrderController::class, 'reallocateForm'])->name('work-order.reallocate.form');
             Route::post('/{workOrder}/reallocate', [WorkOrderController::class, 'reallocate'])->name('work-order.reallocate');
-            
+
             // Undo Flow
             Route::post('/{workOrder}/undo', [WorkOrderController::class, 'undo'])->name('work-order.undo');
             Route::post('/{workOrder}/send-undo-otp', [WorkOrderController::class, 'sendUndoOtp'])->name('work-order.send-undo-otp');
-            
+
             // Return Flow
             Route::post('/{workOrder}/return', [WorkOrderController::class, 'processReturn'])->name('work-order.return');
             Route::post('/{workOrder}/send-return-otp', [WorkOrderController::class, 'sendReturnOtp'])->name('work-order.send-return-otp');
@@ -945,6 +983,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'destroy'])->name('destroy');
         });
         Route::resource('updates', NewUpdatesController::class);
+
     });
 });
 
@@ -1541,7 +1580,7 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
         Route::post('purchase-order/{purchaseOrder}/complete', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'complete'])->name('purchase-order.complete');
         Route::post('purchase-order/{purchaseOrder}/complete-items', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'completeItems'])->name('purchase-order.complete-items');
         Route::get('purchase-order/{purchaseOrder}/print', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'print'])->name('purchase-order.print');
-        
+
         // Repairs
         Route::resource('repairs', App\Http\Controllers\CraftsmanStaff\RepairController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
         Route::get('repairs/export', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'export'])->name('repairs.export');
@@ -1554,13 +1593,22 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
         Route::resource('product', App\Http\Controllers\CraftsmanStaff\ProductController::class);
         Route::post('product/bulk-upload', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'bulkUpload'])->name('product.bulk-upload');
         Route::post('product/print-selected', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'printSelected'])->name('product.print-selected');
-        
+        Route::resource('product-category', App\Http\Controllers\CraftsmanStaff\ProductController::class);
+
         // Designs
         Route::get('design/export', [App\Http\Controllers\CraftsmanStaff\DesignController::class, 'export'])->name('design.export');
         Route::resource('design', App\Http\Controllers\CraftsmanStaff\DesignController::class);
-        
+
+        // Favorites Routes
+        // Route::prefix('favorites')->name('favorites.')->group(function () {
+        //     Route::get('/', [App\Http\Controllers\CraftsmanStaff\FavoriteController::class, 'index'])->name('index');
+        //     Route::post('/', [App\Http\Controllers\CraftsmanStaff\FavoriteController::class, 'store'])->name('store');
+        //     Route::delete('/{id}', [App\Http\Controllers\CraftsmanStaff\FavoriteController::class, 'destroy'])->name('destroy');
+        // });
         // Catalogue
         Route::get('catalogue/export', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'export'])->name('catalogue.export');
         Route::resource('catalogue', App\Http\Controllers\CraftsmanStaff\CatalogueController::class);
+        Route::post('/print-selected', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'printSelected'])->name('catalogue.print-selected');
+        Route::get('/show/{id}', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'show'])->name('catalogue.show');
     });
 });

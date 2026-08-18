@@ -56,6 +56,11 @@ class CraftmanController extends Controller
      */
     public function create()
     {
+        $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
+        if (!$admin || !$admin->hasPermission('can_create_craftsman')) {
+            return redirect()->route('admin.business-partner.craftman')->with('error', 'You do not have permission to create Craftsman.');
+        }
+
         return view('admin.business-partner.create-craftman');
     }
 
@@ -64,6 +69,11 @@ class CraftmanController extends Controller
      */
     public function store(Request $request)
     {
+        $admin = \Illuminate\Support\Facades\Auth::guard('admin')->user();
+        if (!$admin || !$admin->hasPermission('can_create_craftsman')) {
+            return redirect()->route('admin.business-partner.craftman')->with('error', 'You do not have permission to create Craftsman.');
+        }
+
         $validator = Validator::make($request->all(), [
             'craftman_code' => 'required|string|unique:craftmen',
             'dear' => 'nullable|string|unique:craftmen',

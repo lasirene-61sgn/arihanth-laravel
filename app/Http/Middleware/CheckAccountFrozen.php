@@ -42,6 +42,11 @@ class CheckAccountFrozen
             return redirect('/account-frozen')->with('frozen_message', 'Your account has been frozen. Please contact the Super Admin.');
         }
         
+        if (Auth::guard('craftsman_staff')->check() && !Auth::guard('craftsman_staff')->user()->is_active) {
+            Auth::guard('craftsman_staff')->logout();
+            return redirect('/account-frozen')->with('frozen_message', 'Your account has been frozen. Please contact the Super Admin.');
+        }
+        
         if (Auth::guard('key_user')->check() && Auth::guard('key_user')->user()->is_frozen) {
             Auth::guard('key_user')->logout();
             return redirect('/account-frozen')->with('frozen_message', 'Your account has been frozen. Please contact the Super Admin.');

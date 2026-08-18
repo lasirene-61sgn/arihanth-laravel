@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Buyer;
+use App\Models\Craftman;
+use App\Models\ProductSubcategory;
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use App\Exports\AdminDesignExport;
@@ -23,6 +26,12 @@ class DesignController extends Controller
         $product = $design;
         $product->load(['category', 'subcategory', 'images', 'creator', 'designs']);
         $categories = \App\Models\ProductCategory::orderBy('name')->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.design.show', compact('product', 'categories'));
     }
 
@@ -83,6 +92,15 @@ class DesignController extends Controller
         if ($request->filled('filter_code')) $query->where('product_code', 'like', '%' . $request->filter_code . '%');
         if ($request->filled('filter_design_code')) $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
         if ($request->filled('filter_bp_code')) $query->where('bp_code', 'like', '%' . $request->filter_bp_code . '%');
+        if ($request->filled('filter_craftsman')) {
+            // In Product model, craftsman code is often stored in bp_code for craftsman designs
+            $query->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
+            $countQuery->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
+        }
+        if ($request->filled('filter_product_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+            $countQuery->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+        }
 
         if ($request->filled('filter_category')) {
             $query->where('product_category_id', $request->filter_category);
@@ -121,7 +139,13 @@ class DesignController extends Controller
             $q->withCount('products');
         }])->withCount('products')->orderBy('name')->get();
 
-        return view('admin.design.index', compact('products', 'statusCounts', 'categories'));
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
+        return view('admin.design.index', compact('products', 'statusCounts', 'buyers', 'craftsmen', 'subCategories', 'categories'));
     }
 
     /**
@@ -291,6 +315,12 @@ class DesignController extends Controller
     {
         $ids = $request->input('selected_designs', []);
         $designs = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.design.print-selected', compact('designs'));
     }
 
@@ -528,6 +558,12 @@ class DesignController extends Controller
         }
 
         $designs = Product::whereIn('id', $ids)->get();
+        
+        $buyers = Buyer::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('business_name')->get();
+        $subCategories = ProductSubcategory::orderBy('name')->get();
+        $categories = ProductCategory::orderBy('name')->get();
+        
         return view('admin.design.print-80x40', compact('designs'));
     }
     
