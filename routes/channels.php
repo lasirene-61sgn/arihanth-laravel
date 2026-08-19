@@ -3,6 +3,8 @@
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Broadcast;
 
+Broadcast::routes(['middleware' => ['web', 'auth:web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+
 Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
     if (!$user) {
         return false;
@@ -13,7 +15,7 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
         return false;
     }
 
-    // Always allow SuperAdmin
+    // Allow SuperAdmin
     if (
         (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) ||
         (isset($user->role) && in_array($user->role, ['superadmin', 'super_admin'])) ||
@@ -22,7 +24,15 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
         return true;
     }
 
-    // Allow if user is either participant in the conversation
-    return ((int) $conversation->sender_id === (int) $user->id) || 
-           ((int) $conversation->receiver_id === (int) $user->id);
-});
+    $userClass = get_class($user);
+    $userId = (int) $user->id;
+
+    // Compare both ID and model class type
+    $isSender = ((int) $conversation->sender_id === $userId) && 
+                (!isset($conversation->sender_type) || $conversation->sender_type === $userClass);
+
+    $isReceiver = ((int) $conversation->receiver_id === $userId) && 
+                  (!isset($conversation->receiver_type) || $conversation->receiver_type === $userClass);
+
+    return $isSender || $isReceiver;
+}, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);

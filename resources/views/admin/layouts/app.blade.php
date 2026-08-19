@@ -1069,9 +1069,6 @@
         <source src="https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3" type="audio/mpeg">
     </audio>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pusher/8.3.0/pusher.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js"></script>
-
     <script type="module">
   // 1. Import the official Firebase version 12 modular modules
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
