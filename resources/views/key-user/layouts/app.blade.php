@@ -173,6 +173,12 @@
                         <span>Dashboard</span>
                     </a>
 
+                    <a href="{{ route('key-user.global-search') }}"
+                        class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->routeIs('key-user.global-search') ? 'text-white font-semibold' : 'text-amber-100 hover:text-white' }}" style="{{ request()->routeIs('key-user.global-search') ? 'background:rgba(255,255,255,0.15)' : '' }}">
+                        <i class="bi bi-search mr-3 text-lg"></i>
+                        <span>Global Search</span>
+                    </a>
+
                     @if((Auth::guard('key_user')->check() && Auth::guard('key_user')->user()->hasPermission('product')) || (Auth::guard('buyer')->check() && Auth::guard('buyer')->user()->hasPermission('product')))
                     <a href="{{ route('key-user.product.index') }}"
                         class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->routeIs('key-user.product.*') ? 'text-white font-semibold' : 'text-amber-100 hover:text-white' }}">

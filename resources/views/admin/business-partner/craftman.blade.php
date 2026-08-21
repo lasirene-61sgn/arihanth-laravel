@@ -192,7 +192,7 @@
                             </td>
                             <td class="px-6 py-4 text-center">
                                 <div class="flex items-center justify-center gap-1.5 transition-opacity duration-200">
-                                    <a href="{{ route('admin.chat.start', ['receiver_id' => $craftman->id, 'type' => 'craftsman']) }}"
+                                    <a href="{{ route('admin.chat.start', ['receiverId' => $craftman->id, 'type' => 'craftsman']) }}"
                                         class="w-8 h-8 flex items-center justify-center rounded-lg bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition-all duration-200" title="Chat">
                                         <i class="bi bi-chat-dots"></i>
                                     </a>

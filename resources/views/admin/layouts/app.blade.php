@@ -143,6 +143,13 @@
                             <span class="text-sm font-medium">Dashboard</span>
                         </a>
                     </li>
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.global-search') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.global-search') }}">
+                            <i class="bi bi-search text-lg"></i>
+                            <span class="text-sm font-medium">Global Search</span>
+                        </a>
+                    </li>
 
                     @if(Auth::guard('admin')->user()->hasPermission('business_partner'))
                     <li class="px-3 pt-2">

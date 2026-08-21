@@ -245,8 +245,11 @@ class MeetingApiController extends Controller
     {
         $user = Auth::user();
 
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
+
         // 1. Fetch Meetings based on Role
-        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+        if ($isSuperAdmin) {
             $meetingsCollection = Meeting::with(['host', 'participant'])->latest()->get();
         } else {
             $meetingsCollection = Meeting::where(function ($q) use ($user) {
@@ -258,7 +261,7 @@ class MeetingApiController extends Controller
 
         $currentUserClass = get_class($user);
         $currentUserId = $user->id;
-        $isAdminLoggedIn = method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+        $isAdminLoggedIn = ($user instanceof \App\Models\ProcessOwner);
 
         // 2. Convert to Array immediately to manipulate raw JSON structural data safely
         $meetingsArray = $meetingsCollection->toArray();
@@ -529,7 +532,8 @@ class MeetingApiController extends Controller
         }
 
         // Determine status
-        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
         $isAdmin = ($user instanceof \App\Models\ProcessOwner && $user->role === 'admin');
         $status = ($isSuperAdmin || $isAdmin) ? 'approved' : 'pending';
 
@@ -570,7 +574,8 @@ class MeetingApiController extends Controller
         $user = Auth::user();
 
         // Only Admins can approve
-        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
         $isAdmin = ($user instanceof \App\Models\ProcessOwner && $user->role === 'admin');
 
         if (!$isSuperAdmin && !$isAdmin) {
@@ -578,6 +583,36 @@ class MeetingApiController extends Controller
         }
 
         $meeting = Meeting::findOrFail($id);
+
+        // If the meeting is already approved, this might be a CallKit re-ring attempt.
+        // We resend the notification and return success instead of failing.
+        if ($meeting->status === 'approved') {
+            if ($meeting->host && method_exists($meeting->host, 'notify')) {
+                $appId = env('AGORA_APP_ID');
+                $targetToken = '';
+                if ($appId) {
+                    try {
+                        $targetToken = \CyberDeep\LaravelAgoraTokenGenerator\Services\Agora::make($meeting->host->id)
+                            ->channel($meeting->room_id)
+                            ->uId($meeting->host->id)
+                            ->join(false)
+                            ->audioOnly(false)
+                            ->token();
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Agora token generation failed in re_ring: ' . $e->getMessage());
+                    }
+                }
+
+                $meeting->host->notify(new MeetingStatusNotification($meeting, 're_ring', [
+                    'app_id'       => $appId,
+                    'token'        => $targetToken,
+                    'channel_name' => $meeting->room_id,
+                    'uid'          => $meeting->host->id,
+                    'caller_name'  => $this->getFormattedCallerName($user)
+                ]));
+            }
+            return response()->json(['success' => true, 'message' => 'Meeting already approved. Notification resent.', 'data' => $meeting]);
+        }
 
         // Only allow approving if it is in 'pending' status
         if ($meeting->status !== 'pending') {
@@ -611,7 +646,8 @@ class MeetingApiController extends Controller
         // Check permission: Only host or participant or SuperAdmin can cancel
         $isHost = ($meeting->host_id == $user->id && $meeting->host_type == get_class($user));
         $isParticipant = ($meeting->participant_id == $user->id && $meeting->participant_type == get_class($user));
-        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+        $isSuperAdmin = (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (isset($user->role) && ($user->role === 'superadmin' || $user->role === 'super_admin'));
 
         if (!$isHost && !$isParticipant && !$isSuperAdmin) {
             return response()->json(['success' => false, 'message' => 'Unauthorized to cancel this meeting.'], 403);

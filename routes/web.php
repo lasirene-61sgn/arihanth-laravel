@@ -337,6 +337,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::get('/dashboard', [AdminLoginController::class, 'dashboard'])->name('dashboard');
+        Route::get('/global-search', [App\Http\Controllers\Admin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/logout', [AdminLoginController::class, 'logout'])->name('logout');
         Route::post('/fcm-token', [App\Http\Controllers\Admin\FcmTokenController::class, 'saveAdminToken'])->name('fcm-token.save');
 
@@ -638,6 +639,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         });
 
         Route::get('/dashboard', [SuperAdminLoginController::class, 'dashboard'])->name('dashboard');
+        Route::get('/global-search', [App\Http\Controllers\SuperAdmin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::get('/dashboard/stats', [SuperAdminLoginController::class, 'getDashboardStats'])->name('dashboard.stats');
         Route::get('/dashboard/calendar-data', [SuperAdminLoginController::class, 'getCalendarData'])->name('dashboard.calendar-data');
         Route::post('/logout', [SuperAdminLoginController::class, 'logout'])->name('logout');
@@ -1008,6 +1010,8 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         Route::get('/dashboard', [CraftsmanLoginController::class, 'dashboard'])
             ->name('dashboard')
             ->middleware('craftsman.permission:dashboard');
+            
+        Route::get('/global-search', [App\Http\Controllers\Craftsman\GlobalSearchController::class, 'index'])->name('global-search');
 
         Route::post('/logout', [CraftsmanLoginController::class, 'logout'])->name('logout');
 
@@ -1144,6 +1148,13 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         Route::prefix('finance')->group(function () {
             Route::get('/', [App\Http\Controllers\Craftsman\LoginController::class, 'finance'])->name('finance.index');
         });
+
+        // Chat Routes for Craftsmen
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+        Route::get('/chat/start/{receiver_id}/{type?}', [App\Http\Controllers\ChatController::class, 'startChat'])->name('chat.start');
+        Route::get('/chat/search', [App\Http\Controllers\ChatController::class, 'searchUsers'])->name('chat.search');
     });
 });
 // Key User Routes
@@ -1154,6 +1165,7 @@ Route::prefix('key-user')->name('key-user.')->group(function () {
     Route::middleware(['check.buyer.or.keyuser', 'check.account.frozen'])->group(function () {
         Route::post('/logout', [App\Http\Controllers\KeyUser\LoginController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [App\Http\Controllers\KeyUser\LoginController::class, 'dashboard'])->name('dashboard');
+        Route::get('/global-search', [App\Http\Controllers\KeyUser\GlobalSearchController::class, 'index'])->name('global-search');
 
         // Business Partner Routes (Buyer Management for Key Users)
         Route::prefix('business-partner')->group(function () {
@@ -1318,6 +1330,7 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
     // Protected Routes
     Route::middleware(['auth:buyer', 'check.account.frozen'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Buyer\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/global-search', [App\Http\Controllers\Buyer\GlobalSearchController::class, 'index'])->name('global-search');
 
         // Profile Routes
         Route::get('/profile', [App\Http\Controllers\Buyer\ProfileController::class, 'edit'])->name('profile.edit');
@@ -1439,6 +1452,13 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
             Route::post('/', [App\Http\Controllers\Buyer\FavoriteController::class, 'store'])->name('store');
             Route::delete('/{id}', [App\Http\Controllers\Buyer\FavoriteController::class, 'destroy'])->name('destroy');
         });
+
+        // Chat Routes for Buyers
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+        Route::get('/chat/start/{receiver_id}/{type?}', [App\Http\Controllers\ChatController::class, 'startChat'])->name('chat.start');
+        Route::get('/chat/search', [App\Http\Controllers\ChatController::class, 'searchUsers'])->name('chat.search');
     });
 });
 
@@ -1531,6 +1551,13 @@ Route::prefix('user')->name('user.')->group(function () {
                 })
             ]);
         })->name('debug-user-catalogue');
+
+        // Chat Routes for Users
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+        Route::get('/chat/start/{receiver_id}/{type?}', [App\Http\Controllers\ChatController::class, 'startChat'])->name('chat.start');
+        Route::get('/chat/search', [App\Http\Controllers\ChatController::class, 'searchUsers'])->name('chat.search');
     });
 });
 // Public Registration Routes
@@ -1554,6 +1581,7 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
     // Protected Routes
     Route::middleware(['auth:craftsman_staff'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'dashboard'])->name('dashboard');
+        Route::get('/global-search', [App\Http\Controllers\CraftsmanStaff\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/logout', [App\Http\Controllers\CraftsmanStaff\LoginController::class, 'logout'])->name('logout');
 
         // Work Orders
@@ -1610,5 +1638,12 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
         Route::resource('catalogue', App\Http\Controllers\CraftsmanStaff\CatalogueController::class);
         Route::post('/print-selected', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'printSelected'])->name('catalogue.print-selected');
         Route::get('/show/{id}', [App\Http\Controllers\CraftsmanStaff\CatalogueController::class, 'show'])->name('catalogue.show');
+
+        // Chat Routes for Craftsman Staff
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
+        Route::get('/chat/start/{receiver_id}/{type?}', [App\Http\Controllers\ChatController::class, 'startChat'])->name('chat.start');
+        Route::get('/chat/search', [App\Http\Controllers\ChatController::class, 'searchUsers'])->name('chat.search');
     });
 });

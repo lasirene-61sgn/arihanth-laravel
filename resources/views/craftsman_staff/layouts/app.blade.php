@@ -144,6 +144,12 @@
                         </a>
                     </li>
                     @endif
+                    <li>
+                        <a href="{{ route('craftsman_staff.global-search') }}"
+                           class="nav-link flex items-center p-2.5 rounded-lg hover:bg-slate-800 hover:text-white {{ request()->routeIs('craftsman_staff.global-search') ? 'active' : '' }}">
+                            <i class="bi bi-search text-lg mr-3"></i> Global Search
+                        </a>
+                    </li>
 
                     <li>
                         <a href="#" class="nav-link flex items-center p-2.5 rounded-lg hover:bg-slate-800 hover:text-white">

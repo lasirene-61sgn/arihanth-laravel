@@ -201,7 +201,7 @@
                                     <td>{{ $buyer->city ?? 'N/A' }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('super-admin.chat.start', ['receiver_id' => $buyer->id, 'type' => 'buyer']) }}"
+                                            <a href="{{ route('super-admin.chat.start', ['receiverId' => $buyer->id, 'type' => 'buyer']) }}"
                                                 class="btn btn-sm btn-outline-success" title="Chat">
                                                 <i class="bi bi-chat-dots"></i>
                                             </a>

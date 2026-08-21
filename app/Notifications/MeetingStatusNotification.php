@@ -54,7 +54,15 @@ class MeetingStatusNotification extends Notification
         $title = 'Meeting Update';
         $body = '';
 
-        if ($this->status === 'approved') {
+        $effectiveStatus = $this->status;
+        if ($this->status === 're_ring') {
+            $effectiveStatus = 'approved';
+        }
+
+        if ($this->status === 're_ring') {
+            $title = 'Incoming Call';
+            $body = 'Incoming video call...';
+        } elseif ($this->status === 'approved') {
             $body = 'Your meeting has been accepted.';
         } elseif ($this->status === 'cancelled') {
             $body = 'Your meeting has been rejected.';
@@ -65,16 +73,20 @@ class MeetingStatusNotification extends Notification
         }
 
         $data = [
-            'meeting_id' => (string) $this->meeting->id,
-            'room_id'    => $this->meeting->room_id,
+            'meeting_id'  => (string) $this->meeting->id,
+            'room_id'     => $this->meeting->room_id,
+            'type'        => '1',
+            'isVideo'     => 'true',
+            'call_type'   => 'video',
+            'is_video'    => 'true',
         ];
 
-        if ($this->status !== 'joined') {
-            $data['status'] = $this->status;
+        if ($effectiveStatus !== 'joined') {
+            $data['status'] = $effectiveStatus;
         }
 
         // Add specific action for joined status
-        if ($this->status === 'joined') {
+        if ($this->status === 'joined' || $this->status === 're_ring') {
             $data['action'] = 'join_meeting';
         }
 
@@ -126,10 +138,8 @@ class MeetingStatusNotification extends Notification
             $isSuper = isset($caller->role) && ($caller->role === 'superadmin' || $caller->role === 'super_admin');
             if ($isSuper) {
                 $roleLabel = 'Superadmin';
-                print("------------------------------------1");
             } else {
                 $roleLabel = $caller->category ? $caller->category : 'Admin';
-                 print("------------------------------------2");
             }
             
             $parts = array_filter([$code, $name, $roleLabel]);
