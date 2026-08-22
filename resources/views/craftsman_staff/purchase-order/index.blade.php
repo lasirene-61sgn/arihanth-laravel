@@ -130,6 +130,10 @@
 
     <!-- Tabs Navigation -->
     <div class="mb-6 flex flex-wrap gap-2">
+                <a href="{{ route('craftsman_staff.purchase-order.index', array_merge(request()->except('tab'), ['tab' => 'overdue'])) }}"
+            class="px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 {{ request('tab') == 'overdue' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-100' }}">
+            Overdue <span class="ml-2 px-2 py-0.5 rounded-full text-[10px] {{ request('tab') == 'overdue' ? 'bg-emerald-500/50' : 'bg-emerald-100' }}">{{ $overdueOrders->total() }}</span>
+        </a>
         <a href="{{ route('craftsman_staff.purchase-order.index', array_merge(request()->except('tab'), ['tab' => 'allocated'])) }}"
             class="px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 {{ request('tab') == 'allocated' || !request('tab') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-100' }}">
             Allocated <span class="ml-2 px-2 py-0.5 rounded-full text-[10px] {{ request('tab') == 'allocated' || !request('tab') ? 'bg-indigo-500/50' : 'bg-indigo-100' }}">{{ $allocatedOrders->total() }}</span>
@@ -153,18 +157,21 @@
         @php
         $currentTab = request('tab', 'allocated');
         $orders = match($currentTab) {
+        'overdue' => $overdueOrders,
         'in-process' => $inProcessOrders,
         'completed' => $completedOrders,
         'rejected' => $rejectedOrders,
         default => $allocatedOrders,
         };
         $tabTitle = match($currentTab) {
+        'overdue' => 'Overdue',
         'in-process' => 'In Process',
         'completed' => 'Completed',
         'rejected' => 'Rejected',
         default => 'Allocated',
         };
         $accentColor = match($currentTab) {
+        'overdue' => 'orange',
         'in-process' => 'yellow',
         'completed' => 'green',
         'rejected' => 'red',

@@ -77,4 +77,13 @@ class AdminChatController extends Controller
 
         return redirect()->route('admin.chat.index');
     }
+
+    public function searchUsers(Request $request)
+    {
+        $user = $this->getAuthUser();
+        $query = $request->input('q', '');
+        
+        $results = $this->chatService->searchUsers($query, $user);
+        return response()->json($results);
+    }
 }

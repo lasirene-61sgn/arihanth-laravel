@@ -189,9 +189,31 @@ class PurchaseOrderController extends Controller
             })
             ->paginate(self::PER_PAGE, ['*'], 'rejected_orders_page');
 
+                $now = \Carbon\Carbon::now();
+        $overdueOrders = (clone $query)->where(function($q) use ($now) {
+            $q->where(function($sub1) use ($now) {
+                $sub1->whereNotNull('craftsman_due_date')
+                     ->whereDate('craftsman_due_date', '<', $now->startOfDay());
+            })->orWhere(function($sub2) use ($now) {
+                $sub2->whereNotNull('craftsman_due_date')
+                     ->whereDate('craftsman_due_date', '=', $now->startOfDay())
+                     ->whereRaw('? >= 12', [$now->hour]);
+            })->orWhere(function($sub3) use ($now) {
+                $sub3->whereNull('craftsman_due_date')
+                     ->whereNotNull('due_date')
+                     ->whereDate('due_date', '<', $now->startOfDay());
+            })->orWhere(function($sub4) use ($now) {
+                $sub4->whereNull('craftsman_due_date')
+                     ->whereNotNull('due_date')
+                     ->whereDate('due_date', '=', $now->startOfDay())
+                     ->whereRaw('? >= 12', [$now->hour]);
+            });
+        })->whereIn('craftsman_status', ['allocated', 'in_process'])
+          ->paginate(self::PER_PAGE, ['*'], 'overdue_orders_page');
         $productCategories = ProductCategory::orderBy('name')->get();
 
         return view('craftsman.purchase-order.index', compact(
+            'overdueOrders',
             'allocatedOrders', 
             'inProcessOrders', 
             'completedOrders', 
@@ -200,9 +222,6 @@ class PurchaseOrderController extends Controller
         ));
     }
 
-    /**
-     * Export purchase orders to Excel.
-     */
     public function export(Request $request)
     {
         return \Maatwebsite\Excel\Facades\Excel::download(

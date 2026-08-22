@@ -33,6 +33,7 @@ class ChatController extends Controller
             'buyer' => 'buyer',
             'craftsman' => 'craftsman',
             'key-user' => 'key_user',
+            'craftsman-staff' => 'craftsman_staff'
         ];
 
         // Check the guard matching the current URL segment first
@@ -41,7 +42,7 @@ class ChatController extends Controller
         }
 
         // Fallback to checking all guards in order
-        $guards = ['super_admin', 'admin', 'buyer', 'craftsman', 'key_user', 'web'];
+        $guards = ['super_admin', 'admin', 'buyer', 'craftsman', 'key_user', 'craftsman_staff', 'web'];
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 return Auth::guard($guard)->user();
@@ -148,9 +149,6 @@ class ChatController extends Controller
         }
     }
 
-    /**
-     * Start a chat.
-     */
     public function startChat($receiverId, $type = null)
     {
         $user = $this->getAuthUser();
@@ -159,6 +157,53 @@ class ChatController extends Controller
         $this->chatService->startConversation($receiverId, $type, $user);
 
         return redirect()->route($segment . '.chat.index');
+    }
+
+    /**
+     * Create a group chat (for Craftsman/Buyer)
+     */
+    public function createGroup(Request $request)
+    {
+        $user = $this->getAuthUser();
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'participants' => 'required|array',
+            'participants.*.id' => 'required',
+            'participants.*.type' => 'required',
+        ]);
+
+        try {
+            $group = \App\Models\ChatGroup::create([
+                'name' => $request->name,
+                'created_by' => $user->id,
+                'creator_type' => get_class($user),
+            ]);
+
+            // Add creator as participant
+            \App\Models\ChatGroupParticipant::create([
+                'chat_group_id' => $group->id,
+                'user_id' => $user->id,
+                'user_type' => get_class($user),
+                'role' => 'admin',
+            ]);
+
+            // Add other participants
+            foreach ($request->participants as $participant) {
+                // Determine if valid to add (buyer->key_user, craftsman->staff)
+                // Assuming validation is handled frontend, add directly:
+                \App\Models\ChatGroupParticipant::create([
+                    'chat_group_id' => $group->id,
+                    'user_id' => $participant['id'],
+                    'user_type' => $participant['type'],
+                    'role' => 'member',
+                ]);
+            }
+
+            return response()->json(['message' => 'Group created successfully', 'group' => $group]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     /**

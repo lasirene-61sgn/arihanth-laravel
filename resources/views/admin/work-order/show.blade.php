@@ -54,7 +54,7 @@
                         </ul>
                     </div>
 
-                    <a href="{{ route('admin.work-order.index') }}" class="btn btn-light border d-inline-flex align-items-center gap-2 px-3 shadow-sm">
+                    <a href="{{ request('return_url', url()->previous() !== url()->current() ? url()->previous() : route('admin.work-order.index')) }}" class="btn btn-light border d-inline-flex align-items-center gap-2 px-3 shadow-sm">
                         <i class="bi bi-arrow-left"></i>
                         <span>Back</span>
                     </a>

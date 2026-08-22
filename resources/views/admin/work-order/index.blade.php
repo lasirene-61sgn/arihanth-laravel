@@ -535,7 +535,7 @@
                                         </td>
                                         <td class="p-4 text-right">
                                             <div class="inline-flex items-center gap-1">
-                                                <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                                <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'all-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                     <i class="bi bi-eye text-sm text-[16px]"></i>
                                                 </a>
                                             </div>
@@ -799,10 +799,10 @@
                                         </td>
                                         <td class="p-4 text-right">
                                             <div class="inline-flex items-center gap-1">
-                                                <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                                <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'new-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                     <i class="bi bi-eye text-sm text-[16px]"></i>
                                                 </a>
-                                                <a href="{{ route('admin.work-order.edit', ['workOrder' => $order->id, 'return_url' => url()->full()]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
+                                                <a href="{{ route('admin.work-order.edit', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'new-orders']))]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
                                                     <i class="bi bi-pencil text-sm text-[16px]"></i>
                                                 </a>
                                                 <a href="{{ route('admin.work-order.allocate.form', $order) }}" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors" title="Allocate">
@@ -1091,10 +1091,10 @@
                                     </td> -->
                     <td class="p-4 text-right">
                         <div class="inline-flex items-center gap-1">
-                            <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                            <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'allocated-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                             </a>
-                            <a href="{{ route('admin.work-order.edit', ['workOrder' => $order->id, 'return_url' => url()->full()]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
+                            <a href="{{ route('admin.work-order.edit', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'allocated-orders']))]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
                                 <i class="bi bi-pencil text-sm text-[16px]"></i>
                             </a>
                             <a href="{{ route('admin.work-order.reallocate.form', $order) }}" class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Reallocate">
@@ -1376,7 +1376,7 @@
                                             <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
                                                 <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
                                             </button>
-                                            <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                            <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'in-process-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                                             </a>
                                         </div>
@@ -1632,10 +1632,10 @@
                                     </td>
                                     <td class="p-4 text-right">
                                         <div class="inline-flex items-center gap-1">
-                                            <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                            <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'overdue-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                                             </a>
-                                            <a href="{{ route('admin.work-order.edit', ['workOrder' => $order->id, 'return_url' => url()->full()]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
+                                            <a href="{{ route('admin.work-order.edit', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'overdue-orders']))]) }}" class="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors" title="Edit">
                                                 <i class="bi bi-pencil text-sm text-[16px]"></i>
                                             </a>
                                         </div>
@@ -1899,7 +1899,7 @@
                                                 <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
                                                     <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
                                                 </button>
-                                                <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                                <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'for-approval-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                     <i class="bi bi-eye text-sm text-[16px]"></i>
                                                 </a>
                                                 <form method="POST" action="{{ route('admin.work-order.approve', $order) }}" class="inline">
@@ -2193,7 +2193,7 @@
                                             <button type="button" onclick="openAdminUndoModal({{ $order->id }}, {{ $order->admin_undo_count }})" class="p-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors" title="Undo Status">
                                                 <i class="bi bi-arrow-counterclockwise text-sm text-[16px]"></i>
                                             </button>
-                                            <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                            <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'completed-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                 <i class="bi bi-eye text-sm text-[16px]"></i>
                                             </a>
                                             <!-- <a href="{{ route('admin.work-order.reallocate.form', $order) }}" class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Reallocate">
@@ -2455,7 +2455,7 @@
                                         </td>
                                         <td class="p-4 text-right">
                                             <div class="inline-flex items-center gap-1">
-                                                <a href="{{ route('admin.work-order.show', $order) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
+                                                <a href="{{ route('admin.work-order.show', [$order, 'return_url' => route('admin.work-order.index', array_merge(request()->query(), ['tab' => 'rejected-orders']))]) }}" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors" title="View">
                                                     <i class="bi bi-eye text-sm text-[16px]"></i>
                                                 </a>
                                                 <a href="{{ route('admin.work-order.reallocate.form', $order) }}" class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Reallocate">

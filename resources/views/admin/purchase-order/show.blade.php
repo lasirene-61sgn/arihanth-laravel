@@ -29,7 +29,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.purchase-order.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+            <a href="{{ request('return_url', url()->previous() !== url()->current() ? url()->previous() : route('admin.purchase-order.index')) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Back to List
             </a>
@@ -431,7 +431,7 @@
             @endif
 
             <div class="mt-10 pt-6 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-                <a href="{{ route('admin.purchase-order.index') }}" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition w-full md:w-auto text-center">
+                <a href="{{ request('return_url', url()->previous() !== url()->current() ? url()->previous() : route('admin.purchase-order.index')) }}" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition w-full md:w-auto text-center">
                     Back to List
                 </a>
                 <form action="{{ route('admin.purchase-order.destroy', $purchaseOrder) }}" method="POST" onsubmit="return confirm('Permanently delete this order?');" class="w-full md:w-auto">

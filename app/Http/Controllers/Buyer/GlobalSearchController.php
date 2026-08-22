@@ -7,52 +7,151 @@ use Illuminate\Http\Request;
 use App\Models\WorkOrder;
 use App\Models\Product;
 use App\Models\Design;
-use App\Models\Repair;
+use App\Models\KeyUser;
 use App\Models\StockOrder;
+use App\Models\ImageHash;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Jenssegers\ImageHash\ImageHash as Hasher;
+use Jenssegers\ImageHash\Implementations\DifferenceHash;
 
 class GlobalSearchController extends Controller
 {
     public function index(Request $request)
     {
         $query = $request->input('search');
+        $hasImage = $request->hasFile('image_search');
         $results = [];
 
-        if (!empty($query)) {
-            $addResults = function($label, $items, $routePrefix, $routeParamName, $displayField) use (&$results) {
-                if ($items->count() > 0) {
-                    $results[$label] = [
-                        'count' => $items->count(),
-                        'items' => $items->map(function($item) use ($routePrefix, $routeParamName, $displayField) {
-                            $display = $item->{$displayField} ?? '';
-                            if (empty($display)) {
-                                if (isset($item->name)) $display = $item->name;
-                                elseif (isset($item->title)) $display = $item->title;
-                                elseif (isset($item->first_name) && isset($item->last_name)) $display = $item->first_name . ' ' . $item->last_name;
-                                elseif (isset($item->first_name)) $display = $item->first_name;
-                                else $display = 'ID: ' . $item->id;
-                            }
-                            
-                            try {
-                                $url = route($routePrefix, [$routeParamName => $item->id]);
-                            } catch (\Exception $e) {
-                                $url = '#';
-                            }
+        // Helper function to format items
+        $addResults = function($label, $items, $routePrefix, $routeParamName, $displayField) use (&$results) {
+            if ($items->count() > 0) {
+                $results[$label] = [
+                    'count' => $items->count(),
+                    'items' => $items->map(function($item) use ($routePrefix, $routeParamName, $displayField) {
+                        $display = $item->{$displayField} ?? '';
+                        if (empty($display)) {
+                            if (isset($item->name)) $display = $item->name;
+                            elseif (isset($item->title)) $display = $item->title;
+                            elseif (isset($item->first_name) && isset($item->last_name)) $display = $item->first_name . ' ' . $item->last_name;
+                            elseif (isset($item->first_name)) $display = $item->first_name;
+                            else $display = 'ID: ' . $item->id;
+                        }
 
-                            return [
-                                'id' => $item->id,
-                                'display' => $display,
-                                'url' => $url
-                            ];
-                        })
-                    ];
+                        try {
+                            $url = route($routePrefix, [$routeParamName => $item->id]);
+                        } catch (\Exception $e) {
+                            $url = '#';
+                        }
+
+                        $image = null;
+                        if (isset($item->product_image)) $image = $item->product_image;
+                        elseif (isset($item->image)) $image = $item->image;
+                        elseif (isset($item->profile_image)) $image = $item->profile_image;
+                        if ($image) $image = asset($image);
+
+                        $detailsText = 'No additional details available.';
+                        if (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
+                        elseif (isset($item->customer_name) && !empty($item->customer_name)) $detailsText = 'Customer: ' . $item->customer_name;
+                        elseif (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
+                        elseif (isset($item->email) && !empty($item->email)) $detailsText = 'Email: ' . $item->email;
+                        elseif (isset($item->product_category) && !empty($item->product_category)) $detailsText = 'Category: ' . $item->product_category;
+
+                        return [
+                            'id' => $item->id,
+                            'display' => $display,
+                            'url' => $url,
+                            'image' => $image,
+                            'details' => Str::limit($detailsText, 150)
+                        ];
+                    })->values()
+                ];
+            }
+        };
+
+        $buyer = Auth::guard('buyer')->user();
+
+        $canAccess = function($permission) use ($buyer) {
+            if (!$buyer) return true;
+            if (method_exists($buyer, 'hasPermission')) {
+                return $buyer->hasPermission($permission);
+            }
+            return true;
+        };
+
+        if ($hasImage) {
+            $file = $request->file('image_search');
+            $hasher = new Hasher(new DifferenceHash());
+            $uploadedHashHex = $hasher->hash($file->getRealPath())->toHex();
+
+            $hexToBin = function($hex) {
+                $bin = '';
+                for ($i = 0; $i < strlen($hex); $i++) {
+                    $bin .= str_pad(base_convert($hex[$i], 16, 2), 4, '0', STR_PAD_LEFT);
                 }
+                return str_pad($bin, 64, '0', STR_PAD_LEFT);
             };
 
-            $buyer = Auth::guard('buyer')->user();
+            $uploadedHashBin = $hexToBin($uploadedHashHex);
+            $allHashes = ImageHash::all();
+            $matchedItems = [];
 
+            foreach ($allHashes as $dbHash) {
+                $dbHashBin = $hexToBin($dbHash->hash);
+
+                $distance = 0;
+                for ($i = 0; $i < 64; $i++) {
+                    if (isset($uploadedHashBin[$i]) && isset($dbHashBin[$i]) && $uploadedHashBin[$i] !== $dbHashBin[$i]) {
+                        $distance++;
+                    }
+                }
+
+                if ($distance <= 10) {
+                    $type = $dbHash->hashable_type;
+                    if (!isset($matchedItems[$type])) {
+                        $matchedItems[$type] = [];
+                    }
+                    $matchedItems[$type][] = $dbHash->hashable_id;
+                }
+            }
+
+            // Work Orders (Only Buyer's BP Code)
+            if ($canAccess('work_order') && isset($matchedItems[WorkOrder::class])) {
+                $workOrders = WorkOrder::where('bp_code', $buyer->bp_code)
+                    ->whereIn('id', $matchedItems[WorkOrder::class])
+                    ->get();
+                $addResults('Work Orders', $workOrders, 'buyer.work-order.show', 'work_order', 'work_order_number');
+            }
+
+            // Products (Only Buyer's BP Code)
+            if ($canAccess('product') && isset($matchedItems[Product::class])) {
+                $products = Product::where('bp_code', $buyer->bp_code)
+                    ->whereIn('id', $matchedItems[Product::class])
+                    ->get();
+                $addResults('Products', $products, 'buyer.product.show', 'product', 'product_name');
+            }
+
+            // Catalogue (Buyer's accepted products with design code)
+            if ($canAccess('catalogue') && isset($matchedItems[Product::class])) {
+                $catalogues = Product::where('bp_code', $buyer->bp_code)
+                    ->whereNotNull('design_code')
+                    ->where('design_status', 'Accepted')
+                    ->whereNotNull('type')
+                    ->where('type', '!=', '')
+                    ->whereIn('id', $matchedItems[Product::class])
+                    ->get();
+                $addResults('Catalogue', $catalogues, 'buyer.catalogue.show', 'catalogue', 'product_name');
+            }
+
+            // Designs
+            if ($canAccess('design') && isset($matchedItems[Design::class])) {
+                $designs = Design::whereIn('id', $matchedItems[Design::class])->get();
+                $addResults('Designs', $designs, 'buyer.design.show', 'design', 'design_code');
+            }
+
+        } elseif (!empty($query)) {
             // Work Orders
-            if ($buyer->hasPermission('work_order')) {
+            if ($canAccess('work_order')) {
                 $workOrders = WorkOrder::where('bp_code', $buyer->bp_code)
                     ->where(function($q) use ($query) {
                         $q->where('work_order_number', 'LIKE', "%{$query}%")
@@ -65,7 +164,7 @@ class GlobalSearchController extends Controller
             }
 
             // Products
-            if ($buyer->hasPermission('product')) {
+            if ($canAccess('product')) {
                 $products = Product::where('bp_code', $buyer->bp_code)
                     ->where(function($q) use ($query) {
                         $q->where('product_name', 'LIKE', "%{$query}%")
@@ -74,9 +173,9 @@ class GlobalSearchController extends Controller
                     })->limit(20)->get();
                 $addResults('Products', $products, 'buyer.product.show', 'product', 'product_name');
             }
-            
-            // Catalogue (Accepted Products with design code)
-            if ($buyer->hasPermission('catalogue')) {
+
+            // Catalogue
+            if ($canAccess('catalogue')) {
                 $catalogues = Product::where('bp_code', $buyer->bp_code)
                     ->whereNotNull('design_code')
                     ->where('design_status', 'Accepted')
@@ -90,23 +189,19 @@ class GlobalSearchController extends Controller
                 $addResults('Catalogue', $catalogues, 'buyer.catalogue.show', 'catalogue', 'product_name');
             }
 
-            // Designs (Global but Accepted Products with design code)
-            if ($buyer->hasPermission('design')) {
-                $designs = Product::whereNotNull('design_code')
-                    ->where('design_status', 'Accepted')
-                    ->whereNotNull('type')
-                    ->where('type', '!=', '')
-                    ->where(function($q) use ($query) {
-                        $q->where('product_name', 'LIKE', "%{$query}%")
-                            ->orWhere('product_code', 'LIKE', "%{$query}%")
-                            ->orWhere('design_code', 'LIKE', "%{$query}%");
-                    })->limit(20)->get();
+            // Designs
+            if ($canAccess('design')) {
+                $designs = Design::where('design_code', 'LIKE', "%{$query}%")
+                    ->orWhere('design_name', 'LIKE', "%{$query}%")
+                    ->orWhere('design_type', 'LIKE', "%{$query}%")
+                    ->orWhere('category', 'LIKE', "%{$query}%")
+                    ->limit(20)->get();
                 $addResults('Designs', $designs, 'buyer.design.show', 'design', 'design_code');
             }
 
             // Key Users
-            if ($buyer->hasPermission('key_user')) {
-                $keyUsers = \App\Models\KeyUser::where('bp_code', $buyer->bp_code)
+            if ($canAccess('key_user')) {
+                $keyUsers = KeyUser::where('bp_code', $buyer->bp_code)
                     ->where(function($q) use ($query) {
                         $q->where('full_name', 'LIKE', "%{$query}%")
                             ->orWhere('user_code', 'LIKE', "%{$query}%")
@@ -116,19 +211,21 @@ class GlobalSearchController extends Controller
             }
 
             // Live Stock Orders
-            if ($buyer->hasPermission('stock_order')) {
+            if ($canAccess('stock_order')) {
                 $stockOrders = StockOrder::where('buyer_id', $buyer->id)
                     ->where(function($q) use ($query) {
-                        $q->where('order_number', 'LIKE', "%{$query}%");
+                        $q->where('order_number', 'LIKE', "%{$query}%")
+                            ->orWhere('notes', 'LIKE', "%{$query}%");
                     })->limit(20)->get();
                 $addResults('Live Stock Orders', $stockOrders, 'buyer.stock-order.show', 'stock_order', 'order_number');
             }
         }
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
-                'query' => $query,
-                'results' => $results
+                'query' => $hasImage ? 'Image Search' : $query,
+                'results' => $results,
+                'isImageSearch' => $hasImage
             ]);
         }
 

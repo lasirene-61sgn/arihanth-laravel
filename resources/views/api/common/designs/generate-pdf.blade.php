@@ -152,34 +152,37 @@
     @foreach($products as $product)
     <div class="product-card">
         <div class="product-image-box">
-            @php
-            $imagePath = null;
-            if ($product->images->isNotEmpty()) {
-            $relPath = $product->images->first()->path;
-            $path = public_path('storage/' . $relPath);
-            if (file_exists($path)) {
-            $imagePath = $path;
-            } else {
-            $path = public_path($relPath);
-            if (file_exists($path)) {
-            $imagePath = $path;
-            }
-            }
-            }
+            @if($product->images->isNotEmpty())
+                @foreach($product->images as $image)
+                    @php
+                        $imagePath = null;
+                        $relPath = $image->path;
+                        $path = public_path('storage/' . $relPath);
+                        
+                        if (file_exists($path)) {
+                            $imagePath = $path;
+                        } else {
+                            $path = public_path($relPath);
+                            if (file_exists($path)) {
+                                $imagePath = $path;
+                            }
+                        }
 
-            $base64Image = null;
-            if ($imagePath && file_exists($imagePath)) {
-            try {
-            $type = pathinfo($imagePath, PATHINFO_EXTENSION);
-            $dataImage = file_get_contents($imagePath);
-            $base64Image = 'data:image/' . $type . ';base64,' . base64_encode($dataImage);
-            } catch (\Exception $e) {}
-            }
-            @endphp
-            @if($base64Image)
-            <img src="{{ $base64Image }}" class="item-image">
+                        $base64Image = null;
+                        if ($imagePath && file_exists($imagePath)) {
+                            try {
+                                $type = pathinfo($imagePath, PATHINFO_EXTENSION);
+                                $dataImage = file_get_contents($imagePath);
+                                $base64Image = 'data:image/' . $type . ';base64,' . base64_encode($dataImage);
+                            } catch (\Exception $e) {}
+                        }
+                    @endphp
+                    @if($base64Image)
+                        <img src="{{ $base64Image }}" class="item-image" style="margin-bottom: 10px;">
+                    @endif
+                @endforeach
             @else
-            <div style="width: 180px; height: 180px; background: #f5f5f5; line-height: 180px; color: #999; border: 1px solid #ddd;">No Image</div>
+                <div style="width: 180px; height: 180px; background: #f5f5f5; line-height: 180px; text-align: center; color: #999; border: 1px solid #ddd;">No Image</div>
             @endif
         </div>
         <div class="product-details">

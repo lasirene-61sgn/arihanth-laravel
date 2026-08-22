@@ -130,12 +130,34 @@
     </div>
 </div>
 
+<!-- Modal: Start New Chat -->
+<div class="modal fade" id="newChatModal" tabindex="-1" aria-labelledby="newChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newChatModalLabel">Start Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom">
+                    <input type="text" id="chat-search-input" class="form-control" placeholder="Search users by name or code..." oninput="searchChatUsers(this.value)">
+                </div>
+                <div class="list-group list-group-flush" id="chat-search-results" style="max-height: 350px; overflow-y: auto;">
+                    <div class="p-4 text-center text-muted">Type to search for admins, buyers, or craftsmen...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .convo-item.active { background-color: #e9ecef !important; border-left: 4px solid #0d6efd; }
-    .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; word-wrap: break-word; }
+    .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; word-wrap: break-word; position: relative; }
     .msg-outgoing { background-color: #0d6efd; color: #fff; margin-left: auto; border-bottom-right-radius: 2px; }
     .msg-incoming { background-color: #e4e6eb; color: #1c1e21; margin-right: auto; border-bottom-left-radius: 2px; }
-    .msg-time { font-size: 0.72rem; opacity: 0.8; margin-top: 3px; text-align: right; }
+    .msg-time { font-size: 0.72rem; opacity: 0.8; margin-top: 3px; text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+    .msg-tick { font-size: 0.8rem; }
+    .msg-tick.read { color: #53bdeb; } /* Blue ticks for read */
 </style>
 
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
@@ -146,8 +168,12 @@
     const authUserType = "{{ addslashes(get_class($user)) }}";
     const sendRouteUrl = "{{ route('super-admin.chat.send') }}";
     const showRouteBaseUrl = "{{ url('super-admin/chat') }}";
+    const searchRouteUrl = "{{ route('super-admin.chat.search') }}";
+    const markDeliveredUrl = "{{ route('chat.message.delivered') }}";
+    const markReadUrl = "{{ route('chat.message.read') }}";
 
     let activeConversationId = null;
+    let unreadMessageIds = [];
 
     // Initialize Echo
     window.Pusher = Pusher;
@@ -225,9 +251,61 @@
                 .listen('.message.sent', (e) => {
                     appendMessage(e);
                     scrollToBottom();
+                    markAsDelivered([e.id]); // Mark as delivered immediately
+                    if (document.visibilityState === 'visible') {
+                        markAsRead([e.id]); // Mark as read if chat is active
+                    } else {
+                        unreadMessageIds.push(e.id);
+                    }
+                })
+                .listen('.message.delivered', (e) => {
+                    updateMessageTick(e.messageId, 'delivered');
+                })
+                .listen('.message.read', (e) => {
+                    updateMessageTick(e.messageId, 'read');
+                })
+                .listen('.message.deleted', (e) => {
+                    const msgEl = document.getElementById(`msg-${e.messageId}`);
+                    if (msgEl) msgEl.remove();
                 });
         }
     };
+
+    // Mark read on focus
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible' && activeConversationId && unreadMessageIds.length > 0) {
+            markAsRead(unreadMessageIds);
+            unreadMessageIds = [];
+        }
+    });
+
+    function markAsDelivered(ids) {
+        fetch(markDeliveredUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ message_ids: ids })
+        });
+    }
+
+    function markAsRead(ids) {
+        fetch(markReadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ message_ids: ids })
+        });
+    }
+
+    function updateMessageTick(msgId, status) {
+        const tickEl = document.getElementById(`tick-${msgId}`);
+        if (!tickEl) return;
+        
+        if (status === 'delivered') {
+            tickEl.innerHTML = '✓✓';
+        } else if (status === 'read') {
+            tickEl.innerHTML = '✓✓';
+            tickEl.classList.add('read');
+        }
+    }
 
     // Global Send Message
     window.handleSendMessage = function(e) {
@@ -282,18 +360,68 @@
         const isMe = (parseInt(msg.sender_id) === parseInt(authUserId)) &&
                      (!msg.sender_type || msg.sender_type === authUserType);
 
+        let tickHtml = '';
+        if (isMe) {
+            // Check statuses
+            let isRead = msg.statuses && msg.statuses.some(s => s.read_at);
+            let isDelivered = msg.statuses && msg.statuses.some(s => s.delivered_at);
+            
+            if (isRead) {
+                tickHtml = `<span class="msg-tick read" id="tick-${msg.id}">✓✓</span>`;
+            } else if (isDelivered) {
+                tickHtml = `<span class="msg-tick" id="tick-${msg.id}">✓✓</span>`;
+            } else {
+                tickHtml = `<span class="msg-tick" id="tick-${msg.id}">✓</span>`; // Sent
+            }
+        } else {
+            // Collect unread messages on initial load
+            if (!msg.is_read) {
+                unreadMessageIds.push(msg.id);
+            }
+        }
+
         const bubble = document.createElement('div');
         if (msg.id) bubble.id = `msg-${msg.id}`;
 
         bubble.className = `msg-bubble ${isMe ? 'msg-outgoing' : 'msg-incoming'}`;
         bubble.innerHTML = `
             <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 2px;">
-                ${isMe ? 'You' : (msg.sender_name || 'Admin')}
+                ${isMe ? 'You' : (msg.sender_name || 'User')}
             </div>
             <div>${msg.body ?? ''}</div>
-            <div class="msg-time">${msg.created_at || ''}</div>
+            <div class="msg-time">
+                <span>${msg.created_at || ''}</span>
+                ${tickHtml}
+            </div>
         `;
         chatBox.appendChild(bubble);
+    }
+
+    function searchChatUsers(query) {
+        const resultsBox = document.getElementById('chat-search-results');
+        
+        fetch(`${searchRouteUrl}?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                resultsBox.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(contact => {
+                        let url = `{{ url('super-admin/chat/start') }}/${contact.id}/${contact.type}`;
+                        resultsBox.innerHTML += `
+                            <a href="${url}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">${contact.name}</h6>
+                                    <small class="text-muted">${contact.code ?? ''}</small>
+                                </div>
+                                <span class="btn btn-sm btn-primary">Start Chat</span>
+                            </a>
+                        `;
+                    });
+                } else {
+                    resultsBox.innerHTML = '<div class="p-4 text-center text-muted">No users found.</div>';
+                }
+            })
+            .catch(err => console.error(err));
     }
 
     function scrollToBottom() {

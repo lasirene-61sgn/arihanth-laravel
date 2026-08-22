@@ -283,59 +283,123 @@
             @php
             $images = [];
             // Collect images from gallery_images (already strings)
-            if (isset($workOrder['gallery_images']) && is_array($workOrder['gallery_images'])) {
-            $images = array_merge($images, $workOrder['gallery_images']);
+            if (isset($workOrder['gallery_images']) && is_array($workOrder['gallery_images']) && !empty($workOrder['gallery_images'])) {
+                $images = array_merge($images, $workOrder['gallery_images']);
             }
 
             // Collect images from completion_proof_images (already strings)
-            if (isset($workOrder['completion_proof_images']) && is_array($workOrder['completion_proof_images'])) {
-            $images = array_merge($images, $workOrder['completion_proof_images']);
+            if (isset($workOrder['completion_proof_images']) && is_array($workOrder['completion_proof_images']) && !empty($workOrder['completion_proof_images'])) {
+                $images = array_merge($images, $workOrder['completion_proof_images']);
             }
 
             // Fallback to legacy images array if the above are empty
             if (empty($images) && isset($workOrder['images']) && is_array($workOrder['images'])) {
-            foreach ($workOrder['images'] as $img) {
-            if (is_string($img)) {
-            $images[] = $img;
-            } elseif (is_array($img) && isset($img['image_url'])) {
-            $images[] = $img['image_url'];
+                foreach ($workOrder['images'] as $img) {
+                    if (is_string($img)) {
+                        $images[] = $img;
+                    } elseif (is_array($img) && isset($img['image_url'])) {
+                        $images[] = $img['image_url'];
+                    }
+                }
             }
-            }
+
+            // Final fallback to single image fields
+            if (empty($images)) {
+                if (!empty($workOrder['preview_image_url']) && is_string($workOrder['preview_image_url'])) {
+                    $images[] = $workOrder['preview_image_url'];
+                } elseif (!empty($workOrder['product_image_url']) && is_string($workOrder['product_image_url'])) {
+                    $images[] = $workOrder['product_image_url'];
+                } elseif (!empty($workOrder['product_image']) && is_string($workOrder['product_image'])) {
+                    $images[] = $workOrder['product_image'];
+                }
             }
 
             $images = array_unique($images);
 
             // Convert to Base64 for Dompdf
             $base64Images = [];
+            $pdfLinks = [];
+            
+            \Illuminate\Support\Facades\Log::info("Generating PDF for WorkOrder " . ($workOrder['work_order_number'] ?? 'Unknown'));
+            \Illuminate\Support\Facades\Log::info("Collected images: " . json_encode($images));
+
             foreach ($images as $imgUrl) {
-            if (!$imgUrl || !is_string($imgUrl)) continue;
+                if (!$imgUrl || !is_string($imgUrl)) continue;
 
-            // Skip PDFs as Dompdf can't render them as images
-            if (str_ends_with(strtolower($imgUrl), '.pdf')) continue;
+                // Handle PDFs by adding them as links instead of rendering as images
+                if (str_ends_with(strtolower($imgUrl), '.pdf')) {
+                    $pdfLinks[] = filter_var($imgUrl, FILTER_VALIDATE_URL) ? $imgUrl : asset($imgUrl);
+                    continue;
+                }
 
-            // Try to get local path from URL
-            $relativePath = str_replace(asset(''), '', $imgUrl);
-            $fullPath = public_path(ltrim($relativePath, '/'));
+                $fullPath = '';
+                
+                $parsedUrl = parse_url($imgUrl);
+                $path = ltrim($parsedUrl['path'] ?? $imgUrl, '/');
+                $storageTrimmed = str_replace('storage/', '', $path);
+                
+                $pathsToTry = [
+                    $imgUrl,
+                    public_path($path),
+                    storage_path('app/public/' . $storageTrimmed),
+                    public_path('storage/' . $path)
+                ];
+                
+                foreach ($pathsToTry as $p) {
+                    if (is_string($p) && file_exists($p) && is_file($p)) {
+                        $fullPath = $p;
+                        break;
+                    }
+                }
 
-            // Fallback to storage path if not in public
-            if (!file_exists($fullPath)) {
-            $storagePath = str_replace('storage/', '', $relativePath);
-            $fullPath = storage_path('app/public/' . ltrim($storagePath, '/'));
-            }
+                \Illuminate\Support\Facades\Log::info("Resolving image: $imgUrl -> FullPath: $fullPath");
 
-            if (file_exists($fullPath) && !empty(getimagesize($fullPath))) {
-            $type = pathinfo($fullPath, PATHINFO_EXTENSION);
-            $data = file_get_contents($fullPath);
-            $base64Images[] = 'data:image/' . $type . ';base64,' . base64_encode($data);
-            }
+                if ($fullPath && @getimagesize($fullPath)) {
+                    $type = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+                    if ($type === 'jpg') $type = 'jpeg';
+                    $data = file_get_contents($fullPath);
+                    $base64Images[] = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                    \Illuminate\Support\Facades\Log::info("Added local image: data:image/$type");
+                } elseif (filter_var($imgUrl, FILTER_VALIDATE_URL)) {
+                    \Illuminate\Support\Facades\Log::info("Trying remote download: $imgUrl");
+                    try {
+                        $context = stream_context_create(['http' => ['ignore_errors' => true]]);
+                        $data = @file_get_contents($imgUrl, false, $context);
+                        if ($data && @imagecreatefromstring($data)) {
+                            $type = strtolower(pathinfo(parse_url($imgUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+                            if ($type === 'jpg' || !$type) $type = 'jpeg';
+                            $base64Images[] = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                            \Illuminate\Support\Facades\Log::info("Added remote image: data:image/$type");
+                        } else {
+                            \Illuminate\Support\Facades\Log::warning("Remote download failed or invalid image: $imgUrl");
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Remote download exception: " . $e->getMessage());
+                    }
+                } else {
+                    \Illuminate\Support\Facades\Log::warning("Could not resolve image: $imgUrl");
+                }
             }
             @endphp
 
             @forelse($base64Images as $b64)
-            <img src="{{ $b64 }}" class="product-image" style="margin: 5px;">
+            <img src="{{ $b64 }}" class="product-image" width="250" style="margin: 5px;">
             @empty
-            <div style="color: #a0aec0; padding: 20px;">No images available for this work order.</div>
+                @if(empty($pdfLinks))
+                <div style="color: #a0aec0; padding: 20px;">No images available for this work order.</div>
+                @endif
             @endforelse
+
+            @if(!empty($pdfLinks))
+                <div style="margin-top: 15px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <strong style="color: #4a5568; font-size: 14px;">Attached Documents:</strong><br>
+                    @foreach($pdfLinks as $pdfUrl)
+                        <a href="{{ $pdfUrl }}" target="_blank" style="color: #3182ce; text-decoration: none; font-size: 13px; display: block; margin-top: 5px;">
+                            📄 View Attached PDF ({{ basename(parse_url($pdfUrl, PHP_URL_PATH)) }})
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <div class="footer">

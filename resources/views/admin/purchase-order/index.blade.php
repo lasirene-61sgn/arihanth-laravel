@@ -214,7 +214,7 @@
         <div class="flex border-b border-slate-200 overflow-x-auto hide-scrollbar">
             @foreach($tabDefinitions as $index => $tab)
                 <button type="button"
-                        @click="activeTab = '{{ $tab['id'] }}'"
+                        @click="activeTab = '{{ $tab['id'] }}'; let u = new URL(window.location.href); u.searchParams.set('tab', '{{ $tab['id'] }}'); history.replaceState(null, '', u.toString());"
                         :class="activeTab === '{{ $tab['id'] }}' ? 'border-magenta-600 text-magenta-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
                         class="whitespace-nowrap py-4 px-6 border-b-2 font-bold text-sm transition-all duration-200">
                     {{ $tab['label'] }}
@@ -522,13 +522,13 @@
                                                 @endif
                                             </div>
                                         </template>
-                                        <a href="{{ route('admin.purchase-order.show', $po) }}" 
+                                        <a href="{{ route('admin.purchase-order.show', [$po, 'return_url' => route('admin.purchase-order.index', array_merge(request()->query(), ['tab' => $tab['id']]))]) }}" 
                                            class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all duration-200" title="View">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         
                                         @if($tab['id'] == 'created')
-                                            <a href="{{ route('admin.purchase-order.edit', ['purchaseOrder' => $po->id, 'return_url' => url()->full()]) }}" 
+                                            <a href="{{ route('admin.purchase-order.edit', [$po, 'return_url' => route('admin.purchase-order.index', array_merge(request()->query(), ['tab' => $tab['id']]))]) }}" 
                                                class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </a>

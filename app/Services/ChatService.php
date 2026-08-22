@@ -73,7 +73,7 @@ class ChatService
             throw new \Exception('Unauthorized', 403);
         }
 
-        $messages = $conversation->messages()->with(['sender', 'attachments'])->oldest()->get();
+        $messages = $conversation->messages()->with(['sender', 'attachments', 'statuses.user'])->oldest()->get();
 
         if ($includeBase64) {
             foreach ($messages as $msg) {
@@ -205,7 +205,13 @@ class ChatService
                 }
                 $attachment->delete();
             }
+            $messageId = $message->id;
+            $conversationId = $message->conversation_id;
+            $groupId = $message->chat_group_id;
+            
             $message->delete();
+            
+            broadcast(new \App\Events\MessageDeleted($messageId, $conversationId, $groupId))->toOthers();
             return true;
         });
     }

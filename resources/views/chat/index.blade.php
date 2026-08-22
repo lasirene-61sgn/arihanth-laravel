@@ -255,7 +255,7 @@
                         @endphp
                         <div class="chat-item p-3 border-bottom d-flex align-items-center {{ isset($activeId) && $activeId == $chat->id ? 'active' : '' }}" 
                              id="chat-item-{{ $chat->id }}" 
-                             onclick="openChat({{ $chat->id }}, '{{ $otherName }}')">
+                             onclick="openChat({{ $chat->id }}, '{{ addslashes($otherName) }}')">
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="mb-0 fw-bold">{{ $otherName }}</h6>
@@ -282,7 +282,7 @@
                         @endphp
                         <div class="chat-item p-3 border-bottom d-flex align-items-center {{ isset($activeId) && $activeId == $chat->id ? 'active' : '' }}" 
                              id="chat-item-{{ $chat->id }}"
-                             onclick="openChat({{ $chat->id }}, '{{ $otherName }}')">
+                             onclick="openChat({{ $chat->id }}, '{{ addslashes($otherName) }}')">
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="mb-0 fw-bold">{{ $otherName }}</h6>
@@ -308,7 +308,7 @@
                         @endphp
                         <div class="chat-item p-3 border-bottom d-flex align-items-center {{ isset($activeId) && $activeId == $chat->id ? 'active' : '' }}" 
                              id="chat-item-{{ $chat->id }}"
-                             onclick="openChat({{ $chat->id }}, '{{ $otherName }}')">
+                             onclick="openChat({{ $chat->id }}, '{{ addslashes($otherName) }}')">
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="mb-0 fw-bold">{{ $otherName }}</h6>
@@ -358,7 +358,7 @@
                              data-sender-type="{{ $chat->sender_type }}"
                              data-receiver-type="{{ $chat->receiver_type }}"
                              style="display: none;"
-                             onclick="openChat({{ $chat->id }}, '{{ $sName }} & {{ $rName }}')">
+                             onclick="openChat({{ $chat->id }}, '{{ addslashes($sName) }} & {{ addslashes($rName) }}')">
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="mb-0 fw-bold small text-truncate" style="max-width: 150px;">{{ $sName }} & {{ $rName }}</h6>
@@ -397,7 +397,7 @@
                                         $other = $isSender ? $chat->receiver : $chat->sender;
                                         $otherName = $other->business_name ?? $other->name ?? $other->full_name ?? 'Buyer';
                                         @endphp
-                                        <div class="admin-branch py-1 small text-muted" onclick="openChat({{ $chat->id }}, '{{ $otherName }} (via {{ $admin->full_name }})')">
+                                        <div class="admin-branch py-1 small text-muted" onclick="openChat({{ $chat->id }}, '{{ addslashes($otherName) }} (via {{ addslashes($admin->full_name) }})')">
                                             <i class="bi bi-chat-text"></i> {{ $otherName }}
                                         </div>
                                     @endforeach
@@ -418,7 +418,7 @@
                                         $other = $isSender ? $chat->receiver : $chat->sender;
                                         $otherName = $other->business_name ?? $other->name ?? $other->full_name ?? 'Craftsman';
                                         @endphp
-                                        <div class="admin-branch py-1 small text-muted" onclick="openChat({{ $chat->id }}, '{{ $otherName }} (via {{ $admin->full_name }})')">
+                                        <div class="admin-branch py-1 small text-muted" onclick="openChat({{ $chat->id }}, '{{ addslashes($otherName) }} (via {{ addslashes($admin->full_name) }})')">
                                             <i class="bi bi-chat-text"></i> {{ $otherName }}
                                         </div>
                                     @endforeach
@@ -526,18 +526,6 @@
 
 <script>
     // Laravel Echo Configuration
-    window.Pusher = Pusher;
-
-    window.Echo = new Echo({
-        broadcaster: 'pusher',
-        key: '{{ env('REVERB_APP_KEY', 'lyohtqijqnxk7v0haqro') }}',
-        wsHost: '{{ env('REVERB_HOST', '127.0.0.1') }}',
-        wsPort: {{ env('REVERB_PORT', 8080) }},
-        forceTLS: false,
-        disableStats: true,
-    });
-
-
     let activeId = null;
     let selectedFiles = [];
     let mediaRecorder;
@@ -553,6 +541,22 @@
     const isAdmin = {{ $isAdmin ? 'true' : 'false' }};
 
     let currentUnsubscribe = null;
+
+    try {
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: '{{ config('broadcasting.connections.reverb.key') ?? env('REVERB_APP_KEY', 'lyohtqijqnxk7v0haqro') }}',
+            wsHost: '{{ config('broadcasting.connections.reverb.options.host') ?? env('REVERB_HOST', '127.0.0.1') }}',
+            wsPort: {{ config('broadcasting.connections.reverb.options.port') ?? env('REVERB_PORT', 8080) }},
+            wssPort: {{ config('broadcasting.connections.reverb.options.port') ?? env('REVERB_PORT', 8080) }},
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            disableStats: true,
+        });
+    } catch (e) {
+        console.error('Echo initialization error:', e);
+    }
 
     function openChat(id, name) {
         // Leave previous Echo channel
@@ -582,30 +586,64 @@
         loadMessages(id, true);
 
         // --- Laravel Echo Listener ---
-        window.Echo.channel(`chat.${id}`)
-            .listen('MessageSent', (e) => {
-                const myTypeBasename = myType.split('\\').pop();
-                const isMe = (e.sender_id == myId && e.sender_type === myTypeBasename);
-                
-                // Only append if it's from the other person
-                if (!isMe) {
-                    const container = document.getElementById('message-container');
-                    const bubbleHtml = `
-                    <div class="chat-bubble bubble-other">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">${e.body || ''}</div>
-                        </div>
-                        <div style="font-size:0.65rem; opacity:0.8; margin-top:8px;" class="text-end d-flex align-items-center justify-content-end gap-2">
-                            <span>${new Date(e.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                    </div>`;
-                    const placeholder = document.getElementById('placeholder');
-                    if (placeholder) placeholder.classList.add('d-none');
+        if (window.Echo) {
+            window.Echo.private(`conversation.${id}`)
+                .listen('.message.sent', (e) => {
+                    const myTypeBasename = myType.split('\\').pop();
+                    const isMe = (e.sender_id == myId && e.sender_type === myTypeBasename);
                     
-                    container.insertAdjacentHTML('beforeend', bubbleHtml);
-                    container.scrollTop = container.scrollHeight;
-                }
-            });
+                    // Only append if it's from the other person
+                    if (!isMe) {
+                        const container = document.getElementById('message-container');
+                        const bubbleHtml = `
+                        <div class="chat-bubble bubble-other" id="message-${e.id}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">${e.body || ''}</div>
+                            </div>
+                            <div style="font-size:0.65rem; opacity:0.8; margin-top:8px;" class="text-end d-flex align-items-center justify-content-end gap-2">
+                                <span>${new Date(e.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>`;
+                        const placeholder = document.getElementById('placeholder');
+                        if (placeholder) placeholder.classList.add('d-none');
+                        
+                        container.insertAdjacentHTML('beforeend', bubbleHtml);
+                        container.scrollTop = container.scrollHeight;
+
+                        // Mark as delivered immediately
+                        fetch(`{{ route('chat.message.delivered') }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ message_ids: [e.id] })
+                        });
+
+                        if (document.visibilityState === 'visible') {
+                            fetch(`{{ route('chat.message.read') }}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                body: JSON.stringify({ message_ids: [e.id] })
+                            });
+                        }
+                    }
+                })
+                .listen('.message.delivered', (e) => {
+                    const tickEl = document.getElementById(`tick-${e.messageId}`);
+                    if (tickEl && !tickEl.classList.contains('read-tick')) {
+                        tickEl.innerHTML = '<i class="bi bi-check2-all" style="color: #6c757d; font-size: 0.9rem;"></i>';
+                    }
+                })
+                .listen('.message.read', (e) => {
+                    const tickEl = document.getElementById(`tick-${e.messageId}`);
+                    if (tickEl) {
+                        tickEl.innerHTML = '<i class="bi bi-check2-all" style="color: #00f2fe; font-size: 0.9rem;"></i>';
+                        tickEl.classList.add('read-tick');
+                    }
+                })
+                .listen('.message.deleted', (e) => {
+                    const el = document.getElementById(`message-${e.messageId}`);
+                    if (el) el.remove();
+                });
+        }
         // -----------------------------------
     }
 
@@ -841,6 +879,20 @@ async function sendMessage(e) {
                     }
                 });
                 const deleteBtn = (isSuperAdmin || isAdmin) ? `<i class="bi bi-trash cursor-pointer ms-2" style="font-size: 0.8rem; opacity: 0.5; color: ${isMe ? 'white' : 'red'}" onclick="deleteMessage(${msg.id})"></i>` : '';
+                
+                let tickHtml = '';
+                if (isMe) {
+                    let isRead = msg.statuses && msg.statuses.some(s => s.read_at);
+                    let isDelivered = msg.statuses && msg.statuses.some(s => s.delivered_at);
+                    if (isRead) {
+                        tickHtml = `<span id="tick-${msg.id}" class="read-tick"><i class="bi bi-check2-all" style="color: #00f2fe; font-size: 0.9rem;"></i></span>`;
+                    } else if (isDelivered) {
+                        tickHtml = `<span id="tick-${msg.id}"><i class="bi bi-check2-all" style="color: #6c757d; font-size: 0.9rem;"></i></span>`;
+                    } else {
+                        tickHtml = `<span id="tick-${msg.id}"><i class="bi bi-check2" style="color: #6c757d; font-size: 0.9rem;"></i></span>`;
+                    }
+                }
+
                 html += `
                 <div class="chat-bubble ${isMe ? 'bubble-me' : 'bubble-other'}" id="message-${msg.id}">
                     <div class="d-flex justify-content-between align-items-start">
@@ -850,7 +902,7 @@ async function sendMessage(e) {
                     ${attachHtml}
                     <div style="font-size:0.65rem; opacity:0.8; margin-top:8px;" class="text-end d-flex align-items-center justify-content-end gap-2">
                         <span>${new Date(msg.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        ${isMe ? '<i class="bi bi-check2-all" style="color: #00f2fe; font-size: 0.9rem; -webkit-text-stroke: 0.5px #00f2fe;"></i>' : ''}
+                        ${tickHtml}
                     </div>
                 </div>`;
             });
@@ -988,10 +1040,8 @@ async function sendMessage(e) {
         });
     }
 
-    setInterval(() => {
-        if (activeId) loadMessages(activeId, false);
-        pollSidebar();
-    }, 5000);
+    // Use websockets exclusively instead of polling
+    // Removed polling setInterval
 
     async function searchUsers(query) {
         if (query.length < 2) {
