@@ -624,13 +624,68 @@
 </div>
 
 <!-- Modals for Statistics -->
+
+<!-- Orders List Modal -->
+<div class="modal fade" id="ordersListModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content dark:tw-bg-slate-900 tw-border-0 tw-rounded-xl tw-shadow-2xl">
+            <div class="modal-header tw-border-0 tw-pb-0">
+                <h6 class="modal-title tw-font-bold tw-text-gray-900 dark:tw-text-white" id="ordersListModalTitle">Order Numbers</h6>
+                <button type="button" class="btn-close dark:tw-invert" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body tw-pt-3 tw-max-h-96 tw-overflow-y-auto">
+                <div id="ordersListModalBody" class="tw-flex tw-flex-col tw-gap-2">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Top Picks Craftsman Modal -->
 <div class="modal fade" id="topPicksCraftsmanModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl roboto-font" style="max-width: 98%;">
         <div class="modal-content dark:tw-bg-slate-900 tw-border-0 tw-rounded-2xl tw-shadow-2xl">
-            <div class="modal-header tw-border-0 tw-pb-0">
-                <h5 class="modal-title tw-font-extrabold tw-text-indigo-700 dark:tw-text-indigo-400">{{ __('messages.top_picks_craftsman') }} (Top 50)</h5>
-                <button type="button" class="btn-close dark:tw-invert" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header tw-border-0 tw-pb-0 tw-flex tw-justify-between tw-items-center">
+                <h5 class="modal-title tw-font-extrabold tw-text-indigo-700 dark:tw-text-indigo-400">{{ __('messages.top_picks_craftsman') }}</h5>
+                <div class="tw-flex tw-items-center tw-gap-3">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="printTopPicksCraftsman()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                    <button type="button" class="btn-close dark:tw-invert" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="tw-px-9 tw-pt-4">
+                <div class="tw-flex tw-flex-wrap tw-gap-4 tw-items-center tw-justify-between tw-bg-gray-50 dark:tw-bg-slate-800 tw-p-3 tw-rounded-lg">
+                    <!-- Type Filter -->
+                    <div class="tw-flex tw-items-center tw-gap-2">
+                        <span class="tw-text-sm tw-font-bold tw-text-gray-700 dark:tw-text-gray-300">Type:</span>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="tpmTypeFilter" id="tpmTypeBoth" value="both" checked>
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmTypeBoth">Both</label>
+
+                            <input type="radio" class="btn-check" name="tpmTypeFilter" id="tpmTypeWA" value="wa">
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmTypeWA">Work Orders (WA)</label>
+
+                            <input type="radio" class="btn-check" name="tpmTypeFilter" id="tpmTypePA" value="pa">
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmTypePA">Purchase Orders (PA)</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="tw-flex tw-items-center tw-gap-2">
+                        <span class="tw-text-sm tw-font-bold tw-text-gray-700 dark:tw-text-gray-300">Status:</span>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="tpmStatusFilter" id="tpmStatusAll" value="all" checked>
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmStatusAll">All</label>
+
+                            <input type="radio" class="btn-check" name="tpmStatusFilter" id="tpmStatusActive" value="active">
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmStatusActive">Active (In Process / For Approval / Overdue)</label>
+
+                            <input type="radio" class="btn-check" name="tpmStatusFilter" id="tpmStatusCompleted" value="completed">
+                            <label class="btn btn-outline-secondary btn-sm" for="tpmStatusCompleted">Completed</label>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-body tw-p-9">
                 <div class="table-responsive">
@@ -639,46 +694,56 @@
                             <tr>
                                 <th rowspan="2" class="tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-align-middle">{{ __('messages.craftsman') }}</th>
                                 <th rowspan="2" class="tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-align-middle">{{ __('messages.bp_code') }}</th>
-                                <th colspan="5" class="tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-bg-blue-50 dark:tw-bg-blue-900/20 tw-text-blue-700 dark:tw-text-blue-300">WORK ORDERS (WA)</th>
-                                <th colspan="6" class="tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-bg-indigo-50 dark:tw-bg-indigo-900/20 tw-text-indigo-700 dark:tw-text-indigo-300">PURCHASE ORDERS (PA)</th>
+                                <th colspan="5" class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-bg-blue-50 dark:tw-bg-blue-900/20 tw-text-blue-700 dark:tw-text-blue-300">WORK ORDERS (WA)</th>
+                                <th colspan="6" class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-bg-indigo-50 dark:tw-bg-indigo-900/20 tw-text-indigo-700 dark:tw-text-indigo-300">PURCHASE ORDERS (PA)</th>
                                 <th rowspan="2" class="tw-text-center tw-text-[14px] tw-font-bold tw-uppercase tw-tracking-wider tw-align-middle">{{ __('messages.total_weight') }}</th>
                             </tr>
                             <tr class="tw-bg-gray-50 dark:tw-bg-slate-800/50">
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">INPROCESS (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">FOR APPROVAL (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">OVERDUE (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">COMPLETED (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold tw-bg-blue-100/50 dark:tw-bg-blue-800/30">WA TOTAL</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">ALLOC (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">PROCESS (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">DONE (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold">FOR APPROVAL (C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold tw-text-orange-500">OVERDUE(C/W)</th>
-                                <th class="tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-indigo-800/30">PA TOTAL</th>
+                                <th class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold">INPROCESS (C/W)</th>
+                                <th class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold">FOR APPROVAL (C/W)</th>
+                                <th class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold">OVERDUE (C/W)</th>
+                                <th class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold">COMPLETED (C/W)</th>
+                                <th class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold tw-bg-blue-100/50 dark:tw-bg-blue-800/30">WA TOTAL</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold">ALLOC (C/W)</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold">PROCESS (C/W)</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold">DONE (C/W)</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold">FOR APPROVAL (C/W)</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold tw-text-orange-500">OVERDUE(C/W)</th>
+                                <th class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-indigo-800/30">PA TOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($topPicksCraftsmanFull as $code => $stat)
-                            <tr class="hover:tw-bg-blue-50/50 tw-transition-colors">
+                            @php
+                                $hasInProcess = ($stat['wo']['in_process']['count'] > 0 || $stat['po']['in_process']['count'] > 0) ? 'true' : 'false';
+                                $hasForApproval = ($stat['wo']['for_approval']['count'] > 0 || $stat['po']['for_approval']['count'] > 0) ? 'true' : 'false';
+                                $hasOverdue = ($stat['wo']['overdue']['count'] > 0 || $stat['po']['overdue']['count'] > 0) ? 'true' : 'false';
+                                $hasCompleted = ($stat['wo']['completed']['count'] > 0 || $stat['po']['completed']['count'] > 0) ? 'true' : 'false';
+                            @endphp
+                            <tr class="tpm-row hover:tw-bg-blue-50/50 tw-transition-colors" 
+                                data-in-process="{{ $hasInProcess }}" 
+                                data-for-approval="{{ $hasForApproval }}" 
+                                data-overdue="{{ $hasOverdue }}" 
+                                data-completed="{{ $hasCompleted }}">
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ $stat['name'] }}</td>
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ $code }}</td>
                                 
                                 {{-- Work Orders --}}
 
 
-                                <td class="tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['in_process']['weight'] > 0 ? $stat['wo']['in_process']['count'] . ' - ' . number_format($stat['wo']['in_process']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['for_approval']['weight'] > 0 ? $stat['wo']['for_approval']['count'] . ' - ' . number_format($stat['wo']['for_approval']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['overdue']['weight'] > 0 ? $stat['wo']['overdue']['count'] . ' - ' . number_format($stat['wo']['overdue']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-green-600 dark:tw-text-green-400" style="color: #16a34a !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['completed']['weight'] > 0 ? $stat['wo']['completed']['count'] . ' - ' . number_format($stat['wo']['completed']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-blue-900/10 tw-text-blue-800 dark:tw-text-blue-300" style="color: #1e40af !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ number_format($stat['wa_total_weight'], 2) }}</td>
+                                <td class="tpm-col-wa tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['in_process']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['wo']['in_process']['orders'] ?? [])) . '" data-title="In Process (WO)">' . $stat['wo']['in_process']['count'] . ' - ' . number_format($stat['wo']['in_process']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-wa tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['for_approval']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['wo']['for_approval']['orders'] ?? [])) . '" data-title="For Approval (WO)">' . $stat['wo']['for_approval']['count'] . ' - ' . number_format($stat['wo']['for_approval']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-wa tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['overdue']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['wo']['overdue']['orders'] ?? [])) . '" data-title="Overdue (WO)">' . $stat['wo']['overdue']['count'] . ' - ' . number_format($stat['wo']['overdue']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-wa tw-text-center tw-text-[14px] tw-text-green-600 dark:tw-text-green-400" style="color: #16a34a !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['wo']['completed']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['wo']['completed']['orders'] ?? [])) . '" data-title="Completed (WO)">' . $stat['wo']['completed']['count'] . ' - ' . number_format($stat['wo']['completed']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-wa tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-blue-900/10 tw-text-blue-800 dark:tw-text-blue-300" style="color: #1e40af !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ number_format($stat['wa_total_weight'], 2) }}</td>
                                 
                                 {{-- Purchase Orders --}}
-                                <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['allocated']['weight'] > 0 ? $stat['po']['allocated']['count'] . ' - ' . number_format($stat['po']['allocated']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-indigo-600 dark:tw-text-indigo-400" style="color: #4f46e5 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['in_process']['weight'] > 0 ? $stat['po']['in_process']['count'] . ' - ' . number_format($stat['po']['in_process']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['completed']['weight'] > 0 ? $stat['po']['completed']['count'] . ' - ' . number_format($stat['po']['completed']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['for_approval']['weight'] > 0 ? $stat['po']['for_approval']['count'] . ' - ' . number_format($stat['po']['for_approval']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['overdue']['weight'] > 0 ? $stat['po']['overdue']['count'] . ' - ' . number_format($stat['po']['overdue']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-indigo-900/10 tw-text-indigo-800 dark:tw-text-indigo-300" style="color: #3730a3 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ number_format($stat['po_total_weight'], 2) }}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['allocated']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['po']['allocated']['orders'] ?? [])) . '" data-title="Allocated (PO)">' . $stat['po']['allocated']['count'] . ' - ' . number_format($stat['po']['allocated']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-text-indigo-600 dark:tw-text-indigo-400" style="color: #4f46e5 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['in_process']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['po']['in_process']['orders'] ?? [])) . '" data-title="In Process (PO)">' . $stat['po']['in_process']['count'] . ' - ' . number_format($stat['po']['in_process']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['completed']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['po']['completed']['orders'] ?? [])) . '" data-title="Completed (PO)">' . $stat['po']['completed']['count'] . ' - ' . number_format($stat['po']['completed']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['for_approval']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['po']['for_approval']['orders'] ?? [])) . '" data-title="For Approval (PO)">' . $stat['po']['for_approval']['count'] . ' - ' . number_format($stat['po']['for_approval']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{!! $stat['po']['overdue']['weight'] > 0 ? '<span class="tw-cursor-pointer hover:tw-opacity-80" style="text-decoration-line: underline; text-decoration-style: dashed; text-underline-offset: 3px;" onclick="showOrdersList(this)" data-orders="' . htmlspecialchars(json_encode($stat['po']['overdue']['orders'] ?? [])) . '" data-title="Overdue (PO)">' . $stat['po']['overdue']['count'] . ' - ' . number_format($stat['po']['overdue']['weight'], 2) . '</span>' : '' !!}</td>
+                                <td class="tpm-col-pa tw-text-center tw-text-[14px] tw-font-bold dark:tw-bg-indigo-900/10 tw-text-indigo-800 dark:tw-text-indigo-300" style="color: #3730a3 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ number_format($stat['po_total_weight'], 2) }}</td>
 
                                 <td class="tw-text-center tw-font-black tw-text-blue-700 dark:tw-text-blue-400 tw-py-3 tw-text-xs" style="color: #1d4ed8 !important; background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;">{{ number_format($stat['total_weight'], 3) }}</td>
                             </tr>
@@ -1296,4 +1361,88 @@
     </div>
 </div>
 
+@endsection
+
+@section('scripts')
+<script>
+    function printTopPicksCraftsman() {
+        const modal = document.getElementById('topPicksCraftsmanModal');
+        const tableHtml = modal.querySelector('.table-responsive').innerHTML;
+        const printWindow = window.open('', '', 'width=1200,height=800');
+        printWindow.document.write('<html><head><title>Print - Top Picks Craftsman</title>');
+        printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
+        printWindow.document.write('<style>body { padding: 20px; font-family: "Roboto", sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd !important; padding: 8px; text-align: center; } .tpm-col-wa { display: ' + (document.getElementById('tpmTypePA').checked ? 'none' : 'table-cell') + '; } .tpm-col-pa { display: ' + (document.getElementById('tpmTypeWA').checked ? 'none' : 'table-cell') + '; }</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h2 class="text-center mb-4">Top Picks Craftsman</h2>');
+        printWindow.document.write(tableHtml);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        setTimeout(function() {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeRadios = document.querySelectorAll('input[name="tpmTypeFilter"]');
+        const statusRadios = document.querySelectorAll('input[name="tpmStatusFilter"]');
+        const rows = document.querySelectorAll('.tpm-row');
+
+        
+    window.showOrdersList = function(el) {
+        const title = el.getAttribute('data-title');
+        const orders = JSON.parse(el.getAttribute('data-orders') || '[]');
+        
+        document.getElementById('ordersListModalTitle').innerText = title + ' Orders';
+        
+        const body = document.getElementById('ordersListModalBody');
+        body.innerHTML = '';
+        
+        if (orders.length === 0) {
+            body.innerHTML = '<div class="tw-text-center tw-text-gray-500 tw-py-4 tw-text-sm">No orders found.</div>';
+        } else {
+            orders.forEach(order => {
+                const div = document.createElement('div');
+                div.className = 'tw-bg-gray-100 dark:tw-bg-slate-800 tw-px-3 tw-py-2 tw-rounded-lg tw-text-sm tw-font-semibold tw-text-center tw-text-gray-700 dark:tw-text-gray-300';
+                div.innerText = order;
+                body.appendChild(div);
+            });
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('ordersListModal'));
+        modal.show();
+    };
+
+        function filterTable() {
+            const selectedType = document.querySelector('input[name="tpmTypeFilter"]:checked').value;
+            const selectedStatus = document.querySelector('input[name="tpmStatusFilter"]:checked').value;
+
+            // Toggle WA / PA Columns
+            document.querySelectorAll('.tpm-col-wa').forEach(el => {
+                el.style.display = (selectedType === 'pa') ? 'none' : '';
+            });
+            document.querySelectorAll('.tpm-col-pa').forEach(el => {
+                el.style.display = (selectedType === 'wa') ? 'none' : '';
+            });
+
+            // Filter Rows
+            rows.forEach(row => {
+                let showRow = false;
+                
+                if (selectedStatus === 'all') {
+                    showRow = true;
+                } else if (selectedStatus === 'active') {
+                    showRow = row.dataset.inProcess === 'true' || row.dataset.forApproval === 'true' || row.dataset.overdue === 'true';
+                } else if (selectedStatus === 'completed') {
+                    showRow = row.dataset.completed === 'true';
+                }
+
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+
+        typeRadios.forEach(radio => radio.addEventListener('change', filterTable));
+        statusRadios.forEach(radio => radio.addEventListener('change', filterTable));
+    });
+</script>
 @endsection

@@ -223,22 +223,22 @@ class LoginController extends Controller
                 
                 // Work Order Breakdown
                 'wo' => [
-                    'new' => ['count' => 0, 'weight' => 0],
-                    'allocated' => ['count' => 0, 'weight' => 0],
-                    'in_process' => ['count' => 0, 'weight' => 0],
-                    'completed' => ['count' => 0, 'weight' => 0],
-                    'overdue' => ['count' => 0, 'weight' => 0],
-                    'for_approval' => ['count' => 0, 'weight' => 0],
+                    'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'allocated' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'in_process' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'completed' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'overdue' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'for_approval' => ['count' => 0, 'weight' => 0, 'orders' => []],
                 ],
                 
                 // Purchase Order Breakdown
                 'po' => [
-                    'new' => ['count' => 0, 'weight' => 0],
-                    'allocated' => ['count' => 0, 'weight' => 0],
-                    'in_process' => ['count' => 0, 'weight' => 0],
-                    'completed' => ['count' => 0, 'weight' => 0],
-                    'overdue' => ['count' => 0, 'weight' => 0],
-                    'for_approval' => ['count' => 0, 'weight' => 0],
+                    'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'allocated' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'in_process' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'completed' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'overdue' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'for_approval' => ['count' => 0, 'weight' => 0, 'orders' => []],
                 ]
             ];
 
@@ -250,30 +250,36 @@ class LoginController extends Controller
                 
                 $stats['wo']['allocated']['count']++;
                 $stats['wo']['allocated']['weight'] += $w;
+                $stats['wo']['allocated']['orders'][] = $wo->work_order_number;
                 
                 if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
                     $stats['wo']['new']['count']++;
                     $stats['wo']['new']['weight'] += $w;
+                    $stats['wo']['new']['orders'][] = $wo->work_order_number;
                 }
                 
                 if ($wo->craftsman_status == 'in_process') {
                     $stats['wo']['in_process']['count']++;
                     $stats['wo']['in_process']['weight'] += $w;
+                    $stats['wo']['in_process']['orders'][] = $wo->work_order_number;
                 }
                 
                 if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') {
                     $stats['wo']['completed']['count']++;
                     $stats['wo']['completed']['weight'] += $w;
+                    $stats['wo']['completed']['orders'][] = $wo->work_order_number;
                 }
 
                 if ($wo->isOverdue()) {
                     $stats['wo']['overdue']['count']++;
                     $stats['wo']['overdue']['weight'] += $w;
+                    $stats['wo']['overdue']['orders'][] = $wo->work_order_number;
                 }
 
                 if ($wo->status == 'for_approval') {
                     $stats['wo']['for_approval']['count']++;
                     $stats['wo']['for_approval']['weight'] += $w;
+                    $stats['wo']['for_approval']['orders'][] = $wo->work_order_number;
                 }
                 
                 $stats['wa_total_weight'] += $w;
@@ -310,30 +316,36 @@ class LoginController extends Controller
 
                 $stats['po']['allocated']['count']++;
                 $stats['po']['allocated']['weight'] += $poWeight;
+                $stats['po']['allocated']['orders'][] = $po->purchase_order_code;
 
                 if (!$po->craftsman_status || $po->craftsman_status == 'allocated') {
                     $stats['po']['new']['count']++;
                     $stats['po']['new']['weight'] += $poWeight;
+                    $stats['po']['new']['orders'][] = $po->purchase_order_code;
                 }
 
                 if ($po->craftsman_status == 'in_process') {
                     $stats['po']['in_process']['count']++;
                     $stats['po']['in_process']['weight'] += $poWeight;
+                    $stats['po']['in_process']['orders'][] = $po->purchase_order_code;
                 }
 
                 if ($po->craftsman_status == 'completed' || $po->status == 'completed') {
                     $stats['po']['completed']['count']++;
                     $stats['po']['completed']['weight'] += $poWeight;
+                    $stats['po']['completed']['orders'][] = $po->purchase_order_code;
                 }
 
                 if ($po->due_date && $po->due_date < now() && $po->status != 'completed') {
                     $stats['po']['overdue']['count']++;
                     $stats['po']['overdue']['weight'] += $poWeight;
+                    $stats['po']['overdue']['orders'][] = $po->purchase_order_code;
                 }
 
                 if ($po->status == 'for_approval') {
                     $stats['po']['for_approval']['count']++;
                     $stats['po']['for_approval']['weight'] += $poWeight;
+                    $stats['po']['for_approval']['orders'][] = $po->purchase_order_code;
                 }
 
                 $stats['po_total_weight'] += $poWeight;
@@ -353,10 +365,10 @@ class LoginController extends Controller
         uasort($craftsmanStats, function ($a, $b) {
             return $b['allocated'] <=> $a['allocated'];
         });
-        $topPicksCraftsmanFull = array_slice($craftsmanStats, 0, 50, true);
+        $topPicksCraftsmanFull = $craftsmanStats;
         $topPicksCraftsman = array_map(function ($stat) {
             return $stat['allocated'];
-        }, $topPicksCraftsmanFull);
+        }, array_slice($craftsmanStats, 0, 50, true));
 
         // Least Picks Craftsman (by total allocated)
         uasort($craftsmanStats, function ($a, $b) {
