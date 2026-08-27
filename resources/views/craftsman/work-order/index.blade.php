@@ -144,6 +144,10 @@
                 id="in-process-tab" data-bs-toggle="tab" data-bs-target="#in-process" type="button" role="tab">
                 In Process ({{ $inProcessOrders->total() }})
             </button>
+             <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'overdue' ? 'active' : '' }}"
+                id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
+                Overdue ({{ $overdueOrders->total() }})
+            </button>
             <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'completed' ? 'active' : '' }}"
                 id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
                 Completed ({{ $completedOrders->total() }})
@@ -152,10 +156,7 @@
                 id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
                 Rejected ({{ $rejectedOrders->total() }})
             </button>
-            <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'overdue' ? 'active' : '' }}"
-                id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
-                Overdue ({{ $overdueOrders->total() }})
-            </button>
+           
         </div>
     </div>
 
@@ -655,6 +656,114 @@
             </div>
         </div>
 
+        <div class="tab-pane fade {{ request('tab') == 'overdue' ? 'show active' : '' }}" id="overdue" role="tabpanel">
+            <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mt-4">
+                <div class="p-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <h4 class="font-bold text-emerald-900">Overdue Work Orders</h4>
+                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">{{ $overdueOrders->total() }}</span>
+                    </div>
+                </div>
+
+                <div class="p-0">
+                    @if($overdueOrders->count() > 0)
+                    <form action="{{ route('craftsman.work-order.print-selected') }}" method="POST" id="bulkPrintOverdueForm">
+                        @csrf
+                        <div class="px-6 py-4 bg-white border-b border-emerald-50 flex justify-end">
+                            <button type="submit" class="bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2">
+                                <i class="bi bi-printer"></i> Print Selected
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-emerald-50/30 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+                                        <th class="px-6 py-4 text-center"><input type="checkbox" id="selectAllOverdue" class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"></th>
+                                        <th class="px-6 py-4">Image</th>
+                                        <th class="px-6 py-4">Work Order</th>
+                                        <th class="px-6 py-4">Category</th>
+                                        <th class="px-6 py-4">Subcategory</th>
+                                        <!--<th class="px-6 py-4">Order Date</th>-->
+                                        <th class="px-6 py-4">Due Date</th>
+                                        <th class="px-6 py-4">Weight</th>
+                                        <th class="px-6 py-4">Qty</th>
+                                        <th class="px-6 py-4">Size</th>
+                                        <th class="px-6 py-4">Status</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-emerald-50">
+                                    @foreach($overdueOrders as $order)
+                                    <tr class="hover:bg-emerald-50/30 transition-colors bg-red-50/30 {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                        <td class="px-6 py-4 text-center">
+                                            <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="overdue-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            @if($order->preview_image_url)
+                                            <div class="w-12 h-12 rounded-lg border border-emerald-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all bg-white"
+                                                onclick="openUniversalPreview('{{ $order->preview_image_url }}', '{{ $order->file_type }}')">
+                                                @if($order->file_type === 'pdf')
+                                                <canvas class="pdf-canvas w-full h-full object-cover" data-url="{{ $order->preview_image_url }}"></canvas>
+                                                @else
+                                                <img src="{{ $order->preview_image_url }}" alt="Img" class="w-full h-full object-cover">
+                                                @endif
+                                            </div>
+                                            @else
+                                            <div class="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-300">
+                                                <i class="bi bi-image text-xl"></i>
+                                            </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col gap-1">
+                                                <span class="font-bold text-red-700">{{ $order->work_order_number }}</span>
+                                                @if($order->priority)
+                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
+                                                    {{ strtoupper($order->priority) }}
+                                                </span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
+                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>
+                                        <!--<td class="px-6 py-4 text-sm text-emerald-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
+                                        <td class="px-6 py-4 text-sm text-red-600 font-bold whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
+                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->weight_from }}g</td>
+                                        <td class="px-6 py-4 text-sm text-emerald-700 font-bold">{{ $order->quantity }}</td>
+                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->size }}</td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-md">{{ ucfirst(str_replace('_', ' ', $order->craftsman_status)) }}</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="{{ route('craftsman.work-order.show', $order) }}"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+
+                    <div class="p-6 border-t border-emerald-50">
+                        {{ $overdueOrders->appends(array_merge(request()->except('overdue_orders_page'), ['tab' => 'overdue']))->links() }}
+                    </div>
+                    @else
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="bi bi-calendar-check text-2xl text-emerald-300"></i>
+                        </div>
+                        <h3 class="text-emerald-900 font-bold">No Overdue Orders</h3>
+                        <p class="text-emerald-500 text-sm">Great job! You have no overdue work orders.</p>
+                    </div>
+                    @endif
+                </div> <!-- Overdue Tab Card -->
+            </div> <!-- Overdue Tab Pane -->
+        </div> 
+
         <!-- Completed Orders Tab -->
         <div class="tab-pane fade {{ request('tab') == 'completed' ? 'show active' : '' }}" id="completed" role="tabpanel">
             <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mt-4">
@@ -876,113 +985,7 @@
         </div>
 
         <!-- Overdue Orders Tab -->
-        <div class="tab-pane fade {{ request('tab') == 'overdue' ? 'show active' : '' }}" id="overdue" role="tabpanel">
-            <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mt-4">
-                <div class="p-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <h4 class="font-bold text-emerald-900">Overdue Work Orders</h4>
-                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">{{ $overdueOrders->total() }}</span>
-                    </div>
-                </div>
-
-                <div class="p-0">
-                    @if($overdueOrders->count() > 0)
-                    <form action="{{ route('craftsman.work-order.print-selected') }}" method="POST" id="bulkPrintOverdueForm">
-                        @csrf
-                        <div class="px-6 py-4 bg-white border-b border-emerald-50 flex justify-end">
-                            <button type="submit" class="bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2">
-                                <i class="bi bi-printer"></i> Print Selected
-                            </button>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="bg-emerald-50/30 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                                        <th class="px-6 py-4 text-center"><input type="checkbox" id="selectAllOverdue" class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"></th>
-                                        <th class="px-6 py-4">Image</th>
-                                        <th class="px-6 py-4">Work Order</th>
-                                        <th class="px-6 py-4">Category</th>
-                                        <th class="px-6 py-4">Subcategory</th>
-                                        <!--<th class="px-6 py-4">Order Date</th>-->
-                                        <th class="px-6 py-4">Due Date</th>
-                                        <th class="px-6 py-4">Weight</th>
-                                        <th class="px-6 py-4">Qty</th>
-                                        <th class="px-6 py-4">Size</th>
-                                        <th class="px-6 py-4">Status</th>
-                                        <th class="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-emerald-50">
-                                    @foreach($overdueOrders as $order)
-                                    <tr class="hover:bg-emerald-50/30 transition-colors bg-red-50/30 {{ ($order->priority == 'Urgent' || $order->priority == 'High') && $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
-                                        <td class="px-6 py-4 text-center">
-                                            <input type="checkbox" name="work_order_ids[]" value="{{ $order->id }}" class="overdue-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            @if($order->preview_image_url)
-                                            <div class="w-12 h-12 rounded-lg border border-emerald-100 overflow-hidden cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all bg-white"
-                                                onclick="openUniversalPreview('{{ $order->preview_image_url }}', '{{ $order->file_type }}')">
-                                                @if($order->file_type === 'pdf')
-                                                <canvas class="pdf-canvas w-full h-full object-cover" data-url="{{ $order->preview_image_url }}"></canvas>
-                                                @else
-                                                <img src="{{ $order->preview_image_url }}" alt="Img" class="w-full h-full object-cover">
-                                                @endif
-                                            </div>
-                                            @else
-                                            <div class="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-300">
-                                                <i class="bi bi-image text-xl"></i>
-                                            </div>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col gap-1">
-                                                <span class="font-bold text-red-700">{{ $order->work_order_number }}</span>
-                                                @if($order->priority)
-                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full w-max {{ $order->priority == 'Urgent' ? 'bg-red-100 text-red-700 border border-red-200' : ($order->priority == 'High' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-blue-100 text-blue-700 border border-blue-200') }} {{ $order->craftsman_status === 'allocated' ? 'animate-custom-blink' : '' }}">
-                                                    {{ strtoupper($order->priority) }}
-                                                </span>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->productCategory->name ?? $order->product_category ?? '-' }}</td>
-                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->subcategoryRelation->name ?? $order->subcategory ?? '-' }}</td>
-                                        <!--<td class="px-6 py-4 text-sm text-emerald-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
-                                        <td class="px-6 py-4 text-sm text-red-600 font-bold whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
-                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->weight_from }}g</td>
-                                        <td class="px-6 py-4 text-sm text-emerald-700 font-bold">{{ $order->quantity }}</td>
-                                        <td class="px-6 py-4 text-sm text-emerald-700">{{ $order->size }}</td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-md">{{ ucfirst(str_replace('_', ' ', $order->craftsman_status)) }}</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a href="{{ route('craftsman.work-order.show', $order) }}"
-                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </form>
-
-                    <div class="p-6 border-t border-emerald-50">
-                        {{ $overdueOrders->appends(array_merge(request()->except('overdue_orders_page'), ['tab' => 'overdue']))->links() }}
-                    </div>
-                    @else
-                    <div class="text-center py-12">
-                        <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="bi bi-calendar-check text-2xl text-emerald-300"></i>
-                        </div>
-                        <h3 class="text-emerald-900 font-bold">No Overdue Orders</h3>
-                        <p class="text-emerald-500 text-sm">Great job! You have no overdue work orders.</p>
-                    </div>
-                    @endif
-                </div> <!-- Overdue Tab Card -->
-            </div> <!-- Overdue Tab Pane -->
-        </div> <!-- Tab Content Wrapper -->
+        <!-- Tab Content Wrapper -->
     </div> <!-- Space-y-6 Wrapper -->
 
     <!-- Complete Order Modal -->

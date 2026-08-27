@@ -201,10 +201,11 @@
         foreach($forApprovalOrders as $po) $checkOverdue($po);
 
         $tabDefinitions = [
-            ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
+            
             ['id' => 'created', 'label' => 'Created', 'data' => $createdOrders],
             ['id' => 'allocated', 'label' => 'Allocated', 'data' => $allocatedOrders],
             ['id' => 'in_process', 'label' => 'In Process', 'data' => $inProcessOrders],
+            ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
             ['id' => 'for_approval', 'label' => 'For Approval', 'data' => $forApprovalOrders],
             ['id' => 'completed', 'label' => 'Completed', 'data' => $completedOrders],
             ['id' => 'rejected', 'label' => 'Rejected', 'data' => $rejectedOrders],

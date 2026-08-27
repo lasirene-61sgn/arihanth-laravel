@@ -146,6 +146,10 @@
                     id="in-process-tab" data-bs-toggle="tab" data-bs-target="#in-process" type="button" role="tab">
                 In Process ({{ $inProcessOrders->total() }})
             </button>
+            <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'overdue' ? 'active' : '' }}" 
+                    id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
+                Overdue ({{ $overdueOrders->total() }})
+            </button>
             <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'completed' ? 'active' : '' }}" 
                     id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
                 Completed ({{ $completedOrders->total() }})
@@ -154,10 +158,7 @@
                     id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
                 Rejected ({{ $rejectedOrders->total() }})
             </button>
-            <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'overdue' ? 'active' : '' }}" 
-                    id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
-                Overdue ({{ $overdueOrders->total() }})
-            </button>
+            
         </div>
     </div>
 

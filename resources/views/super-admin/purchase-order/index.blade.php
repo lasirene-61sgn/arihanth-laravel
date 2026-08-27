@@ -214,10 +214,11 @@
                 foreach($forApprovalOrders as $po) $checkOverdue($po);
 
                 $tabDefinitions = [
-                ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
+                
                 ['id' => 'created', 'label' => __('messages.created'), 'data' => $createdOrders],
                 ['id' => 'allocated', 'label' => __('messages.allocated'), 'data' => $allocatedOrders],
                 ['id' => 'in_process', 'label' => __('messages.in_process'), 'data' => $inProcessOrders],
+                ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
                 ['id' => 'for_approval', 'label' => __('messages.for_approval'), 'data' => $forApprovalOrders],
                 ['id' => 'completed', 'label' => __('messages.completed'), 'data' => $completedOrders],
                 ['id' => 'rejected', 'label' => __('messages.rejected'), 'data' => $rejectedOrders],

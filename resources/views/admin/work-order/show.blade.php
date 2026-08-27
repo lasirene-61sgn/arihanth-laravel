@@ -33,10 +33,10 @@
                     @endif
 
                     <div class="dropdown">
-                        <button type="button" class="btn btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-2 px-3 shadow-sm" data-bs-toggle="dropdown">
+                        <!-- <button type="button" class="btn btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-2 px-3 shadow-sm" data-bs-toggle="dropdown">
                             <i class="bi bi-share"></i>
                             <span>Share</span>
-                        </button>
+                        </button> -->
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                             <li>
                                 <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ route('admin.work-order.print', $workOrder) }}" target="_blank">

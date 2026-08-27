@@ -176,7 +176,7 @@
                     'new-orders' => 'New Orders',
                     'allocated-orders' => 'Allocated',
                     'in-process-orders' => 'In Process',
-                    'overdue-orders' => 'Overdue',
+                    
                     'for-approval-orders' => 'Pending Approval',
                     'completed-orders' => 'Completed',
                     'rejected-orders' => 'Rejected',
@@ -201,7 +201,7 @@
                 'new-orders' => [$newOrders, 'No new work orders found.'],
                 'allocated-orders' => [$allocatedOrders, 'No allocated work orders found.'],
                 'in-process-orders' => [$inProcessOrders, 'No work orders in process found.'],
-                'overdue-orders' => [$overdueOrders, 'No overdue work orders found.'],
+                
                 'for-approval-orders' => [$forApprovalOrders, 'No work orders pending approval found.'],
                 'completed-orders' => [$completedOrders, 'No completed work orders found.'],
                 'rejected-orders' => [$rejectedOrders, 'No rejected work orders found.'],
