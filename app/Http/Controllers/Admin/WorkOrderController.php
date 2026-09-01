@@ -952,8 +952,25 @@ class WorkOrderController extends Controller
         $newWorkOrder->craftsman_status = null;
         $newWorkOrder->allocated_craftsman_bp_code = null;
         $newWorkOrder->allocated_by = null; // Reset allocator
+        $newWorkOrder->allocated_at = null;
         $newWorkOrder->approved_by = null;
         $newWorkOrder->rejection_reason = null;
+
+        // Reset return logs & notes for a fresh cycle
+        $newWorkOrder->return_note = null;
+        $newWorkOrder->return_due_date = null;
+        $newWorkOrder->damaged_image = null;
+        $newWorkOrder->admin_return_count = 0;
+        $newWorkOrder->superadmin_return_count = 0;
+        $newWorkOrder->admin_undo_count = 0;
+        $newWorkOrder->superadmin_undo_count = 0;
+
+        // Reset staff tracking
+        $newWorkOrder->craftsman_staff_id = null;
+        $newWorkOrder->accepted_by_staff_id = null;
+        $newWorkOrder->staff_accepted_at = null;
+        $newWorkOrder->staff_completed_at = null;
+
         $newWorkOrder->due_date = today()->addDays(7); // Set a new due date (7 days from now)
         $newWorkOrder->craftsman_due_date = today()->addDays(14); // Set a new craftsman due date (14 days from now)
 

@@ -313,6 +313,8 @@
                                     <option value="">Select Type</option>
                                     <option value="Piece">Piece</option>
                                     <option value="Pair">Pair</option>
+                                    <option value="Set">Set</option>
+
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">

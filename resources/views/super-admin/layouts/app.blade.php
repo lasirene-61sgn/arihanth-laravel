@@ -75,6 +75,13 @@
                         <span>Search</span>
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('super-admin.details-all') }}"
+                        class="tw-flex tw-items-center tw-gap-3 tw-px-4 tw-py-2.5 tw-rounded-lg tw-font-medium tw-text-sm tw-transition-all tw-duration-200 tw-no-underline hover:tw-bg-white/10 hover:tw-text-white {{ request()->routeIs('super-admin.details-all') ? 'tw-bg-white/20 tw-text-white' : 'tw-text-white/80' }}">
+                        <i class="bi bi-list-columns-reverse tw-text-lg"></i>
+                        <span>Details ALL</span>
+                    </a>
+                </li>
 
                 <!-- Business Partner Dropdown -->
                 @if(Auth::guard('super_admin')->user()?->hasPermission('business_partner'))

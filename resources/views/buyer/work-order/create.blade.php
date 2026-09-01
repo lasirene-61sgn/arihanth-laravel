@@ -240,7 +240,7 @@
 
                     <div class="space-y-2">
                         <label for="quantity" class="text-sm font-bold text-slate-700">Quantity <span class="text-red-500">*</span></label>
-                        <input type="number" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="quantity" name="quantity" value="{{ old('quantity') }}" required placeholder="0">
+                        <input type="text" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="quantity" name="quantity" value="{{ old('quantity') }}" required placeholder="0">
                     </div>
 
                     <div class="space-y-2">
@@ -249,6 +249,8 @@
                             <option value="">Select Type</option>
                             <option value="Piece" {{ old('type') == 'Piece' ? 'selected' : '' }}>Piece</option>
                             <option value="Pair" {{ old('type') == 'Pair' ? 'selected' : '' }}>Pair</option>
+                            <option value="Set" {{ old('type') == 'Set' ? 'selected' : '' }}>Set</option>
+
                         </select>
                     </div>
                     <div class="space-y-2">

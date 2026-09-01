@@ -57,12 +57,12 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Quantity / Type</label>
-                            <p class="text-sm font-bold text-slate-800">{{ $workOrder->qty }} <span class="text-slate-500 font-medium lowercase">{{ $workOrder->type }}</span></p>
+                            <p class="text-sm font-bold text-slate-800">{{ $workOrder->quantity }} <span class="text-slate-500 font-medium lowercase">{{ $workOrder->type }}</span></p>
                         </div>
-                        <div class="space-y-1 col-span-full">
+                        <!-- <div class="space-y-1 col-span-full">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Order Date</label>
                             <p class="text-sm font-bold text-slate-800"><i class="bi bi-calendar-check mr-2 text-slate-300"></i>{{ $workOrder->wo_date ? $workOrder->wo_date->format('d M Y') : 'N/A' }}</p>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
@@ -101,14 +101,14 @@
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
-                        <div class="space-y-1">
+                        <!-- <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Expected Delivery</label>
                             <p class="text-sm font-bold text-amber-600"><i class="bi bi-truck mr-2"></i>{{ $workOrder->expected_delivery_date ? $workOrder->expected_delivery_date->format('d M Y') : 'N/A' }}</p>
-                        </div>
-                        <div class="space-y-1">
+                        </div> -->
+                        <!-- <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Work Order For</label>
                             <p class="text-sm font-bold text-slate-800">{{ $workOrder->work_order_for }}</p>
-                        </div>
+                        </div> -->
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">BP Code</label>
                             <p class="text-sm font-bold text-slate-800">{{ $workOrder->bp_code }}</p>

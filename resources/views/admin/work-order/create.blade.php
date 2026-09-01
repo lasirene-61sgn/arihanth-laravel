@@ -311,6 +311,8 @@
                                     <option value="">Select Type</option>
                                     <option value="Piece" {{ old('type') == 'Piece' ? 'selected' : '' }}>Piece</option>
                                     <option value="Pair" {{ old('type') == 'Pair' ? 'selected' : '' }}>Pair</option>
+                                    <option value="Set" {{ old('type') == 'Set' ? 'selected' : '' }}>Set</option>
+
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">

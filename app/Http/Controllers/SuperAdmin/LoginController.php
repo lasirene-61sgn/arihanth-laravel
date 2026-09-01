@@ -248,38 +248,46 @@ class LoginController extends Controller
                 // Use weight_to as requested, fallback to weight_from if missing
                 $w = floatval($wo->weight_to ?: $wo->weight_from);
                 
+                $dueDateStr = $wo->craftsman_due_date ? \Carbon\Carbon::parse($wo->craftsman_due_date)->format('d-m-Y') : 'N/A';
+                $overdueDaysText = '';
+                if ($wo->isOverdue() && $wo->craftsman_due_date) {
+                    $overdueDays = \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($wo->craftsman_due_date)->startOfDay());
+                    $overdueDaysText = " [{$overdueDays} days overdue]";
+                }
+                $woStr = $wo->work_order_number . ' - ' . ($wo->bp_code ?? 'N/A') . ' - ' . ($wo->customer_name ?? 'Unknown') . ' (W: ' . floatval($wo->weight_from) . 'g, Qty: ' . floatval($wo->quantity) . ', Due: ' . $dueDateStr . ')' . $overdueDaysText;
+                
                 $stats['wo']['allocated']['count']++;
                 $stats['wo']['allocated']['weight'] += $w;
-                $stats['wo']['allocated']['orders'][] = $wo->work_order_number;
+                $stats['wo']['allocated']['orders'][] = $woStr;
                 
                 if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
                     $stats['wo']['new']['count']++;
                     $stats['wo']['new']['weight'] += $w;
-                    $stats['wo']['new']['orders'][] = $wo->work_order_number;
+                    $stats['wo']['new']['orders'][] = $woStr;
                 }
                 
                 if ($wo->craftsman_status == 'in_process') {
                     $stats['wo']['in_process']['count']++;
                     $stats['wo']['in_process']['weight'] += $w;
-                    $stats['wo']['in_process']['orders'][] = $wo->work_order_number;
+                    $stats['wo']['in_process']['orders'][] = $woStr;
                 }
                 
                 if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') {
                     $stats['wo']['completed']['count']++;
                     $stats['wo']['completed']['weight'] += $w;
-                    $stats['wo']['completed']['orders'][] = $wo->work_order_number;
+                    $stats['wo']['completed']['orders'][] = $woStr;
                 }
 
                 if ($wo->isOverdue()) {
                     $stats['wo']['overdue']['count']++;
                     $stats['wo']['overdue']['weight'] += $w;
-                    $stats['wo']['overdue']['orders'][] = $wo->work_order_number;
+                    $stats['wo']['overdue']['orders'][] = $woStr;
                 }
 
                 if ($wo->status == 'for_approval') {
                     $stats['wo']['for_approval']['count']++;
                     $stats['wo']['for_approval']['weight'] += $w;
-                    $stats['wo']['for_approval']['orders'][] = $wo->work_order_number;
+                    $stats['wo']['for_approval']['orders'][] = $woStr;
                 }
                 
                 $stats['wa_total_weight'] += $w;
@@ -314,38 +322,46 @@ class LoginController extends Controller
                     }
                 }
 
+                $poDueDateStr = $po->due_date ? \Carbon\Carbon::parse($po->due_date)->format('d-m-Y') : 'N/A';
+                $poOverdueDaysText = '';
+                if ($po->due_date && $po->due_date < now() && $po->status != 'completed') {
+                    $poOverdueDays = \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($po->due_date)->startOfDay());
+                    $poOverdueDaysText = " [{$poOverdueDays} days overdue]";
+                }
+                $poStr = $po->purchase_order_code . ' (Due: ' . $poDueDateStr . ')' . $poOverdueDaysText;
+
                 $stats['po']['allocated']['count']++;
                 $stats['po']['allocated']['weight'] += $poWeight;
-                $stats['po']['allocated']['orders'][] = $po->purchase_order_code;
+                $stats['po']['allocated']['orders'][] = $poStr;
 
                 if (!$po->craftsman_status || $po->craftsman_status == 'allocated') {
                     $stats['po']['new']['count']++;
                     $stats['po']['new']['weight'] += $poWeight;
-                    $stats['po']['new']['orders'][] = $po->purchase_order_code;
+                    $stats['po']['new']['orders'][] = $poStr;
                 }
 
                 if ($po->craftsman_status == 'in_process') {
                     $stats['po']['in_process']['count']++;
                     $stats['po']['in_process']['weight'] += $poWeight;
-                    $stats['po']['in_process']['orders'][] = $po->purchase_order_code;
+                    $stats['po']['in_process']['orders'][] = $poStr;
                 }
 
                 if ($po->craftsman_status == 'completed' || $po->status == 'completed') {
                     $stats['po']['completed']['count']++;
                     $stats['po']['completed']['weight'] += $poWeight;
-                    $stats['po']['completed']['orders'][] = $po->purchase_order_code;
+                    $stats['po']['completed']['orders'][] = $poStr;
                 }
 
                 if ($po->due_date && $po->due_date < now() && $po->status != 'completed') {
                     $stats['po']['overdue']['count']++;
                     $stats['po']['overdue']['weight'] += $poWeight;
-                    $stats['po']['overdue']['orders'][] = $po->purchase_order_code;
+                    $stats['po']['overdue']['orders'][] = $poStr;
                 }
 
                 if ($po->status == 'for_approval') {
                     $stats['po']['for_approval']['count']++;
                     $stats['po']['for_approval']['weight'] += $poWeight;
-                    $stats['po']['for_approval']['orders'][] = $po->purchase_order_code;
+                    $stats['po']['for_approval']['orders'][] = $poStr;
                 }
 
                 $stats['po_total_weight'] += $poWeight;

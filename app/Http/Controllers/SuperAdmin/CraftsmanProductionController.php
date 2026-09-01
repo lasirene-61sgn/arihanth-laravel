@@ -6,27 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\Craftman;
 use App\Models\WorkOrder;
 use App\Models\PurchaseOrder;
+use App\Models\Buyer;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 
 class CraftsmanProductionController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 20);
+        $search = trim($request->get('search', ''));
+
         $query = Craftman::query();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
                   ->orWhere('craftman_code', 'LIKE', "%{$search}%")
-                  ->orWhere('business_name', 'LIKE', "%{$search}%");
+                  ->orWhere('business_name', 'LIKE', "%{$search}%")
+                  ->orWhere('city', 'LIKE', "%{$search}%");
             });
         }
 
-        $craftsmen = $query->paginate(20);
+        $craftsmen = $query->paginate($perPage)->withQueryString();
 
-        return view('super-admin.craftsman-production.index', compact('craftsmen'));
+        return view('super-admin.craftsman-production.index', compact('craftsmen', 'search', 'perPage'));
     }
 
     public function show(Request $request, $code)
@@ -34,16 +40,15 @@ class CraftsmanProductionController extends Controller
         $craftsman = Craftman::where('craftman_code', $code)->firstOrFail();
         $tab = $request->get('tab', 'new');
         $buyerCode = $request->get('buyer_code');
+        $search = trim($request->get('search', ''));
+        $perPage = (int) $request->get('per_page', 10);
+        $woPage = (int) $request->get('wo_page', 1);
+        $poPage = (int) $request->get('po_page', 1);
 
-        // Fetch all buyers for the dropdown
-        $buyers = \App\Models\Buyer::orderBy('name')->get();
-
+        $buyers = Buyer::orderBy('name')->get();
         $now = Carbon::now();
 
-        // We need counts for ALL statuses for the selected buyer (or all if no buyer selected)
-        // So let's fetch ALL work orders and purchase orders for this craftsman (and buyer if selected)
-        // to calculate counts, and then filter for the tab.
-
+        // Work orders & Purchase orders queries
         $allWorkOrdersQuery = WorkOrder::where('allocated_craftsman_bp_code', $code);
         $allPurchaseOrdersQuery = PurchaseOrder::where('allocated_craftsman_code', $code);
 
@@ -54,14 +59,14 @@ class CraftsmanProductionController extends Controller
         $allWorkOrders = $allWorkOrdersQuery->get();
         $allPurchaseOrders = $allPurchaseOrdersQuery->get();
 
-        // If buyer selected, we need to filter Purchase Orders by buyer in PHP
+        // Filter PO by buyer if buyer filter is active
         if ($buyerCode) {
-            $allPurchaseOrders = $allPurchaseOrders->filter(function($po) use ($buyerCode) {
+            $allPurchaseOrders = $allPurchaseOrders->filter(function ($po) use ($buyerCode) {
                 $items = $po->items ?? [];
                 foreach ($items as $item) {
                     $productId = $item['product_id'] ?? null;
                     if ($productId) {
-                        $product = \App\Models\Product::find($productId);
+                        $product = Product::find($productId);
                         if ($product && $product->bp_code === $buyerCode) {
                             return true;
                         }
@@ -71,7 +76,7 @@ class CraftsmanProductionController extends Controller
             });
         }
 
-        // Now calculate counts for the selected buyer (or all if no buyer selected)
+        // Metrics Calculation
         $buyerMetrics = [
             'work_orders' => [
                 'allocated' => 0,
@@ -94,12 +99,12 @@ class CraftsmanProductionController extends Controller
                 $buyerMetrics['work_orders']['completed']++;
             } elseif ($wo->craftsman_status === 'rejected') {
                 $buyerMetrics['work_orders']['rejected']++;
-            } elseif ($wo->isOverdue()) {
+            } elseif (method_exists($wo, 'isOverdue') && $wo->isOverdue()) {
                 $buyerMetrics['work_orders']['overdue']++;
             } elseif ($wo->craftsman_status === 'in_process') {
                 $buyerMetrics['work_orders']['in_process']++;
             } else {
-                $buyerMetrics['work_orders']['allocated']++; // Default to allocated if assigned but not in process
+                $buyerMetrics['work_orders']['allocated']++;
             }
         }
 
@@ -108,7 +113,7 @@ class CraftsmanProductionController extends Controller
                 $buyerMetrics['purchase_orders']['completed']++;
             } elseif ($po->craftsman_status === 'rejected') {
                 $buyerMetrics['purchase_orders']['rejected']++;
-            } elseif ($po->due_date && $po->due_date->isBefore($now->startOfDay()) && $po->status !== 'approved') {
+            } elseif ($po->due_date && Carbon::parse($po->due_date)->isBefore($now->startOfDay()) && $po->status !== 'approved') {
                 $buyerMetrics['purchase_orders']['overdue']++;
             } elseif ($po->craftsman_status === 'in_process') {
                 $buyerMetrics['purchase_orders']['in_process']++;
@@ -117,33 +122,33 @@ class CraftsmanProductionController extends Controller
             }
         }
 
-        // Now apply tab filtering for the displayed lists
-        $workOrders = $allWorkOrders->filter(function($wo) use ($tab, $now) {
+        // Filter by Tab
+        $filteredWorkOrders = $allWorkOrders->filter(function ($wo) use ($tab) {
             switch ($tab) {
                 case 'new': return $wo->status === 'new';
                 case 'in_process': return $wo->craftsman_status === 'in_process';
                 case 'completed': return $wo->status === 'completed';
-                case 'overdue': return $wo->isOverdue();
+                case 'overdue': return method_exists($wo, 'isOverdue') ? $wo->isOverdue() : false;
                 default: return true;
             }
         });
 
-        $purchaseOrders = $allPurchaseOrders->filter(function($po) use ($tab, $now) {
+        $filteredPurchaseOrders = $allPurchaseOrders->filter(function ($po) use ($tab, $now) {
             switch ($tab) {
                 case 'new': return $po->status === 'new';
                 case 'in_process': return $po->craftsman_status === 'in_process';
-                case 'completed': return $po->status === 'approved';
-                case 'overdue': 
-                    return $po->status !== 'approved' 
-                        && $po->craftsman_status !== 'rejected' 
-                        && $po->due_date 
-                        && $po->due_date->isBefore($now->startOfDay());
+                case 'completed': return in_array($po->status, ['approved', 'completed']);
+                case 'overdue':
+                    return !in_array($po->status, ['approved', 'completed'])
+                        && $po->craftsman_status !== 'rejected'
+                        && $po->due_date
+                        && Carbon::parse($po->due_date)->isBefore($now->startOfDay());
                 default: return true;
             }
         });
 
-        // Calculate PO total weight for the filtered list
-        foreach ($purchaseOrders as $po) {
+        // Calculate PO weights
+        foreach ($filteredPurchaseOrders as $po) {
             $totalWeight = 0;
             $items = $po->items ?? [];
             foreach ($items as $item) {
@@ -152,6 +157,42 @@ class CraftsmanProductionController extends Controller
             $po->total_calculated_weight = $totalWeight;
         }
 
-        return view('super-admin.craftsman-production.show', compact('craftsman', 'workOrders', 'purchaseOrders', 'tab', 'buyers', 'buyerCode', 'buyerMetrics'));
+        // Paginate Work Orders
+        $workOrders = new LengthAwarePaginator(
+            $filteredWorkOrders->forPage($woPage, $perPage)->values(),
+            $filteredWorkOrders->count(),
+            $perPage,
+            $woPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+                'pageName' => 'wo_page',
+            ]
+        );
+
+        // Paginate Purchase Orders
+        $purchaseOrders = new LengthAwarePaginator(
+            $filteredPurchaseOrders->forPage($poPage, $perPage)->values(),
+            $filteredPurchaseOrders->count(),
+            $perPage,
+            $poPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+                'pageName' => 'po_page',
+            ]
+        );
+
+        return view('super-admin.craftsman-production.show', compact(
+            'craftsman',
+            'workOrders',
+            'purchaseOrders',
+            'tab',
+            'buyers',
+            'buyerCode',
+            'buyerMetrics',
+            'search',
+            'perPage'
+        ));
     }
 }

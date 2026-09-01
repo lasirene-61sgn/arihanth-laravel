@@ -364,7 +364,7 @@
                                                     <!--<td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
                                                     <td class="px-6 py-4 text-sm {{ $isOverdue ? 'text-red-600 font-bold' : 'text-indigo-700' }} whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
                                                     <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->weight_from }}g</td>
-                                                    <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }}</td>
+                                                    <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }} {{$order->type}}</td>
                                                     <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->size }}</td>
                                                     <td class="px-6 py-4 text-sm text-indigo-600 truncate max-w-[150px]" title="{{ $order->narration_craftsman }}">{{ $order->narration_craftsman ?? '-' }}</td>
                                                     <td class="px-6 py-4 text-right">
@@ -567,7 +567,7 @@
                                                         <!--<td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
                                                         <td class="px-6 py-4 text-sm {{ $isOverdue ? 'text-red-600 font-bold' : 'text-indigo-700' }} whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->weight_from }}g</td>
-                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }}</td>
+                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }} {{$order->type}}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->size }}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-600 truncate max-w-[150px]" title="{{ $order->narration_craftsman }}">{{ $order->narration_craftsman ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-right">
@@ -680,7 +680,7 @@
                                                         <!--<td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
                                                         <td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->weight_from }}g</td>
-                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }}</td>
+                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }} {{$order->type}}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->size }}</td>
                                                         <td class="px-6 py-4">
                                                             @if($order->status == 'for_approval')
@@ -793,7 +793,7 @@
                                                         <!--<td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
                                                         <td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->weight_from }}g</td>
-                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }}</td>
+                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }} {{$order->type}}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->size }}</td>
                                                         <td class="px-6 py-4 text-sm text-red-600 italic truncate max-w-[150px]" title="{{ $order->rejection_reason }}">{{ $order->rejection_reason ?? '-' }}</td>
                                                         <td class="px-6 py-4 text-right">
@@ -900,7 +900,7 @@
                                                         <!--<td class="px-6 py-4 text-sm text-indigo-700 whitespace-nowrap">{{ $order->due_date ? $order->due_date->format('d M, Y') : 'N/A' }}</td>-->
                                                         <td class="px-6 py-4 text-sm text-red-600 font-bold whitespace-nowrap">{{ $order->craftsman_due_date ? $order->craftsman_due_date->format('d M, Y') : 'N/A' }}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->weight_from }}g</td>
-                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }}</td>
+                                                        <td class="px-6 py-4 text-sm text-indigo-700 font-bold">{{ $order->quantity }} {{$order->type}}</td>
                                                         <td class="px-6 py-4 text-sm text-indigo-700">{{ $order->size }}</td>
                                                         <td class="px-6 py-4">
                                                             <span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-md">{{ ucfirst(str_replace('_', ' ', $order->craftsman_status)) }}</span>

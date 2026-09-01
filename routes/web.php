@@ -346,6 +346,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminLoginController::class, 'dashboard'])->name('dashboard');
         Route::get('/global-search', [App\Http\Controllers\Admin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/global-search', [App\Http\Controllers\Admin\GlobalSearchController::class, 'index']);
+        
+        Route::get('/details-all', [App\Http\Controllers\Admin\DetailsAllController::class, 'index'])->name('details-all');
         Route::post('/logout', [AdminLoginController::class, 'logout'])->name('logout');
         Route::post('/fcm-token', [App\Http\Controllers\Admin\FcmTokenController::class, 'saveAdminToken'])->name('fcm-token.save');
 
@@ -649,6 +651,8 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/dashboard', [SuperAdminLoginController::class, 'dashboard'])->name('dashboard');
         Route::get('/global-search', [App\Http\Controllers\SuperAdmin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/global-search', [App\Http\Controllers\SuperAdmin\GlobalSearchController::class, 'index']);
+        
+        Route::get('/details-all', [App\Http\Controllers\SuperAdmin\DetailsAllController::class, 'index'])->name('details-all');
         Route::get('/dashboard/stats', [SuperAdminLoginController::class, 'getDashboardStats'])->name('dashboard.stats');
         Route::get('/dashboard/calendar-data', [SuperAdminLoginController::class, 'getCalendarData'])->name('dashboard.calendar-data');
         Route::post('/logout', [SuperAdminLoginController::class, 'logout'])->name('logout');

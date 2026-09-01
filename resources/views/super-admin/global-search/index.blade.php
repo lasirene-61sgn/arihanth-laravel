@@ -87,6 +87,16 @@
                             </div>
                             <ul class="tw-divide-y tw-divide-gray-50 dark:tw-divide-slate-700/50 tw-max-h-72 tw-overflow-y-auto custom-scrollbar">
                                 @foreach($data['items'] as $item)
+                                    @php
+                                        $display = htmlspecialchars($item['display'] ?? '');
+                                        if(!empty($query)) {
+                                            $pattern = '/(' . preg_quote($query, '/') . ')/i';
+                                            $replacement = '<span class="tw-bg-yellow-200 dark:tw-bg-yellow-900/50 tw-text-gray-900 dark:tw-text-yellow-100 tw-rounded tw-px-1">$1</span>';
+                                            $displayHtml = preg_replace($pattern, $replacement, $display);
+                                        } else {
+                                            $displayHtml = $display;
+                                        }
+                                    @endphp
                                     <li>
                                         <button type="button" 
                                             class="search-result-btn tw-w-full tw-text-left tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 hover:tw-bg-maroon/5 dark:hover:tw-bg-slate-700/50 tw-transition-all tw-duration-200 tw-group tw-border-l-2 tw-border-transparent hover:tw-border-maroon"
@@ -98,7 +108,7 @@
                                                 <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-gray-100 dark:tw-bg-slate-700 group-hover:tw-bg-maroon/10 tw-flex tw-items-center tw-justify-center tw-text-gray-500 group-hover:tw-text-maroon tw-transition-colors tw-shadow-sm">
                                                     <i class="bi bi-link-45deg tw-text-lg"></i>
                                                 </div>
-                                                <span class="tw-text-gray-700 dark:tw-text-gray-300 tw-font-semibold group-hover:tw-text-maroon tw-transition-colors">{{ $item['display'] }}</span>
+                                                <span class="tw-text-gray-700 dark:tw-text-gray-300 tw-font-semibold group-hover:tw-text-maroon tw-transition-colors">{!! $displayHtml !!}</span>
                                             </div>
                                             <div class="tw-flex tw-items-center">
                                                 @if(!empty($item['image']))
@@ -249,6 +259,17 @@
                 data.items.forEach(item => {
                     const displaySafe = (item.display || '').replace(/"/g, '&quot;');
                     const detailsSafe = (item.details || 'No additional details available.').replace(/"/g, '&quot;');
+                    
+                    const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                    let displayHtml = escapeHtml(item.display || '');
+                    
+                    if (query) {
+                        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp('(' + escapedQuery + ')', 'gi');
+                        const highlightTag = '<span class="tw-bg-yellow-200 dark:tw-bg-yellow-900/50 tw-text-gray-900 dark:tw-text-yellow-100 tw-rounded tw-px-1">$1</span>';
+                        displayHtml = displayHtml.replace(regex, highlightTag);
+                    }
+
                     html += `
                         <li>
                             <button type="button" class="search-result-btn tw-w-full tw-text-left tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 hover:tw-bg-maroon/5 dark:hover:tw-bg-slate-700/50 tw-transition-all tw-duration-200 tw-group tw-border-l-2 tw-border-transparent hover:tw-border-maroon"
@@ -260,7 +281,7 @@
                                     <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-gray-100 dark:tw-bg-slate-700 group-hover:tw-bg-maroon/10 tw-flex tw-items-center tw-justify-center tw-text-gray-500 group-hover:tw-text-maroon tw-transition-colors tw-shadow-sm">
                                         <i class="bi bi-link-45deg tw-text-lg"></i>
                                     </div>
-                                    <span class="tw-text-gray-700 dark:tw-text-gray-300 tw-font-semibold group-hover:tw-text-maroon tw-transition-colors">${item.display}</span>
+                                    <span class="tw-text-gray-700 dark:tw-text-gray-300 tw-font-semibold group-hover:tw-text-maroon tw-transition-colors">${displayHtml}</span>
                                 </div>
                                 <div class="tw-flex tw-items-center">
                                     ${item.image ? `<img src="${item.image}" alt="Preview" class="tw-w-12 tw-h-12 tw-object-cover tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100 dark:tw-border-slate-600 tw-mr-4" />` : ''}

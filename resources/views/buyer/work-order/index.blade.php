@@ -339,10 +339,10 @@
                                                 </a>
                                                 @endif
 
-                                                <a href="{{ route('buyer.work-order.print', $workOrder) }}"
+                                                <!-- <a href="{{ route('buyer.work-order.print', $workOrder) }}"
                                                     class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors" target="_blank" title="Print">
                                                     <i class="bi bi-printer text-lg"></i>
-                                                </a>
+                                                </a> -->
 
                                                 <a href="{{ route('buyer.work-order.show', $workOrder) }}"
                                                     class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors">

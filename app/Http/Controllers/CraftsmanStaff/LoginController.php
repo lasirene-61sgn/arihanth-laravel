@@ -4,9 +4,13 @@ namespace App\Http\Controllers\CraftsmanStaff;
 
 use App\Http\Controllers\Controller;
 use App\Models\CraftsmanStaff;
+use App\Models\Product;
+use App\Models\PurchaseOrder;
+use App\Models\WorkOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class LoginController extends Controller
 {
@@ -40,113 +44,135 @@ class LoginController extends Controller
         ])->withInput($request->only('staff_code'));
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $staff = Auth::guard('craftsman_staff')->user();
         $craftsman = $staff->craftsman;
         if (!$craftsman) {
             return redirect()->route('craftsman_staff.login')->withErrors(['staff_code' => 'No associated craftsman found.']);
         }
-        
-        $craftsmanCode = $craftsman->craftman_code;
-        $now = now()->toDateString();
-        $isLate = now()->hour >= 12;
 
-        // Get allocated work orders for the list (the "active" ones)
-        $workOrders = \App\Models\WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)
-            ->where('craftsman_status', 'allocated')
-            ->get();
+        $craftsmanCode = $craftsman->craftman_code;
+        $now = Carbon::now();
+        $isLate = $now->hour >= 12;
+
+        // Fetch Work Orders
+        $allWorkOrders = WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->get();
+        
+        // Fetch Purchase Orders
+        $allPurchaseOrders = PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->get();
 
         // Work Order Statistics
-        $woQuery = \App\Models\WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode);
+        $woAllocatedCount = 0;
+        $woInProcessCount = 0;
+        $woCompletedCount = 0;
+        $woOverdueCount = 0;
+        $woAllocatedWeight = 0;
+        $woInProcessWeight = 0;
+        $woOverdueWeight = 0;
+
+        foreach ($allWorkOrders as $wo) {
+            $weight = (float)($wo->weight_to ?? $wo->weight_from ?? 0);
+            $dueDate = $wo->craftsman_due_date ?? $wo->due_date;
+            $parsedDueDate = $dueDate ? Carbon::parse($dueDate)->startOfDay() : null;
+            
+            $isOverdue = $wo->status !== 'completed' && $wo->craftsman_status !== 'rejected' && $parsedDueDate &&
+                         ($parsedDueDate->lt($now->copy()->startOfDay()) || ($parsedDueDate->eq($now->copy()->startOfDay()) && $isLate));
+            
+            $wo->is_delayed = $isOverdue;
+            $wo->days_delayed = ($isOverdue && $parsedDueDate) ? (int)$now->diffInDays($parsedDueDate) : 0;
+            if ($wo->is_delayed && $wo->days_delayed === 0) {
+                $wo->days_delayed = 1;
+            }
+
+            if ($wo->craftsman_status === 'allocated') {
+                $woAllocatedCount++;
+                $woAllocatedWeight += $weight;
+            } elseif ($wo->craftsman_status === 'in_process') {
+                $woInProcessCount++;
+                $woInProcessWeight += $weight;
+            } elseif ($wo->craftsman_status === 'completed' || $wo->status === 'completed') {
+                $woCompletedCount++;
+            }
+
+            if ($isOverdue) {
+                $woOverdueCount++;
+                $woOverdueWeight += $weight;
+            }
+        }
+
         $woStats = [
-            'total' => (clone $woQuery)->count(),
-            'allocated' => (clone $woQuery)->where('craftsman_status', 'allocated')->count(),
-            'in_process' => (clone $woQuery)->where('craftsman_status', 'in_process')->count(),
-            'completed' => (clone $woQuery)->where('craftsman_status', 'completed')->count(),
-            'for_approval' => (clone $woQuery)->where('status', 'for_approval')->count(),
-            'rejected' => (clone $woQuery)->where('craftsman_status', 'rejected')->count(),
-            'overdue' => (clone $woQuery)->where('status', '!=', 'completed')
-                ->where('craftsman_status', '!=', 'rejected')
-                ->where(function($q) use ($now, $isLate) {
-                    $q->whereDate('due_date', '<', $now)
-                      ->orWhere(function($sq) use ($now, $isLate) {
-                          if ($isLate) {
-                              $sq->whereDate('due_date', $now);
-                          } else {
-                              $sq->whereRaw('1=0');
-                          }
-                      });
-                })->count(),
-            'allocated_weight' => (clone $woQuery)->where('craftsman_status', 'allocated')->sum('weight_to'),
-            'in_process_weight' => (clone $woQuery)->where('craftsman_status', 'in_process')->sum('weight_to'),
-            'overdue_weight' => (clone $woQuery)->where('status', '!=', 'completed')
-                ->where('craftsman_status', '!=', 'rejected')
-                ->where(function($q) use ($now, $isLate) {
-                    $q->whereDate('due_date', '<', $now)
-                      ->orWhere(function($sq) use ($now, $isLate) {
-                          if ($isLate) {
-                              $sq->whereDate('due_date', $now);
-                          } else {
-                              $sq->whereRaw('1=0');
-                          }
-                      });
-                })->sum('weight_to'),
+            'total' => $allWorkOrders->count(),
+            'allocated' => $woAllocatedCount,
+            'in_process' => $woInProcessCount,
+            'completed' => $woCompletedCount,
+            'overdue' => $woOverdueCount,
+            'allocated_weight' => $woAllocatedWeight,
+            'in_process_weight' => $woInProcessWeight,
+            'overdue_weight' => $woOverdueWeight,
         ];
 
-        // Purchase Order Statistics
-        $poQuery = \App\Models\PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode);
-        $poStats = [
-            'total' => (clone $poQuery)->count(),
-            'allocated' => (clone $poQuery)->where('craftsman_status', 'allocated')->count(),
-            'in_process' => (clone $poQuery)->where('craftsman_status', 'in_process')->count(),
-            'completed' => (clone $poQuery)->where('craftsman_status', 'completed')->count(),
-            'for_approval' => (clone $poQuery)->where('status', 'for_approval')->count(),
-            'rejected' => (clone $poQuery)->where(function($q) {
-                $q->where('craftsman_status', 'rejected')
-                  ->orWhereRaw('JSON_LENGTH(rejected_items) > 0');
-            })->count(),
-            'overdue' => (clone $poQuery)->where('status', '!=', 'completed')
-                ->where('status', '!=', 'approved')
-                ->where('craftsman_status', '!=', 'rejected')
-                ->where(function($q) use ($now, $isLate) {
-                    $q->whereDate('due_date', '<', $now)
-                      ->orWhere(function($sq) use ($now, $isLate) {
-                          if ($isLate) {
-                              $sq->whereDate('due_date', $now);
-                          } else {
-                              $sq->whereRaw('1=0');
-                          }
-                      });
-                })->count(),
-        ];
-
-        // PO Weights calculation
+        // Purchase Order Statistics & Weight Calculations
+        $poAllocatedCount = 0;
+        $poInProcessCount = 0;
+        $poCompletedCount = 0;
+        $poOverdueCount = 0;
         $poAllocatedWeight = 0;
         $poInProcessWeight = 0;
         $poOverdueWeight = 0;
 
-        foreach ((clone $poQuery)->get() as $po) {
-            $poWeight = collect($po->items)->sum(function ($item) {
-                return (float) ($item['weight'] ?? 0);
-            });
+        foreach ($allPurchaseOrders as $po) {
+            $totalWeight = 0;
+            $totalQty = 0;
+            $items = $po->items ?? [];
+            foreach ($items as $item) {
+                $totalWeight += (float)($item['weight'] ?? 0);
+                $totalQty += (int)($item['quantity'] ?? 1);
+            }
+            $po->calculated_weight = $totalWeight;
+            $po->calculated_qty = $totalQty;
 
-            if ($po->craftsman_status == 'allocated') $poAllocatedWeight += $poWeight;
-            if ($po->craftsman_status == 'in_process') $poInProcessWeight += $poWeight;
-            
-            $isOverdue = $po->status != 'completed' && $po->status != 'approved' && $po->craftsman_status != 'rejected' && 
-                         (($po->due_date && $po->due_date < $now) || ($po->due_date == $now && $isLate));
-            if ($isOverdue) $poOverdueWeight += $poWeight;
+            $parsedPoDueDate = $po->due_date ? Carbon::parse($po->due_date)->startOfDay() : null;
+            $isOverdue = !in_array($po->status, ['completed', 'approved']) && $po->craftsman_status !== 'rejected' && $parsedPoDueDate &&
+                         ($parsedPoDueDate->lt($now->copy()->startOfDay()) || ($parsedPoDueDate->eq($now->copy()->startOfDay()) && $isLate));
+
+            $po->is_delayed = $isOverdue;
+            $po->days_delayed = ($isOverdue && $parsedPoDueDate) ? (int)$now->diffInDays($parsedPoDueDate) : 0;
+            if ($po->is_delayed && $po->days_delayed === 0) {
+                $po->days_delayed = 1;
+            }
+
+            if ($po->craftsman_status === 'allocated') {
+                $poAllocatedCount++;
+                $poAllocatedWeight += $totalWeight;
+            } elseif ($po->craftsman_status === 'in_process') {
+                $poInProcessCount++;
+                $poInProcessWeight += $totalWeight;
+            } elseif (in_array($po->status, ['completed', 'approved'])) {
+                $poCompletedCount++;
+            }
+
+            if ($isOverdue) {
+                $poOverdueCount++;
+                $poOverdueWeight += $totalWeight;
+            }
         }
 
-        $poStats['allocated_weight'] = $poAllocatedWeight;
-        $poStats['in_process_weight'] = $poInProcessWeight;
-        $poStats['overdue_weight'] = $poOverdueWeight;
-        
-        $totalProducts = \App\Models\Product::where('bp_code', $craftsmanCode)->count();
-        $totalDesigns = \App\Models\Product::where('bp_code', $craftsmanCode)->count();
+        $poStats = [
+            'total' => $allPurchaseOrders->count(),
+            'allocated' => $poAllocatedCount,
+            'in_process' => $poInProcessCount,
+            'completed' => $poCompletedCount,
+            'overdue' => $poOverdueCount,
+            'allocated_weight' => $poAllocatedWeight,
+            'in_process_weight' => $poInProcessWeight,
+            'overdue_weight' => $poOverdueWeight,
+        ];
 
-        // Craftsman-wise Progress Analytics for Modal
+        $totalProducts = Product::where('bp_code', $craftsmanCode)->count();
+        $totalDesigns = Product::where('bp_code', $craftsmanCode)->count();
+
+        // Progress Analytics
         $craftsmanStats = [
             $craftsmanCode => [
                 'name' => $craftsman->business_name ?: $craftsman->name,
@@ -160,14 +186,15 @@ class LoginController extends Controller
                 ]
             ]
         ];
-        
+
         return view('craftsman_staff.dashboard', compact(
             'staff',
-            'craftsman', 
-            'workOrders', 
+            'craftsman',
+            'allWorkOrders',
+            'allPurchaseOrders',
             'woStats',
             'poStats',
-            'totalProducts', 
+            'totalProducts',
             'totalDesigns',
             'craftsmanStats'
         ));

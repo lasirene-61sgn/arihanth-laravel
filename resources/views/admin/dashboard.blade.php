@@ -345,33 +345,7 @@
 
                     <!-- Analytics Cards Row -->
                     <div class="row g-3 mb-4">
-                        <!-- Top Picks Craftsman -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="analytics-card h-100" data-bs-toggle="modal" data-bs-target="#topPicksCraftsmanModal" style="cursor: pointer;">
-                                <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <i class="bi bi-star text-warning fs-5"></i>
-                                        <i class="bi bi-arrow-right text-muted"></i>
-                                    </div>
-                                    <h3 class="analytics-number mb-1">{{ !empty($topPicksCraftsmanFull) ? collect($topPicksCraftsmanFull)->first()['allocated'] : 0 }}</h3>
-                                    <p class="analytics-label mb-0">TOP PICKS CRAFTSMAN</p>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Least Picks Craftsman -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="analytics-card h-100" data-bs-toggle="modal" data-bs-target="#leastPicksCraftsmanModal" style="cursor: pointer;">
-                                <div class="card-body p-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <i class="bi bi-clock text-info fs-5"></i>
-                                        <i class="bi bi-arrow-right text-muted"></i>
-                                    </div>
-                                    <h3 class="analytics-number mb-1">{{ !empty($leastPicksCraftsmanFull) ? collect($leastPicksCraftsmanFull)->first()['allocated'] : 0 }}</h3>
-                                    <p class="analytics-label mb-0">LEAST PICKS CRAFTSMAN</p>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Most Selling Products -->
                         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -574,109 +548,7 @@
 </div>
 
 <!-- Modals for Statistics -->
-<!-- Top Picks Craftsman Modal -->
-<div class="modal fade" id="topPicksCraftsmanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark">TOP PICKS CRAFTSMAN (Top 15)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle">
-                        <thead class="bg-light">
-                            <tr>
-                                <th rowspan="2" class="align-middle" style="font-size: 0.75rem;">{{ __('messages.craftsman') }}</th>
-                                <th rowspan="2" class="text-center align-middle" style="font-size: 0.75rem;">{{ __('messages.bp_code') }}</th>
-                                <th colspan="3" class="text-center bg-primary text-white" style="font-size: 0.7rem;">WORK ORDERS (WA)</th>
-                                <th colspan="3" class="text-center bg-info text-white" style="font-size: 0.7rem;">PURCHASE ORDERS (PA)</th>
-                            </tr>
-                            <tr class="bg-white">
-                                <th class="text-center py-1" style="font-size: 0.65rem;">PROCESS (C/W)</th>
-                                <th class="text-center py-1" style="font-size: 0.65rem;">FOR APPROVAL (C/W)</th>
-                                <th class="text-center py-1 text-danger" style="font-size: 0.65rem;">OVERDUE(C/W)</th>
-                                <th class="text-center py-1" style="font-size: 0.65rem;">PROCESS (C/W)</th>
-                                <th class="text-center py-1" style="font-size: 0.65rem;">FOR APPROVAL (C/W)</th>
-                                <th class="text-center py-1 text-danger" style="font-size: 0.65rem;">OVERDUE(C/W)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($topPicksCraftsmanFull as $code => $stat)
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold text-dark" style="font-size: 0.8rem;">{{ $stat['name'] }}</div>
-                                </td>
-                                <td class="text-center"><span class="badge bg-light text-dark" style="font-size: 0.7rem;">{{ $code }}</span></td>
-                                
-                                {{-- Work Orders --}}
-                                <td class="text-center text-primary" style="font-size: 0.75rem;">{{ $stat['wo']['in_process']['count'] }} | {{ number_format($stat['wo']['in_process']['weight'], 2) }}</td>
-                                <td class="text-center text-purple-600" style="font-size: 0.75rem;">{{ $stat['wo']['for_approval']['count'] }} | {{ number_format($stat['wo']['for_approval']['weight'], 2) }}</td>
-                                <td class="text-center text-danger fw-bold" style="font-size: 0.75rem;">{{ $stat['wo']['overdue']['count'] }} | {{ number_format($stat['wo']['overdue']['weight'], 2) }}</td>
-                                
-                                {{-- Purchase Orders --}}
-                                <td class="text-center text-info" style="font-size: 0.75rem;">{{ $stat['po']['in_process']['count'] }} | {{ number_format($stat['po']['in_process']['weight'], 2) }}</td>
-                                <td class="text-center text-purple-600" style="font-size: 0.75rem;">{{ $stat['po']['for_approval']['count'] }} | {{ number_format($stat['po']['for_approval']['weight'], 2) }}</td>
-                                <td class="text-center text-warning fw-bold" style="font-size: 0.75rem;">{{ $stat['po']['overdue']['count'] }} | {{ number_format($stat['po']['overdue']['weight'], 2) }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No data found</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Least Picks Craftsman Modal -->
-<div class="modal fade" id="leastPicksCraftsmanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark">LEAST PICKS CRAFTSMAN (Top 15)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="border-0">{{ __('messages.craftsman') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.bp_code') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.allocated') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.completed') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.total_weight') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.total_amount') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($leastPicksCraftsmanFull as $code => $stat)
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
-                                </td>
-                                <td class="text-center"><span class="badge bg-light text-dark">{{ $code }}</span></td>
-                                <td class="text-center fw-bold">{{ $stat['allocated'] }}</td>
-                                <td class="text-center text-success">{{ $stat['completed'] }}</td>
-                                <td class="text-center fw-semibold text-primary">{{ number_format($stat['total_weight'], 3) }}</td>
-                                <td class="text-center fw-semibold text-danger">₹{{ number_format($stat['total_amount'], 2) }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center py-4">No data found</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Most Selling Products Modal -->
 <div class="modal fade" id="mostSellingProductsModal" tabindex="-1" aria-hidden="true">

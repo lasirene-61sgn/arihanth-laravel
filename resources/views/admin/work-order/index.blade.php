@@ -2723,11 +2723,22 @@
 
         function filterItems(query) {
             getListItems().forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(query)) {
+                if (!item.hasAttribute('data-original-text')) {
+                    item.setAttribute('data-original-text', item.textContent.trim());
+                }
+                const originalText = item.getAttribute('data-original-text');
+                const text = originalText.toLowerCase();
+                
+                if (query && text.includes(query)) {
                     item.classList.remove('hidden');
+                    const regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                    item.innerHTML = originalText.replace(regex, '<span class="bg-yellow-200 text-gray-900 px-0.5 rounded">$1</span>');
+                } else if (!query) {
+                    item.classList.remove('hidden');
+                    item.textContent = originalText;
                 } else {
                     item.classList.add('hidden');
+                    item.textContent = originalText;
                 }
             });
         }
@@ -3020,6 +3031,72 @@
                 document.getElementById('adminOtpStatus').className = "ml-2 text-xs text-rose-600";
             });
     }
+
+    // --- LIVE SEARCH AND HIGHLIGHT LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInputs = document.querySelectorAll('input[name="search"]');
+        let debounceTimer;
+
+        searchInputs.forEach(input => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('search') && input.value === urlParams.get('search')) {
+                if (input.offsetParent !== null) {
+                    input.focus();
+                    const val = input.value;
+                    input.value = '';
+                    input.value = val;
+                }
+            }
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const form = this.closest('form');
+                
+                const iconContainer = this.nextElementSibling;
+                if (iconContainer && iconContainer.innerHTML.includes('bi-search')) {
+                    iconContainer.innerHTML = '<i class="bi bi-hourglass-split text-xs text-pink-500 animate-spin"></i>';
+                }
+
+                debounceTimer = setTimeout(() => {
+                    form.submit();
+                }, 800);
+            });
+        });
+
+        const searchString = new URLSearchParams(window.location.search).get('search');
+        if (searchString && searchString.trim() !== '') {
+            const escapedQuery = searchString.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + escapedQuery + ')', 'gi');
+            const highlightClass = 'bg-yellow-200 text-gray-900 px-0.5 rounded';
+            
+            function highlightTextNodes(node) {
+                if (node.nodeType === 3) {
+                    const match = node.nodeValue.match(regex);
+                    if (match && node.nodeValue.trim() !== '') {
+                        const span = document.createElement('span');
+                        const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        span.innerHTML = escapeHtml(node.nodeValue).replace(regex, `<span class="${highlightClass}">$1</span>`);
+                        node.parentNode.replaceChild(span, node);
+                    }
+                } else if (node.nodeType === 1 && 
+                           node.nodeName !== 'SCRIPT' && 
+                           node.nodeName !== 'STYLE' && 
+                           node.nodeName !== 'INPUT' && 
+                           node.nodeName !== 'TEXTAREA' && 
+                           node.nodeName !== 'SELECT' && 
+                           node.nodeName !== 'OPTION' && 
+                           !node.classList.contains('bg-yellow-200')) {
+                    const children = Array.from(node.childNodes);
+                    for (let i = 0; i < children.length; i++) {
+                        highlightTextNodes(children[i]);
+                    }
+                }
+            }
+
+            const tbodies = document.querySelectorAll('table tbody');
+            tbodies.forEach(tbody => highlightTextNodes(tbody));
+        }
+    });
 </script>
 
 @endsection

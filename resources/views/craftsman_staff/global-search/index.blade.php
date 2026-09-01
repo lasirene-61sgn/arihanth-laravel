@@ -85,6 +85,19 @@
                             </div>
                             <ul class="divide-y divide-gray-50 dark:divide-slate-800/50 max-h-72 overflow-y-auto custom-scrollbar">
                                 @foreach($data['items'] as $item)
+                                    @php
+                                        $display = htmlspecialchars($item['display'] ?? '');
+                                        $details = htmlspecialchars($item['details'] ?? 'No additional details available.');
+                                        if(!empty($query)) {
+                                            $pattern = '/(' . preg_quote($query, '/') . ')/i';
+                                            $replacement = '<span class="bg-yellow-200 dark:bg-yellow-900/50 text-gray-900 dark:text-yellow-100 rounded px-1">$1</span>';
+                                            $displayHtml = preg_replace($pattern, $replacement, $display);
+                                            $detailsHtml = preg_replace($pattern, $replacement, $details);
+                                        } else {
+                                            $displayHtml = $display;
+                                            $detailsHtml = $details;
+                                        }
+                                    @endphp
                                     <li>
                                         <button type="button" 
                                             class="search-result-btn w-full text-left flex items-start justify-between p-4 hover:bg-indigo-600/5 dark:hover:bg-slate-800 transition-colors group"
@@ -101,8 +114,8 @@
                                                     </div>
                                                 @endif
                                                 <div class="min-w-0">
-                                                    <span class="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-indigo-600 transition-colors block truncate">{{ $item['display'] }}</span>
-                                                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{{ $item['details'] ?? 'No additional details available.' }}</p>
+                                                    <span class="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-indigo-600 transition-colors block truncate">{!! $displayHtml !!}</span>
+                                                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{!! $detailsHtml !!}</p>
                                                 </div>
                                             </div>
                                             <i class="bi bi-chevron-right text-gray-300 group-hover:text-indigo-600 transition-colors text-sm mt-3 ml-2 shrink-0"></i>
@@ -245,6 +258,20 @@
                 data.items.forEach(item => {
                     const displaySafe = (item.display || '').replace(/"/g, '&quot;');
                     const detailsSafe = (item.details || 'No additional details available.').replace(/"/g, '&quot;');
+                    
+                    const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                    
+                    let displayHtml = escapeHtml(item.display || '');
+                    let detailsHtml = escapeHtml(item.details || 'No additional details available.');
+                    
+                    if (query) {
+                        const escapedQuery = query.replace(/[.*+?^$\{}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp('(' + escapedQuery + ')', 'gi');
+                        const highlightTag = '<span class="bg-yellow-200 dark:bg-yellow-900/50 text-gray-900 dark:text-yellow-100 rounded px-1">$1</span>';
+                        displayHtml = displayHtml.replace(regex, highlightTag);
+                        detailsHtml = detailsHtml.replace(regex, highlightTag);
+                    }
+
                     const imgHtml = item.image 
                         ? `<img src="${item.image}" alt="Preview" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-slate-700 shrink-0" />`
                         : `<div class="w-12 h-12 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600 shrink-0"><i class="bi bi-link-45deg text-lg"></i></div>`;
@@ -259,8 +286,8 @@
                                 <div class="flex items-center gap-3.5 min-w-0">
                                     ${imgHtml}
                                     <div class="min-w-0">
-                                        <span class="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-indigo-600 transition-colors block truncate">${item.display}</span>
-                                        <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">${item.details || 'No additional details available.'}</p>
+                                        <span class="text-gray-800 dark:text-gray-200 font-semibold group-hover:text-indigo-600 transition-colors block truncate">${displayHtml}</span>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">${detailsHtml}</p>
                                     </div>
                                 </div>
                                 <i class="bi bi-chevron-right text-gray-300 group-hover:text-indigo-600 transition-colors text-sm mt-3 ml-2 shrink-0"></i>

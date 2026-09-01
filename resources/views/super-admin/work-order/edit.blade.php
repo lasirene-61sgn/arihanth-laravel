@@ -287,6 +287,8 @@
                                 <select class="form-select @error('type') is-invalid @enderror" id="type" name="type">
                                     <option value="Piece" {{ (old('type', $workOrder->type) == 'Piece') ? 'selected' : '' }}>Piece</option>
                                     <option value="Pair" {{ (old('type', $workOrder->type) == 'Pair') ? 'selected' : '' }}>Pair</option>
+                                    <option value="Set" {{ (old('type', $workOrder->type) == 'Set') ? 'selected' : '' }}>Set</option>
+
                                 </select>
                                 @error('type')
                                     <div class="invalid-feedback">{{ $message }}</div>
