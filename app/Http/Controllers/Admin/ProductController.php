@@ -48,24 +48,21 @@ class ProductController extends Controller
             $query->where('product_code', 'like', '%' . $request->filter_code . '%');
         }
         if ($request->filled('filter_category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->filter_category . '%');
-            });
+            $query->where('product_category_id', $request->filter_category);
         }
         if ($request->filled('filter_subcategory')) {
-            $query->whereHas('subcategory', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->filter_subcategory . '%');
-            });
+            $query->where('product_subcategory_id', $request->filter_subcategory);
         }
         if ($request->filled('filter_bp_code')) {
-            $query->where('bp_code', 'like', '%' . $request->filter_bp_code . '%');
+            $query->where('bp_code', $request->filter_bp_code);
         }
 
-                if ($request->filled('filter_design_code')) {
+        if ($request->filled('filter_design_code')) {
             $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
         }
-        if ($request->filled('filter_craftsman')) {
-            $query->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
+        
+        if (!$request->filled('filter_bp_code') && $request->filled('filter_craftsman')) {
+            $query->where('bp_code', $request->filter_craftsman);
         }
         if ($request->filled('filter_product_code')) {
             $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');

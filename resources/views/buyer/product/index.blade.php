@@ -37,7 +37,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
-                                <select name="category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                <select name="category" id="buyer_category_filter" onchange="filterBuyerSubcategories()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
                                     <option value="">All Categories</option>
                                     @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
@@ -46,10 +46,10 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subcategory</label>
-                                <select name="subcategory" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                    <option value="">All Subcategories</option>
+                                <select name="subcategory" id="buyer_subcategory_filter" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                    <option value="" id="subcat_default_option">Select Category First</option>
                                     @foreach($subcategories as $sub)
-                                    <option value="{{ $sub->id }}" {{ request('subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                    <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -70,15 +70,15 @@
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sort By</label>
                                 <select name="sort" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                    <option value="created_at">Date Added</option>
-                                    <option value="product_name">Product Name</option>
-                                    <option value="product_code">Product Code</option>
-                                    <option value="product_category_id">Category</option>
+                                    <option value="created_at" {{ request('sort', 'created_at') == 'created_at' ? 'selected' : '' }}>Date Added</option>
+                                    <option value="product_name" {{ request('sort') == 'product_name' ? 'selected' : '' }}>Product Name</option>
+                                    <option value="product_code" {{ request('sort') == 'product_code' ? 'selected' : '' }}>Product Code</option>
+                                    <option value="product_category_id" {{ request('sort') == 'product_category_id' ? 'selected' : '' }}>Category</option>
                                 </select>
                             </div>
                             <select name="direction" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
                                 <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Ascending (A-Z)</option>
-                                <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Descending (Z-A)</option>
+                                <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>Descending (Z-A)</option>
                             </select>
                             <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors">Apply Sort</button>
                         </form>
@@ -86,9 +86,6 @@
                 </div>
 
                 <div class="h-8 w-px bg-slate-200 mx-1 hidden sm:block"></div>
-                <!-- <a href="{{ route('buyer.product.export', request()->query()) }}" class="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 border border-green-100 transition-all" title="Export Excel">
-                    <i class="bi bi-file-earmark-excel text-lg"></i>
-                </a> -->
 
                 <button id="print_selected_btn" onclick="printSelected()" class="hidden inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm">
                     <i class="bi bi-printer mr-2"></i> Print Selected
@@ -102,28 +99,31 @@
             </div>
         </div>
     </div>
-    <div class="card shadow-sm mb-4 border-success">
-    <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="fas fa-file-import"></i> Bulk Upload Your Products</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ route('buyer.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="row align-items-center">
-                <div class="col-md-9">
-                    <input type="file" name="zip_file" class="form-control" accept=".zip" required>
-                    <p class="text-muted small mt-2 mb-0">
-                        Upload a ZIP containing your <b>products.csv</b> and product photos.
-                    </p>
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-success w-100">Upload Now</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
 
+    <!-- Bulk Upload Card -->
+    <div class="card shadow-sm mb-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-file-import"></i> Bulk Upload Your Products</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('buyer.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row align-items-center">
+                    <div class="col-md-9">
+                        <input type="file" name="zip_file" class="form-control" accept=".zip" required>
+                        <p class="text-muted small mt-2 mb-0">
+                            Upload a ZIP containing your <b>products.csv</b> and product photos.
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">Upload Now</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Table Card -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -150,7 +150,7 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="relative w-12 h-12">
-                                @if($product->images->count() > 0)
+                                @if($product->images && $product->images->count() > 0)
                                 <img src="{{ asset('storage/' . $product->images->first()->path) }}"
                                     class="w-full h-full object-cover rounded-lg border border-slate-200 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
                                     onclick="window.location.href='{{ route('buyer.product.show', $product) }}'">
@@ -186,7 +186,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            @if($product->images->count() > 0)
+                            @if($product->images && $product->images->count() > 0)
                             <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-cyan-50 text-cyan-700">
                                 <i class="bi bi-files mr-1"></i> {{ $product->images->count() }}
                             </span>
@@ -240,7 +240,58 @@
 </form>
 
 <script>
+    function filterBuyerSubcategories() {
+        const categorySelect = document.getElementById('buyer_category_filter');
+        const subcategorySelect = document.getElementById('buyer_subcategory_filter');
+        const defaultOption = document.getElementById('subcat_default_option');
+        if (!categorySelect || !subcategorySelect) return;
+
+        const categoryId = categorySelect.value;
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+        if (!categoryId) {
+            // No category selected -> Disable subcategory dropdown and hide all subcategories
+            subcategorySelect.disabled = true;
+            if (defaultOption) {
+                defaultOption.textContent = 'Select Category First';
+            }
+            subcategorySelect.value = '';
+            options.forEach(opt => {
+                opt.hidden = true;
+                opt.disabled = true;
+            });
+            return;
+        }
+
+        // Category is selected -> Enable dropdown and only display matching subcategories
+        subcategorySelect.disabled = false;
+        if (defaultOption) {
+            defaultOption.textContent = 'All Subcategories';
+        }
+
+        let selectedOptionHidden = false;
+        options.forEach(option => {
+            if (option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Run category/subcategory dependency on initial load
+        filterBuyerSubcategories();
+
         const selectAll = document.getElementById('select_all');
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');
@@ -267,9 +318,9 @@
             cb.addEventListener('change', function() {
                 updatePrintButton();
                 if (!this.checked) {
-                    selectAll.checked = false;
+                    if (selectAll) selectAll.checked = false;
                 } else if (document.querySelectorAll('.product-checkbox:checked').length === checkboxes.length) {
-                    selectAll.checked = true;
+                    if (selectAll) selectAll.checked = true;
                 }
             });
         });

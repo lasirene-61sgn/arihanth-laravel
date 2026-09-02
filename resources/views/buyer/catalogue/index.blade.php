@@ -42,23 +42,37 @@
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div class="col-span-1">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Design Code</label>
-                                <input type="text" name="filter_design_code" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_design_code') }}">
+                                <input type="text" name="filter_design_code" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_design_code') }}" placeholder="Ex: DS-101">
                             </div>
                             <div class="col-span-1">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Product Code</label>
-                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_product_code') }}">
+                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD-001">
                             </div>
                             <div class="col-span-2">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Product Name</label>
-                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_product_name') }}">
+                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_product_name') }}" placeholder="Ex: Gold Ring">
                             </div>
+                            
+                            <!-- Dynamic Category Dropdown -->
                             <div class="col-span-1">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Category</label>
-                                <input type="text" name="filter_category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_category') }}">
+                                <select name="filter_category" id="catalogue_category_filter" onchange="filterCatalogueSubcategories()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                    <option value="">All Categories</option>
+                                    @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('filter_category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
+
+                            <!-- Dynamic Subcategory Dropdown -->
                             <div class="col-span-1">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Subcategory</label>
-                                <input type="text" name="filter_subcategory" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" value="{{ request('filter_subcategory') }}">
+                                <select name="filter_subcategory" id="catalogue_subcategory_filter" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                    <option value="" id="catalogue_subcat_default_option">Select Category First</option>
+                                    @foreach($subcategories as $sub)
+                                    <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                         <div class="flex gap-2 pt-4 border-t border-slate-100">
@@ -138,6 +152,10 @@
                                 <span class="text-slate-500">Category</span>
                                 <span class="font-semibold text-slate-700">{{ $item->category->name ?? 'N/A' }}</span>
                             </div>
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-500">Subcategory</span>
+                                <span class="font-semibold text-slate-700">{{ $item->subcategory->name ?? 'N/A' }}</span>
+                            </div>
                         </div>
 
                         <div class="mt-auto">
@@ -167,9 +185,65 @@
 </div>
 
 <script>
-    document.getElementById('select_all').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.product-checkbox');
-        checkboxes.forEach(cb => cb.checked = this.checked);
+    function filterCatalogueSubcategories() {
+        const categorySelect = document.getElementById('catalogue_category_filter');
+        const subcategorySelect = document.getElementById('catalogue_subcategory_filter');
+        const defaultOption = document.getElementById('catalogue_subcat_default_option');
+        if (!categorySelect || !subcategorySelect) return;
+
+        const categoryId = categorySelect.value;
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+        if (!categoryId) {
+            // Disable subcategory if no category is picked
+            subcategorySelect.disabled = true;
+            if (defaultOption) {
+                defaultOption.textContent = 'Select Category First';
+            }
+            subcategorySelect.value = '';
+            options.forEach(opt => {
+                opt.hidden = true;
+                opt.disabled = true;
+            });
+            return;
+        }
+
+        // Enable subcategory and only show child options
+        subcategorySelect.disabled = false;
+        if (defaultOption) {
+            defaultOption.textContent = 'All Subcategories';
+        }
+
+        let selectedOptionHidden = false;
+        options.forEach(option => {
+            if (option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize dropdown filter state on page load
+        filterCatalogueSubcategories();
+
+        const selectAll = document.getElementById('select_all');
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.product-checkbox');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
     });
 
     function submitBulkPrint() {

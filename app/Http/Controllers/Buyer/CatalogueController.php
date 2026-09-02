@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Buyer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductSubcategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,10 +50,10 @@ class CatalogueController extends Controller
             $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
         }
         if ($request->filled('filter_category')) {
-            $query->whereHas('category', fn($q) => $q->where('name', 'like', '%' . $request->filter_category . '%'));
+            $query->where('product_category_id', $request->filter_category);
         }
         if ($request->filled('filter_subcategory')) {
-            $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
+            $query->where('product_subcategory_id', $request->filter_subcategory);
         }
 
         // --- SORTING ---
@@ -60,9 +62,13 @@ class CatalogueController extends Controller
         elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
         else $query->latest();
 
-        $products = $query->paginate(15);
+        $products = $query->paginate(15)->withQueryString();
 
-        return view('buyer.catalogue.index', compact('products'));
+        // Fetch categories and subcategories for the dropdowns
+        $categories = ProductCategory::orderBy('name')->get();
+        $subcategories = ProductSubcategory::orderBy('name')->get();
+
+        return view('buyer.catalogue.index', compact('products', 'categories', 'subcategories'));
     }
 
     public function show($id)

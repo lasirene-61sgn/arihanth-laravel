@@ -5,7 +5,6 @@
 @section('content')
 <div class="container-fluid py-4">
     
-
     <!-- ==========================================
          TOP TRIGGER CARDS (SIDE BY SIDE IN ONE ROW)
     =========================================== -->
@@ -97,41 +96,51 @@
             </div>
         </div>
 
-        <!-- Craftsmen Filters -->
+        <!-- Craftsmen Filters & Action Bar -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body bg-light rounded">
-                <form method="GET" action="{{ route('super-admin.details-all') }}" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label text-muted small fw-bold">Status Filter</label>
-                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="all" {{ $status == 'all' ? 'selected' : '' }}>All Statuses</option>
-                            <option value="in_process" {{ $status == 'in_process' ? 'selected' : '' }}>In Process</option>
-                            <option value="for_approval" {{ $status == 'for_approval' ? 'selected' : '' }}>For Approval</option>
-                            <option value="allocated" {{ $status == 'allocated' ? 'selected' : '' }}>Allocated</option>
-                            <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Completed</option>
-                            <option value="overdue" {{ $status == 'overdue' ? 'selected' : '' }}>Overdue Only (Overdue > 0)</option>
-                        </select>
+                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+                    <form method="GET" action="{{ route('super-admin.details-all') }}" class="row g-3 flex-grow-1 align-items-end mb-0">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small fw-bold">Status Filter</label>
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="all" {{ $status == 'all' ? 'selected' : '' }}>All Statuses</option>
+                                <option value="in_process" {{ $status == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                <option value="for_approval" {{ $status == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                                <option value="allocated" {{ $status == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="overdue" {{ $status == 'overdue' ? 'selected' : '' }}>Overdue Only (Overdue > 0)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small fw-bold">Sort By</label>
+                            <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="allocated" {{ $sortBy == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                <option value="in_process" {{ $sortBy == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                <option value="completed" {{ $sortBy == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="overdue" {{ $sortBy == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                <option value="total_weight" {{ $sortBy == 'total_weight' ? 'selected' : '' }}>Total Combined Weight</option>
+                                <option value="wa_total_weight" {{ $sortBy == 'wa_total_weight' ? 'selected' : '' }}>WO Weight</option>
+                                <option value="po_total_weight" {{ $sortBy == 'po_total_weight' ? 'selected' : '' }}>PO Weight</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-muted small fw-bold">Order</label>
+                            <select name="sort_order" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="desc" {{ $sortOrder == 'desc' ? 'selected' : '' }}>Descending</option>
+                                <option value="asc" {{ $sortOrder == 'asc' ? 'selected' : '' }}>Ascending</option>
+                            </select>
+                        </div>
+                    </form>
+                    <div>
+                        <button type="button" class="btn btn-outline-warning btn-sm me-2 text-dark" onclick="openPrintColumnModal('selected')">
+                            <i class="bi bi-printer"></i> Print Selected Craftsmen
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm text-dark" onclick="openPrintColumnModal('all')">
+                            <i class="bi bi-printer-fill"></i> Print All Craftsmen
+                        </button>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-muted small fw-bold">Sort By</label>
-                        <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="allocated" {{ $sortBy == 'allocated' ? 'selected' : '' }}>Allocated</option>
-                            <option value="in_process" {{ $sortBy == 'in_process' ? 'selected' : '' }}>In Process</option>
-                            <option value="completed" {{ $sortBy == 'completed' ? 'selected' : '' }}>Completed</option>
-                            <option value="overdue" {{ $sortBy == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                            <option value="total_weight" {{ $sortBy == 'total_weight' ? 'selected' : '' }}>Total Combined Weight</option>
-                            <option value="wa_total_weight" {{ $sortBy == 'wa_total_weight' ? 'selected' : '' }}>WO Weight</option>
-                            <option value="po_total_weight" {{ $sortBy == 'po_total_weight' ? 'selected' : '' }}>PO Weight</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted small fw-bold">Order</label>
-                        <select name="sort_order" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="desc" {{ $sortOrder == 'desc' ? 'selected' : '' }}>Descending</option>
-                            <option value="asc" {{ $sortOrder == 'asc' ? 'selected' : '' }}>Ascending</option>
-                        </select>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -664,37 +673,37 @@
                     </div>
                     <div class="col-6" id="fieldCraftsmanCodeContainer">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="8" id="ordColCraftsmanCode" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="4" id="ordColCraftsmanCode" checked>
                             <label class="form-check-label small" for="ordColCraftsmanCode">Craftsman Code</label>
                         </div>
                     </div>
                     <div class="col-6" id="fieldCraftsmanNameContainer">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="9" id="ordColCraftsmanName" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="5" id="ordColCraftsmanName" checked>
                             <label class="form-check-label small" for="ordColCraftsmanName">Craftsman Name</label>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="4" id="ordColQty" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="6" id="ordColQty" checked>
                             <label class="form-check-label small" for="ordColQty">Quantity</label>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="5" id="ordColWeight" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="7" id="ordColWeight" checked>
                             <label class="form-check-label small" for="ordColWeight">Weight (g)</label>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="6" id="ordColDueDate" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="8" id="ordColDueDate" checked>
                             <label class="form-check-label small" for="ordColDueDate">Due Date</label>
                         </div>
                     </div>
                     <div class="col-6" id="fieldOverdueContainer" style="display: none;">
                         <div class="form-check">
-                            <input class="form-check-input order-col-check" type="checkbox" value="7" id="ordColOverdue" checked>
+                            <input class="form-check-input order-col-check" type="checkbox" value="9" id="ordColOverdue" checked>
                             <label class="form-check-label small text-danger" for="ordColOverdue">Overdue Days</label>
                         </div>
                     </div>
@@ -819,6 +828,49 @@
         new bootstrap.Modal(document.getElementById('ordersListModal')).show();
     }
 
+    // --- Helper function for cleaner print windows ---
+    function openReportPrintWindow(title, tableHeaderHtml, tableBodyHtml) {
+        const printWindow = window.open('', '_blank');
+        const printDocument = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${title}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 20px; }
+                    .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; vertical-align: middle; }
+                    .table th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+                    .text-danger { color: #dc3545 !important; }
+                    .text-success { color: #198754 !important; }
+                    .text-primary { color: #0d6efd !important; }
+                    .text-center { text-align: center; }
+                    @media print {
+                        body { margin: 0; padding: 10px; -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h4 class="text-center mb-4">${title}</h4>
+                <table class="table table-bordered">
+                    <thead>${tableHeaderHtml}</thead>
+                    <tbody>${tableBodyHtml}</tbody>
+                </table>
+                <script>
+                    window.onload = function() { 
+                        window.print(); 
+                        window.close(); 
+                    };
+                <\/script>
+            </body>
+            </html>
+        `;
+        printWindow.document.open();
+        printWindow.document.write(printDocument);
+        printWindow.document.close();
+    }
+
     // --- Craftsman Table Print ---
     let printMode = 'all';
 
@@ -867,59 +919,26 @@
             return;
         }
 
-        let html = `
-        <html>
-        <head>
-            <title>Craftsman Details Report</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 20px; font-family: sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-center { text-align: center; }
-                    .bg-light { background-color: #f8f9fa !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <h3 class="text-center mb-4">Craftsman Details Report</h3>
-            <table class="table table-bordered">
-                <thead class="bg-light">
-                    <tr>`;
-
+        let theadHtml = '<tr>';
         activeIndices.forEach(idx => {
-            html += `<th class="text-center">${columnMap[idx]}</th>`;
+            theadHtml += `<th class="text-center">${columnMap[idx]}</th>`;
         });
+        theadHtml += '</tr>';
 
-        html += `   </tr>
-                </thead>
-                <tbody>`;
-
+        let tbodyHtml = '';
         rowsToPrint.forEach(row => {
             const cells = row.querySelectorAll('td');
-            html += '<tr>';
+            tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                html += `<td class="${cell.className}">${cell.innerText.trim()}</td>`;
+                const text = cell ? cell.innerText.trim() : '-';
+                tbodyHtml += `<td class="${cell ? cell.className : ''}">${text}</td>`;
             });
-            html += '</tr>';
+            tbodyHtml += '</tr>';
         });
 
-        html += `
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
         bootstrap.Modal.getInstance(document.getElementById('printFieldsModal')).hide();
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(html);
-        printWindow.document.close();
+        openReportPrintWindow('Craftsman Details Report', theadHtml, tbodyHtml);
     }
 
     // --- Clients Table Print ---
@@ -968,59 +987,26 @@
             return;
         }
 
-        let html = `
-        <html>
-        <head>
-            <title>Top Picks Clients Report</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 20px; font-family: sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-center { text-align: center; }
-                    .bg-light { background-color: #f8f9fa !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <h3 class="text-center mb-4">Top Picks Clients Report (Work Orders)</h3>
-            <table class="table table-bordered">
-                <thead class="bg-light">
-                    <tr>`;
-
+        let theadHtml = '<tr>';
         activeIndices.forEach(idx => {
-            html += `<th class="text-center">${clientColumnMap[idx]}</th>`;
+            theadHtml += `<th class="text-center">${clientColumnMap[idx]}</th>`;
         });
+        theadHtml += '</tr>';
 
-        html += `   </tr>
-                </thead>
-                <tbody>`;
-
+        let tbodyHtml = '';
         rowsToPrint.forEach(row => {
             const cells = row.querySelectorAll('td');
-            html += '<tr>';
+            tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                html += `<td class="${cell.className}">${cell.innerText.trim()}</td>`;
+                const text = cell ? cell.innerText.trim() : '-';
+                tbodyHtml += `<td class="${cell ? cell.className : ''}">${text}</td>`;
             });
-            html += '</tr>';
+            tbodyHtml += '</tr>';
         });
 
-        html += `
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
         bootstrap.Modal.getInstance(document.getElementById('printClientFieldsModal')).hide();
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(html);
-        printWindow.document.close();
+        openReportPrintWindow('Top Picks Clients Report (Work Orders)', theadHtml, tbodyHtml);
     }
 
     // --- Order Detail Pop-Up Print ---
@@ -1052,80 +1038,55 @@
     }
 
     function executeModalCustomPrint() {
+        const isPO = currentOrderType === 'po';
+        
+        // Exact 1-to-1 matching with td indices in #modalOrdersTable
         const orderColumnMap = {
             1: 'Order Number',
             2: 'BP Code',
             3: 'Business Name',
-            4: 'Quantity',
-            5: 'Weight (g)',
-            6: 'Due Date',
-            7: 'Overdue Days',
-            8: 'Craftsman Code',
-            9: 'Craftsman Name'
+            4: 'Craftsman Code',
+            5: 'Craftsman Name',
+            6: 'Quantity',
+            7: 'Weight (g)',
+            8: 'Due Date',
+            9: 'Overdue Days'
         };
 
         const activeIndices = [];
         document.querySelectorAll('.order-col-check:checked').forEach(cb => {
-            activeIndices.push(parseInt(cb.value));
+            const val = parseInt(cb.value);
+            // Skip PO columns if PO mode is active
+            if (isPO && [2, 3, 4, 5].includes(val)) {
+                return;
+            }
+            activeIndices.push(val);
         });
 
         const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
         const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
         const title = document.getElementById('ordersListModalTitle').innerText;
 
-        let html = `
-        <html>
-        <head>
-            <title>Print - ${title}</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 20px; font-family: sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-center { text-align: center; }
-                    .bg-light { background-color: #f8f9fa !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <h4 class="text-center mb-4">${title}</h4>
-            <table class="table table-bordered">
-                <thead class="bg-light">
-                    <tr>`;
-
+        let theadHtml = '<tr>';
         activeIndices.forEach(idx => {
-            html += `<th class="text-center">${orderColumnMap[idx]}</th>`;
+            theadHtml += `<th class="text-center">${orderColumnMap[idx]}</th>`;
         });
+        theadHtml += '</tr>';
 
-        html += `   </tr>
-                </thead>
-                <tbody>`;
-
+        let tbodyHtml = '';
         rowsToPrint.forEach(row => {
             const cells = row.querySelectorAll('td');
-            html += '<tr>';
+            tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                html += `<td class="${cell.className}">${cell.innerText.trim()}</td>`;
+                const text = cell ? cell.innerText.trim() : '-';
+                tbodyHtml += `<td class="${cell ? cell.className.replace('bp-col', '').replace('business-col', '').replace('craftsman-col', '') : ''}">${text}</td>`;
             });
-            html += '</tr>';
+            tbodyHtml += '</tr>';
         });
 
-        html += `
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
         bootstrap.Modal.getInstance(document.getElementById('orderPrintFieldsModal')).hide();
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(html);
-        printWindow.document.close();
+        openReportPrintWindow(title, theadHtml, tbodyHtml);
     }
 </script>
 @endsection

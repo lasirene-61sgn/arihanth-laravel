@@ -106,7 +106,7 @@
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Category</label>
-                                    <select name="filter_category" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_category" id="category_filter" onchange="filterSubcategories()" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                         <option value="">All Categories</option>
                                         @foreach($categories as $cat)
                                             <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -115,16 +115,16 @@
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Subcategory</label>
-                                    <select name="filter_subcategory" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_subcategory" id="filter_subcategory" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                         <option value="">All Subcategories</option>
                                         @foreach($subCategories as $sub)
-                                            <option value="{{ $sub->id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                            <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-span-2 space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">BP Code (Buyer)</label>
-                                    <select name="filter_bp_code" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_bp_code" id="filter_bp_code" onchange="handleCreatorChange('buyer')" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                         <option value="">All Buyers</option>
                                         @foreach($buyers as $buyer)
                                             <option value="{{ $buyer->bp_code }}" {{ request('filter_bp_code') == $buyer->bp_code ? 'selected' : '' }}>{{ $buyer->bp_code }} - {{ $buyer->business_name }}</option>
@@ -133,7 +133,7 @@
                                 </div>
                                 <div class="col-span-2 space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Craftsman Code</label>
-                                    <select name="filter_craftsman" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_craftsman" id="filter_craftsman" onchange="handleCreatorChange('craftsman')" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
                                         <option value="">All Craftsmen</option>
                                         @foreach($craftsmen as $craftsman)
                                             <option value="{{ $craftsman->craftman_code }}" {{ request('filter_craftsman') == $craftsman->craftman_code ? 'selected' : '' }}>{{ $craftsman->craftman_code }} - {{ $craftsman->business_name }}</option>
@@ -142,8 +142,12 @@
                                 </div>
                             </div>
                             <div class="flex gap-3 pt-4 border-t border-gray-100">
-                                <button type="submit" class="flex-1 px-4 py-2 bg-magenta-800 hover:bg-magenta-900 text-white text-sm font-bold rounded-lg transition-colors">Apply</button>
-                                <a href="{{ route('admin.design.index') }}" class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg text-center transition-colors">Reset</a>
+                                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm inline-flex items-center justify-center gap-2">
+                                    <i class="bi bi-funnel-fill"></i> Apply Filters
+                                </button>
+                                <a href="{{ route('admin.design.index') }}" class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-lg text-center transition-colors inline-flex items-center justify-center gap-2">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                </a>
                             </div>
                         </form>
                     </div>
@@ -916,6 +920,49 @@
         if (selected.length > 0) url += (url.includes('?') ? '&' : '?') + 'selected_ids=' + selected.join(',');
         window.location.href = url;
     }
+
+    function filterSubcategories() {
+        const categoryId = document.getElementById('category_filter').value;
+        const subcategorySelect = document.getElementById('filter_subcategory');
+        if (!subcategorySelect) return;
+        
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+        let selectedOptionHidden = false;
+
+        options.forEach(option => {
+            if (!categoryId || option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
+    function handleCreatorChange(type) {
+        const buyerSelect = document.getElementById('filter_bp_code');
+        const craftsmanSelect = document.getElementById('filter_craftsman');
+        
+        if (!buyerSelect || !craftsmanSelect) return;
+
+        if (type === 'buyer' && buyerSelect.value) {
+            craftsmanSelect.value = '';
+        } else if (type === 'craftsman' && craftsmanSelect.value) {
+            buyerSelect.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        filterSubcategories();
+    });
 </script>
 
 <style>

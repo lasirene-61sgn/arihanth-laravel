@@ -20,53 +20,57 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
-    
 
-public function index(Request $request)
-{
-    if ($staff = $this->currentStaff()) {
-        if (!$staff->hasPermission('product_view') && !$staff->hasPermission('product_create') && !$staff->hasPermission('product_edit')) {
-            abort(403, 'Unauthorized action.');
+
+    public function index(Request $request)
+    {
+        if ($staff = $this->currentStaff()) {
+            if (!$staff->hasPermission('product_view') && !$staff->hasPermission('product_create') && !$staff->hasPermission('product_edit')) {
+                abort(403, 'Unauthorized action.');
+            }
         }
-    }
-    $craftsman = $this->currentCraftsman();
-    
-    $query = Product::with(['category', 'subcategory', 'images', 'creator'])
-        ->where('bp_code', $craftsman->craftman_code)
-        ->whereNotNull('type');
+        $craftsman = $this->currentCraftsman();
 
-    // --- SEARCH & FILTERS ---
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('product_name', 'like', "%{$search}%")
-              ->orWhere('product_code', 'like', "%{$search}%");
-        });
-    }
+        $query = Product::with(['category', 'subcategory', 'images', 'creator'])
+            ->where('bp_code', $craftsman->craftman_code)
+            ->whereNotNull('type');
 
-    if ($request->filled('filter_product_code')) {
-        $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
-    }
-    if ($request->filled('filter_product_name')) {
-        $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
-    }
-    if ($request->filled('filter_category')) {
-        $query->whereHas('category', fn($q) => $q->where('name', 'like', '%' . $request->filter_category . '%'));
-    }
-    if ($request->filled('filter_subcategory')) {
-        $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
-    }
+        // --- SEARCH & FILTERS ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
+            });
+        }
 
-    // --- SORTING ---
-    $sort = $request->get('sort', 'latest');
-    if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
-    elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
-    else $query->latest();
+        if ($request->filled('filter_product_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+        }
+        if ($request->filled('filter_product_name')) {
+            $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
+        }
+        if ($request->filled('filter_category')) {
+            $query->where('product_category_id', $request->filter_category);
+        }
+        if ($request->filled('filter_subcategory')) {
+            $query->where('product_subcategory_id', $request->filter_subcategory);
+        }
 
-    $products = $query->paginate(15);
+        // --- SORTING ---
+        $sort = $request->get('sort', 'latest');
+        if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
+        elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
+        else $query->latest();
 
-    return view('craftsman.product.index', compact('products'));
-}
+        $products = $query->paginate(15)->withQueryString();
+
+        // Fetch dropdown collections
+        $categories = ProductCategory::orderBy('name')->get();
+        $subcategories = ProductSubcategory::orderBy('name')->get();
+
+        return view('craftsman.product.index', compact('products', 'categories', 'subcategories'));
+    }
 
 
 
@@ -89,7 +93,7 @@ public function index(Request $request)
         if (empty($request->product_code)) {
             $request->merge(['product_code' => Product::generateProductCode()]);
         }
-        
+
         $request->validate([
             'product_code' => 'nullable|string|max:255|unique:products,product_code',
             'product_name' => 'nullable|string|max:255',
@@ -186,7 +190,7 @@ public function index(Request $request)
             'delete_images' => 'nullable|array',
             'delete_images.*' => 'integer',
         ]);
-        
+
         try {
             // Handle image deletion
             if ($request->has('delete_images')) {
@@ -230,7 +234,7 @@ public function index(Request $request)
         }
         $craftsman = $this->currentCraftsman();
         if ($product->bp_code != $craftsman->craftman_code) abort(403);
-        
+
         // Delete image files and records
         foreach ($product->images as $image) {
             if (Storage::disk('public')->exists($image->path)) {
@@ -245,11 +249,11 @@ public function index(Request $request)
     public function getSubcategories($categoryId)
     {
         $subcategories = ProductSubcategory::where('product_category_id', $categoryId)->get();
-        
+
         return response()->json($subcategories);
     }
 
-    public function export(Request $request) 
+    public function export(Request $request)
     {
         return Excel::download(new CraftsmanProductExport($request), 'My_Craftsman_Products_' . now()->format('d-m-Y') . '.xlsx');
     }
@@ -261,15 +265,16 @@ public function index(Request $request)
         return view('admin.product.print-selected', compact('products'));
     }
 
-    public function bulkUpload(Request $request){
+    public function bulkUpload(Request $request)
+    {
         $craftsman = $this->currentCraftsman();
         $request->validate([
             'zip_file' => 'required|mimes:zip|max:10400',
         ]);
 
-       $zip = new \ZipArchive;
+        $zip = new \ZipArchive;
         $file = $request->file('zip_file');
-        if($zip->open($file->getRealPath()) === TRUE){
+        if ($zip->open($file->getRealPath()) === TRUE) {
             $timestamp = time();
             $baseTempPath = storage_path('app/temp_buyer_bulk_' . $timestamp);
             $zip->extractTo($baseTempPath);
@@ -280,11 +285,11 @@ public function index(Request $request)
 
             $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($baseTempPath));
 
-            foreach($files as $fileInfo){
-                if($fileInfo->isFile()){
+            foreach ($files as $fileInfo) {
+                if ($fileInfo->isFile()) {
                     $extension = strtolower($fileInfo->getExtension());
-                    if(in_array($extension, ['xlsx', 'xls', 'csv'])){
-                        if(strpos($fileInfo->getFileName(), '._') === false){
+                    if (in_array($extension, ['xlsx', 'xls', 'csv'])) {
+                        if (strpos($fileInfo->getFileName(), '._') === false) {
                             $excelFile = $fileInfo->getRealPath();
                             $actualExtarctPath = dirname($excelFile);
                             break;
@@ -292,16 +297,16 @@ public function index(Request $request)
                     }
                 }
             }
-            if(!$excelFile){
+            if (!$excelFile) {
                 File::deleteDirectory($baseTempPath);
                 return redirect()->back()->with('Error', 'Inside the ZIP Excel are nto found');
             }
 
-            try{
+            try {
                 Excel::import(new ProductImport($actualExtarctPath, $craftsman->craftsman_code), $excelFile);
                 File::deleteDirectory($baseTempPath);
                 return redirect()->back()->with('Success', 'Excel Uploaded and products are also uploaded');
-            }catch(\Exception $e){
+            } catch (\Exception $e) {
                 File::deleteDirectory($baseTempPath);
                 return redirect()->back()->with('Error', 'Error message: ' . $e->getMessage());
             }

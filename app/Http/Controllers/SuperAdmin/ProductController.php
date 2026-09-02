@@ -21,6 +21,56 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     // 1. Handle Export
+    //     if ($request->get('export') === 'excel') {
+    //         return Excel::download(new ProductExport($request), 'products-list.xlsx');
+    //     }
+
+    //     $query = Product::with(['category', 'subcategory', 'creator', 'images'])
+    //         ->notFromFrozenAccounts()
+    //         ->whereNotNull('type');
+
+    //     // 2. Search Logic
+    //     if ($request->filled('search')) {
+    //         $search = $request->search;
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('product_name', 'like', "%$search%")
+    //                 ->orWhere('product_code', 'like', "%$search%");
+    //         });
+    //     }
+
+    //     // 3. Filter Logic (Category)
+    //     if ($request->filled('category_filter')) {
+    //         $query->where('product_category_id', $request->category_filter);
+    //     }
+
+    //     // 4. Sort Logic
+    //     $sortBy = $request->get('sort_by', 'created_at');
+    //     $sortOrder = $request->get('sort_order', 'desc');
+    //     $query->orderBy($sortBy, $sortOrder);
+
+    //     $products = $query->paginate(15)->withQueryString();
+
+    //     // Get categories for the filter dropdown
+    //     $categories = ProductCategory::orderBy('name')->get();
+    //     $all_categories = ProductCategory::withCount('products')
+    //         ->with(['subcategories' => function($query) {
+    //             $query->withCount('products');
+    //         }])
+    //         ->orderBy('name')
+    //         ->get();
+
+
+    //     $buyers = Buyer::orderBy('business_name')->get();
+    //     $craftsmen = Craftman::orderBy('business_name')->get();
+    //     $subCategories = ProductSubcategory::orderBy('name')->get();
+    //     $categories = ProductCategory::orderBy('name')->get();
+
+    //     return view('super-admin.product.index', compact('products', 'categories', 'all_categories', 'buyers', 'craftsmen', 'subCategories'));
+    // }
+
     public function index(Request $request)
     {
         // 1. Handle Export
@@ -32,54 +82,90 @@ class ProductController extends Controller
             ->notFromFrozenAccounts()
             ->whereNotNull('type');
 
-        // 2. Search Logic
+        // Quick Search (from Search Modal/Bar)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%$search%")
-                    ->orWhere('product_code', 'like', "%$search%");
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
             });
         }
 
-        // 3. Filter Logic (Category)
+        // Advanced Filter: Product Name
+        if ($request->filled('filter_name')) {
+            $query->where('product_name', 'like', '%' . $request->filter_name . '%');
+        }
+
+        // Advanced Filter: Product Code
+        if ($request->filled('filter_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_code . '%');
+        }
+
+        // Advanced Filter: Design Code
+        if ($request->filled('filter_design_code')) {
+            $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+        }
+
+        // Advanced Filter: Category
         if ($request->filled('category_filter')) {
             $query->where('product_category_id', $request->category_filter);
         }
 
-        // 4. Sort Logic
+        // Advanced Filter: Subcategory
+        if ($request->filled('filter_subcategory')) {
+            $query->where('product_subcategory_id', $request->filter_subcategory);
+        }
+
+        // Advanced Filter: Buyer (Created by Buyer)
+        if ($request->filled('filter_bp_code')) {
+            $query->where('bp_code', $request->filter_bp_code);
+        }
+
+        // Advanced Filter: Craftsman (Created by Craftsman)
+        // Note: Ignored if Buyer is already set to enforce mutual exclusivity
+        if (!$request->filled('filter_bp_code') && $request->filled('filter_craftsman')) {
+            $query->where('bp_code', $request->filter_craftsman);
+        }
+
+        // Sorting
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
         $products = $query->paginate(15)->withQueryString();
 
-        // Get categories for the filter dropdown
+        // Dropdown collections
         $categories = ProductCategory::orderBy('name')->get();
         $all_categories = ProductCategory::withCount('products')
-            ->with(['subcategories' => function($query) {
-                $query->withCount('products');
+            ->with(['subcategories' => function ($q) {
+                $q->withCount('products');
             }])
             ->orderBy('name')
             ->get();
 
-        
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
-        $categories = ProductCategory::orderBy('name')->get();
-        
-        return view('super-admin.product.index', compact('products', 'categories', 'all_categories', 'buyers', 'craftsmen', 'subCategories'));
+
+        return view('super-admin.product.index', compact(
+            'products',
+            'categories',
+            'all_categories',
+            'buyers',
+            'craftsmen',
+            'subCategories'
+        ));
     }
 
     public function create()
     {
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('super-admin.product.create', compact('categories'));
     }
 
@@ -156,12 +242,12 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'subcategory', 'images']);
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('super-admin.product.show', compact('product'));
     }
 
@@ -170,12 +256,12 @@ class ProductController extends Controller
         $categories = ProductCategory::orderBy('name')->get();
         $subcategories = $product->product_category_id ? ProductSubcategory::where('product_category_id', $product->product_category_id)->get() : collect();
         $product->load('images');
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('super-admin.product.edit', compact('product', 'categories', 'subcategories'));
     }
 
@@ -187,7 +273,7 @@ class ProductController extends Controller
             'product_name' => 'nullable|string|max:255',
             'bp_code' => 'nullable|string|exists:buyers,bp_code',
             'craftsman_code' => 'nullable|exists:craftmen,craftman_code',
-            
+
             'product_category_id' => 'required|exists:product_categories,id',
             'subcategory_id' => 'nullable|exists:product_subcategories,id',
             'type' => 'required|in:Piece,Pair',
@@ -265,16 +351,16 @@ class ProductController extends Controller
     {
         $request->validate(['category_id' => 'required|exists:product_categories,id']);
         $subcategories = ProductSubcategory::where('product_category_id', $request->category_id)
-            ->withCount(['products' => function($query) {
+            ->withCount(['products' => function ($query) {
                 $query->whereNotNull('design_code');
             }])
             ->orderBy('name')
             ->get();
-            
-        $category = ProductCategory::withCount(['products' => function($query) {
-                $query->whereNotNull('design_code');
-            }])->find($request->category_id);
-            
+
+        $category = ProductCategory::withCount(['products' => function ($query) {
+            $query->whereNotNull('design_code');
+        }])->find($request->category_id);
+
         return response()->json([
             'subcategories' => $subcategories,
             'total_products' => $category ? $category->products_count : 0
@@ -298,12 +384,12 @@ class ProductController extends Controller
     {
         $ids = $request->input('selected_products', []);
         $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('super-admin.product.print-selected', compact('products'));
     }
 

@@ -103,27 +103,27 @@
 
             <div class="tw-space-y-1">
                 <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Category</label>
-                <select name="filter_category" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                <select name="category_filter" id="category_filter" onchange="filterSubcategories()" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        <option value="{{ $cat->id }}" {{ request('category_filter') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div class="tw-space-y-1">
                 <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Sub Category</label>
-                <select name="filter_subcategory" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                <select name="filter_subcategory" id="filter_subcategory" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
                     <option value="">All Sub Categories</option>
                     @foreach($subCategories as $sub)
-                        <option value="{{ $sub->id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                        <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div class="tw-space-y-1 lg:tw-col-span-2">
                 <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">BP Code (Buyer)</label>
-                <select name="filter_bp_code" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                <select name="filter_bp_code" id="filter_bp_code" onchange="handleCreatorChange('buyer')" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
                     <option value="">All Buyers</option>
                     @foreach($buyers as $buyer)
                         <option value="{{ $buyer->bp_code }}" {{ request('filter_bp_code') == $buyer->bp_code ? 'selected' : '' }}>{{ $buyer->bp_code }} - {{ $buyer->business_name }}</option>
@@ -133,7 +133,7 @@
 
             <div class="tw-space-y-1 lg:tw-col-span-2">
                 <label class="tw-text-[10px] tw-font-bold tw-text-gray-500 tw-uppercase">Craftsman Code</label>
-                <select name="filter_craftsman" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
+                <select name="filter_craftsman" id="filter_craftsman" onchange="handleCreatorChange('craftsman')" class="form-select tw-rounded-xl tw-text-sm tw-bg-gray-50 dark:tw-bg-gray-700">
                     <option value="">All Craftsmen</option>
                     @foreach($craftsmen as $craftsman)
                         <option value="{{ $craftsman->craftman_code }}" {{ request('filter_craftsman') == $craftsman->craftman_code ? 'selected' : '' }}>{{ $craftsman->craftman_code }} - {{ $craftsman->business_name }}</option>
@@ -141,9 +141,14 @@
                 </select>
             </div>
             
-            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-4 tw-flex tw-justify-end tw-gap-2 tw-mt-2">
-                <a href="{{ url()->current() }}" class="tw-px-6 tw-py-2 tw-rounded-xl tw-bg-gray-100 hover:tw-bg-gray-200 tw-text-gray-700 tw-text-xs tw-font-bold tw-no-underline">RESET</a>
-                <button type="submit" class="tw-bg-brand tw-text-white tw-px-6 tw-py-2 tw-rounded-xl tw-text-xs tw-font-bold">APPLY FILTERS</button>
+            <!-- High visibility action buttons -->
+            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-4 tw-flex tw-justify-end tw-items-center tw-gap-3 tw-mt-4 tw-pt-4 tw-border-t tw-border-gray-100 dark:tw-border-gray-700">
+                <a href="{{ url()->current() }}" class="tw-px-6 tw-py-2.5 tw-rounded-xl tw-bg-gray-200 hover:tw-bg-gray-300 dark:tw-bg-gray-700 dark:hover:tw-bg-gray-600 tw-text-gray-700 dark:tw-text-gray-200 tw-text-xs tw-font-bold tw-no-underline tw-transition-all">
+                    RESET
+                </a>
+                <button type="submit" class="tw-px-6 tw-py-2.5 tw-rounded-xl tw-bg-blue-600 hover:tw-bg-blue-700 tw-text-white tw-text-xs tw-font-bold tw-shadow-md hover:tw-shadow-lg tw-transition-all tw-flex tw-items-center tw-gap-2">
+                    <i class="bi bi-funnel-fill"></i> APPLY FILTERS
+                </button>
             </div>
         </form>
     </div>
@@ -607,6 +612,50 @@
 
             setInterval(updateTimers, 1000);
             window.addEventListener('load', updateTimers);
+
+            function filterSubcategories() {
+                const categoryId = document.getElementById('category_filter').value;
+                const subcategorySelect = document.getElementById('filter_subcategory');
+                if (!subcategorySelect) return;
+                
+                const options = subcategorySelect.querySelectorAll('option[data-category]');
+                let selectedOptionHidden = false;
+        
+                options.forEach(option => {
+                    if (!categoryId || option.getAttribute('data-category') === categoryId) {
+                        option.hidden = false;
+                        option.disabled = false;
+                    } else {
+                        option.hidden = true;
+                        option.disabled = true;
+                        if (option.selected) {
+                            selectedOptionHidden = true;
+                        }
+                    }
+                });
+        
+                if (selectedOptionHidden) {
+                    subcategorySelect.value = '';
+                }
+            }
+        
+            function handleCreatorChange(type) {
+                const buyerSelect = document.getElementById('filter_bp_code');
+                const craftsmanSelect = document.getElementById('filter_craftsman');
+                
+                if (!buyerSelect || !craftsmanSelect) return;
+        
+                // Ensure Buyer and Craftsman cannot be selected together
+                if (type === 'buyer' && buyerSelect.value) {
+                    craftsmanSelect.value = '';
+                } else if (type === 'craftsman' && craftsmanSelect.value) {
+                    buyerSelect.value = '';
+                }
+            }
+        
+            document.addEventListener('DOMContentLoaded', function() {
+                filterSubcategories();
+            });
         </script>
 
         <!-- Accept Design Modal -->

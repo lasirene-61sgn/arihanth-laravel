@@ -53,10 +53,19 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Category</label>
-                            <select name="category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                            <select name="category" id="design_category_filter" onchange="filterDesignSubcategories()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
                                 <option value="">All Categories</option>
                                 @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Subcategory</label>
+                            <select name="subcategory" id="design_subcategory_filter" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                <option value="" id="design_subcat_default_option">Select Category First</option>
+                                @foreach($subcategories as $sub)
+                                <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -75,13 +84,13 @@
                 <div x-show="sortOpen" @click.away="sortOpen = false" class="absolute right-0 z-50 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-4" style="display: none;">
                     <form action="{{ route('buyer.design.index') }}" method="GET" class="space-y-3">
                         <select name="sort" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                            <option value="created_at" {{ request('sort') == 'created_at' ? 'selected' : '' }}>Newest Items</option>
+                            <option value="created_at" {{ request('sort', 'created_at') == 'created_at' ? 'selected' : '' }}>Newest Items</option>
                             <option value="design_code" {{ request('sort') == 'design_code' ? 'selected' : '' }}>Design Code</option>
                             <option value="product_name" {{ request('sort') == 'product_name' ? 'selected' : '' }}>Product Name</option>
                         </select>
                         <select name="direction" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
                             <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Ascending</option>
-                            <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Descending</option>
+                            <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>Descending</option>
                         </select>
                         <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors">Sort Now</button>
                     </form>
@@ -122,16 +131,16 @@
                         $imagesCount = $design->images->count();
                         $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
                         if (!$firstImage && $design->product_image) {
-                        $imgs = explode(',', $design->product_image);
-                        $firstImage = trim($imgs[0]);
+                            $imgs = explode(',', $design->product_image);
+                            $firstImage = trim($imgs[0]);
                         }
 
                         $imgSrc = null;
                         if ($firstImage) {
-                        if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-                        elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-                        elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-                        else { $imgSrc = asset('storage/products/' . $firstImage); }
+                            if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                            elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                            elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                            else { $imgSrc = asset('storage/products/' . $firstImage); }
                         }
                         @endphp
 
@@ -140,7 +149,7 @@
                         $isLocked = $design->isDesignLocked(Auth::guard('buyer')->user());
                         @endphp
                         <img src="{{ $imgSrc }}"
-                            class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-500 {{ $isLocked ? 'blur-3xl ' : '' }}"
+                            class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 {{ $isLocked ? 'blur-3xl' : '' }}"
                             alt="{{ $design->product_name }}">
                         @if($isLocked)
                         <div class="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[2px]">
@@ -163,8 +172,6 @@
 
                     <div class="p-4 flex flex-col flex-1 border-t border-slate-50">
                         <div class="flex justify-between items-start mb-2">
-                            <!-- <h6 class="text-sm font-bold text-slate-800 line-clamp-1 flex-1 mr-2">{{ $design->product_name }}</h6> -->
-                            <!-- <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{{ $design->design_code }}</span> -->
                             <div class="max-w-[70%] mx-auto flex justify-center">
                                 <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate"
                                     title="{{ $design->design_code }}">
@@ -174,10 +181,9 @@
                         </div>
 
                         <div class="flex justify-between items-center text-xs text-slate-500 mb-4">
-                            @if ($design->category->name)
-                            <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"> {{ $design->category->name ?? 'N/A' }}</span>
+                            @if ($design->category && $design->category->name)
+                            <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"> {{ $design->category->name }}</span>
                             @endif
-                            <!-- <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"> Size: {{ $design->size }}</span> -->
                             <span class="font-bold text-slate-700">{{ $design->weight_from }}-{{ $design->weight_to }} gm</span>
                         </div>
 
@@ -227,6 +233,56 @@
 </div>
 
 <script>
+function filterDesignSubcategories() {
+    const categorySelect = document.getElementById('design_category_filter');
+    const subcategorySelect = document.getElementById('design_subcategory_filter');
+    const defaultOption = document.getElementById('design_subcat_default_option');
+    if (!categorySelect || !subcategorySelect) return;
+
+    const categoryId = categorySelect.value;
+    const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+    if (!categoryId) {
+        subcategorySelect.disabled = true;
+        if (defaultOption) {
+            defaultOption.textContent = 'Select Category First';
+        }
+        subcategorySelect.value = '';
+        options.forEach(opt => {
+            opt.hidden = true;
+            opt.disabled = true;
+        });
+        return;
+    }
+
+    subcategorySelect.disabled = false;
+    if (defaultOption) {
+        defaultOption.textContent = 'All Subcategories';
+    }
+
+    let selectedOptionHidden = false;
+    options.forEach(option => {
+        if (option.getAttribute('data-category') === categoryId) {
+            option.hidden = false;
+            option.disabled = false;
+        } else {
+            option.hidden = true;
+            option.disabled = true;
+            if (option.selected) {
+                selectedOptionHidden = true;
+            }
+        }
+    });
+
+    if (selectedOptionHidden) {
+        subcategorySelect.value = '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterDesignSubcategories();
+});
+
 function addToFavorite(productId) {
     fetch("{{ route('buyer.favorites.store') }}", {
         method: "POST",
@@ -238,11 +294,7 @@ function addToFavorite(productId) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            alert(data.message);
-        } else {
-            alert(data.message);
-        }
+        alert(data.message);
     })
     .catch(error => {
         console.error('Error:', error);

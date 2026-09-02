@@ -8,18 +8,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Exports\CraftsmanCatalogueExport;
+use App\Models\ProductCategory;
+use App\Models\ProductSubcategory;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CatalogueController extends Controller
 {
-    
 
-public function index(Request $request)
+
+    public function index(Request $request)
 {
     $craftsman = $this->currentCraftsman();
     
     // Query: Must be mine (bp_code matches) AND Accepted AND have a Design Code
-    $query = Product::with(['category', 'subcategory'])
+    $query = Product::with(['category', 'subcategory', 'images'])
         ->where('bp_code', $craftsman->craftman_code)
         ->where('design_status', 'Accepted')
         ->whereNotNull('design_code')
@@ -46,10 +48,10 @@ public function index(Request $request)
         $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
     }
     if ($request->filled('filter_category')) {
-        $query->whereHas('category', fn($q) => $q->where('name', 'like', '%' . $request->filter_category . '%'));
+        $query->where('product_category_id', $request->filter_category);
     }
     if ($request->filled('filter_subcategory')) {
-        $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
+        $query->where('product_subcategory_id', $request->filter_subcategory);
     }
 
     // --- SORTING ---
@@ -58,16 +60,19 @@ public function index(Request $request)
     elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
     else $query->latest();
 
-    $designs = $query->paginate(15);
+    $designs = $query->paginate(15)->withQueryString();
 
     // Attach creator info (Current Craftsman)
-    $craftsman = $this->currentCraftsman();
     foreach($designs as $design) {
         $design->creator_name = $craftsman->full_name ?? $craftsman->name ?? 'Craftsman';
         $design->creator_bp_code = $craftsman->craftman_code ?? 'N/A';
     }
 
-    return view('craftsman.catalogue.index', compact('designs'));
+    // Dropdowns data
+    $categories = ProductCategory::orderBy('name')->get();
+    $subcategories = ProductSubcategory::orderBy('name')->get();
+
+    return view('craftsman.catalogue.index', compact('designs', 'categories', 'subcategories'));
 }
 
 
@@ -87,7 +92,7 @@ public function index(Request $request)
         return view('craftsman.catalogue.show', compact('design'));
     }
 
-    public function export(Request $request) 
+    public function export(Request $request)
     {
         return Excel::download(new CraftsmanCatalogueExport($request), 'CraftsmanCatalogueExport_' . now()->format('d-m-Y') . '.xlsx');
     }

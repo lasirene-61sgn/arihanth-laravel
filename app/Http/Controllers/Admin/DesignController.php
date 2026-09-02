@@ -44,28 +44,46 @@ class DesignController extends Controller
             ->notFromFrozenAccounts()
             ->whereNotNull('type');
 
+        $applyFilters = function ($q) use ($request) {
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $q->where(function ($subq) use ($search) {
+                    $subq->where('product_name', 'like', "%{$search}%")
+                        ->orWhere('product_code', 'like', "%{$search}%")
+                        ->orWhere('design_code', 'like', "%{$search}%")
+                        ->orWhere('bp_code', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('filter_name')) {
+                $q->where('product_name', 'like', '%' . $request->filter_name . '%');
+            }
+            if ($request->filled('filter_code')) {
+                $q->where('product_code', 'like', '%' . $request->filter_code . '%');
+            }
+            if ($request->filled('filter_design_code')) {
+                $q->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+            }
+            if ($request->filled('filter_product_code')) {
+                $q->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+            }
+            if ($request->filled('filter_category')) {
+                $q->where('product_category_id', $request->filter_category);
+            }
+            if ($request->filled('filter_subcategory')) {
+                $q->where('product_subcategory_id', $request->filter_subcategory);
+            }
+            if ($request->filled('filter_bp_code')) {
+                $q->where('bp_code', $request->filter_bp_code);
+            }
+            if (!$request->filled('filter_bp_code') && $request->filled('filter_craftsman')) {
+                $q->where('bp_code', $request->filter_craftsman);
+            }
+        };
+
         // --- COUNT CALCULATION (Based on search/filters but before tab) ---
         $countQuery = clone $baseQuery;
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $countQuery->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%")
-                    ->orWhere('design_code', 'like', "%{$search}%")
-                    ->orWhere('bp_code', 'like', "%{$search}%");
-            });
-        }
-        if ($request->filled('filter_name')) $countQuery->where('product_name', 'like', '%' . $request->filter_name . '%');
-        if ($request->filled('filter_code')) $countQuery->where('product_code', 'like', '%' . $request->filter_code . '%');
-        if ($request->filled('filter_design_code')) $countQuery->where('design_code', 'like', '%' . $request->filter_design_code . '%');
-        if ($request->filled('filter_bp_code')) $countQuery->where('bp_code', 'like', '%' . $request->filter_bp_code . '%');
-
-        if ($request->filled('filter_category')) {
-            $countQuery->where('product_category_id', $request->filter_category);
-        }
-        if ($request->filled('filter_subcategory')) {
-            $countQuery->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
-        }
+        $applyFilters($countQuery);
 
         $statusCounts = [
             'all' => (clone $countQuery)->count(),
@@ -76,38 +94,7 @@ class DesignController extends Controller
 
         // --- MAIN QUERY ---
         $query = clone $baseQuery;
-
-        // --- SEARCH & FILTERS ---
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%")
-                    ->orWhere('design_code', 'like', "%{$search}%")
-                    ->orWhere('bp_code', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('filter_name')) $query->where('product_name', 'like', '%' . $request->filter_name . '%');
-        if ($request->filled('filter_code')) $query->where('product_code', 'like', '%' . $request->filter_code . '%');
-        if ($request->filled('filter_design_code')) $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
-        if ($request->filled('filter_bp_code')) $query->where('bp_code', 'like', '%' . $request->filter_bp_code . '%');
-        if ($request->filled('filter_craftsman')) {
-            // In Product model, craftsman code is often stored in bp_code for craftsman designs
-            $query->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
-            $countQuery->where('bp_code', 'like', '%' . $request->filter_craftsman . '%');
-        }
-        if ($request->filled('filter_product_code')) {
-            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
-            $countQuery->where('product_code', 'like', '%' . $request->filter_product_code . '%');
-        }
-
-        if ($request->filled('filter_category')) {
-            $query->where('product_category_id', $request->filter_category);
-        }
-        if ($request->filled('filter_subcategory')) {
-            $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
-        }
+        $applyFilters($query);
 
         // --- TAB FILTERING ---
         $tab = $request->get('tab', 'all');

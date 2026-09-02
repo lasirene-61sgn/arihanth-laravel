@@ -24,18 +24,44 @@ class DesignController extends Controller
     {
         $baseQuery = Product::with(['category', 'subcategory', 'images', 'creator', 'userAccess'])->notFromFrozenAccounts()->whereNotNull('type');
 
+        $applyFilters = function($q) use ($request) {
+            if ($request->filled('search')) {
+                $q->where(function ($subQ) use ($request) {
+                    $subQ->where('product_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
+                        ->orWhere('design_code', 'like', '%' . $request->search . '%');
+                });
+            }
+            if ($request->filled('filter_name')) {
+                $q->where('product_name', 'like', '%' . $request->filter_name . '%');
+            }
+            if ($request->filled('filter_code')) {
+                $q->where('product_code', 'like', '%' . $request->filter_code . '%');
+            }
+            if ($request->filled('filter_design_code')) {
+                $q->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+            }
+            if ($request->filled('category_filter')) {
+                $q->where('product_category_id', $request->category_filter);
+            }
+            if ($request->filled('filter_subcategory')) {
+                $q->where('product_subcategory_id', $request->filter_subcategory);
+            }
+            if ($request->filled('filter_bp_code')) {
+                $q->where('bp_code', $request->filter_bp_code);
+            }
+            if (!$request->filled('filter_bp_code') && $request->filled('filter_craftsman')) {
+                $q->where('bp_code', $request->filter_craftsman);
+            }
+            if ($request->filled('matched_ids')) {
+                $matchedIds = explode(',', $request->matched_ids);
+                $q->whereIn('id', $matchedIds);
+            }
+        };
+
         // Status Counts (based on current filters but BEFORE tab filtering)
         $countQuery = clone $baseQuery;
-        if ($request->filled('search')) {
-            $countQuery->where(function ($q) use ($request) {
-                $q->where('product_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('product_code', 'like', '%' . $request->search . '%')
-                    ->orWhere('design_code', 'like', '%' . $request->search . '%');
-            });
-        }
-        if ($request->filled('category_filter')) {
-            $countQuery->where('product_category_id', $request->category_filter);
-        }
+        $applyFilters($countQuery);
 
         $allCount = (clone $countQuery)->count();
         $acceptedCount = (clone $countQuery)->where('design_status', 'Accepted')->count();
@@ -51,26 +77,7 @@ class DesignController extends Controller
 
         // --- Now apply filters to the main query ---
         $query = clone $baseQuery;
-
-        // Search Logic
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('product_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('product_code', 'like', '%' . $request->search . '%')
-                    ->orWhere('design_code', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        // Category filter
-        if ($request->filled('category_filter')) {
-            $query->where('product_category_id', $request->category_filter);
-        }
-
-        // Image Search Filter
-        if ($request->filled('matched_ids')) {
-            $matchedIds = explode(',', $request->matched_ids);
-            $query->whereIn('id', $matchedIds);
-        }
+        $applyFilters($query);
 
         // Tab Filtering
         $activeTab = $request->get('tab', 'all');

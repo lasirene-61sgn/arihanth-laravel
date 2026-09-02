@@ -89,15 +89,39 @@
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Category</label>
-                                    <input type="text" name="filter_category" value="{{ request('filter_category') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_category" id="category_filter" onchange="filterSubcategories()" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Categories</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{ $cat->id }}" {{ request('filter_category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Subcategory</label>
-                                    <input type="text" name="filter_subcategory" value="{{ request('filter_subcategory') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <select name="filter_subcategory" id="filter_subcategory" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Sub Categories</option>
+                                        @foreach($subCategories as $sub)
+                                            <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-span-2 space-y-1">
-                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">BP Code</label>
-                                    <input type="text" name="filter_bp_code" value="{{ request('filter_bp_code') }}" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">BP Code (Buyer)</label>
+                                    <select name="filter_bp_code" id="filter_bp_code" onchange="handleCreatorChange('buyer')" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Buyers</option>
+                                        @foreach($buyers as $buyer)
+                                            <option value="{{ $buyer->bp_code }}" {{ request('filter_bp_code') == $buyer->bp_code ? 'selected' : '' }}>{{ $buyer->bp_code }} - {{ $buyer->business_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-span-2 space-y-1">
+                                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Craftsman Code</label>
+                                    <select name="filter_craftsman" id="filter_craftsman" onchange="handleCreatorChange('craftsman')" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-magenta-500">
+                                        <option value="">All Craftsmen</option>
+                                        @foreach($craftsmen as $craftsman)
+                                            <option value="{{ $craftsman->craftman_code }}" {{ request('filter_craftsman') == $craftsman->craftman_code ? 'selected' : '' }}>{{ $craftsman->craftman_code }} - {{ $craftsman->business_name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -357,5 +381,48 @@
         
         window.location.href = url;
     }
+
+    function filterSubcategories() {
+        const categoryId = document.getElementById('category_filter').value;
+        const subcategorySelect = document.getElementById('filter_subcategory');
+        if (!subcategorySelect) return;
+        
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+        let selectedOptionHidden = false;
+
+        options.forEach(option => {
+            if (!categoryId || option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
+    function handleCreatorChange(type) {
+        const buyerSelect = document.getElementById('filter_bp_code');
+        const craftsmanSelect = document.getElementById('filter_craftsman');
+        
+        if (!buyerSelect || !craftsmanSelect) return;
+
+        if (type === 'buyer' && buyerSelect.value) {
+            craftsmanSelect.value = '';
+        } else if (type === 'craftsman' && craftsmanSelect.value) {
+            buyerSelect.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        filterSubcategories();
+    });
 </script>
 @endsection

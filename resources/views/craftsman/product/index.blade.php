@@ -21,19 +21,33 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Code</label>
-                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_product_code') }}">
+                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD-001">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Name</label>
-                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_product_name') }}">
+                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_product_name') }}" placeholder="Ex: Gold Ring">
                             </div>
+                            
+                            <!-- Dynamic Category Dropdown -->
                             <div>
                                 <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Category</label>
-                                <input type="text" name="filter_category" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_category') }}">
+                                <select name="filter_category" id="craftsman_category_filter" onchange="filterCraftsmanSubcategories()" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="">All Categories</option>
+                                    @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('filter_category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
+
+                            <!-- Dynamic Subcategory Dropdown -->
                             <div>
                                 <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Subcategory</label>
-                                <input type="text" name="filter_subcategory" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value="{{ request('filter_subcategory') }}">
+                                <select name="filter_subcategory" id="craftsman_subcategory_filter" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="" id="craftsman_subcat_default_option">Select Category First</option>
+                                    @foreach($subcategories as $sub)
+                                    <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                         <div class="flex gap-2 pt-4 border-t border-emerald-50">
@@ -47,9 +61,6 @@
             <button id="print_selected_btn" onclick="printSelected()" class="hidden inline-flex items-center px-3 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm">
                 <i class="bi bi-printer me-2"></i> Print Selected
             </button>
-            <!-- <button onclick="window.print()" class="inline-flex items-center px-3 py-2 bg-white border border-teal-200 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-50 transition shadow-sm">
-                <i class="bi bi-printer me-2"></i> Print Page
-            </button> -->
             <a href="{{ route('craftsman.product.create') }}"
                 class="inline-flex items-center px-3 py-2 bg-emerald-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition shadow-sm">
                 <i class="bi bi-plus-lg me-2"></i> Create New
@@ -78,30 +89,31 @@
             </div>
         </div>
     </div>
+
     <div class="card shadow-sm mb-4 border-warning">
-    <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="fas fa-hammer"></i> Craftsman Bulk Upload (ZIP)</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ route('craftsman.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="row align-items-center">
-                <div class="col-md-9">
-                    <label class="form-label font-weight-bold">Select ZIP File</label>
-                    <input type="file" name="zip_file" class="form-control" accept=".zip" required>
-                    <div class="form-text mt-2">
-                        Upload a ZIP containing your <b>products.xlsx</b> and all related <b>images</b>.
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-hammer"></i> Craftsman Bulk Upload (ZIP)</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('craftsman.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row align-items-center">
+                    <div class="col-md-9">
+                        <label class="form-label font-weight-bold">Select ZIP File</label>
+                        <input type="file" name="zip_file" class="form-control" accept=".zip" required>
+                        <div class="form-text mt-2">
+                            Upload a ZIP containing your <b>products.xlsx</b> and all related <b>images</b>.
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-dark w-100 mt-3">
+                            <i class="fas fa-upload"></i> Upload Batch
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-dark w-100 mt-3">
-                        <i class="fas fa-upload"></i> Upload Batch
-                    </button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 
     <div class="bg-white rounded-xl shadow-sm border border-emerald-100 overflow-hidden">
         <div class="overflow-x-auto">
@@ -182,7 +194,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-12 text-emerald-400 italic">
+                        <td colspan="7" class="text-center py-12 text-emerald-400 italic">
                             No products found matching your criteria.
                         </td>
                     </tr>
@@ -210,7 +222,58 @@
 </form>
 
 <script>
+    function filterCraftsmanSubcategories() {
+        const categorySelect = document.getElementById('craftsman_category_filter');
+        const subcategorySelect = document.getElementById('craftsman_subcategory_filter');
+        const defaultOption = document.getElementById('craftsman_subcat_default_option');
+        if (!categorySelect || !subcategorySelect) return;
+
+        const categoryId = categorySelect.value;
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+        if (!categoryId) {
+            // Disable subcategory if no category is picked
+            subcategorySelect.disabled = true;
+            if (defaultOption) {
+                defaultOption.textContent = 'Select Category First';
+            }
+            subcategorySelect.value = '';
+            options.forEach(opt => {
+                opt.hidden = true;
+                opt.disabled = true;
+            });
+            return;
+        }
+
+        // Enable subcategory and display only matching options
+        subcategorySelect.disabled = false;
+        if (defaultOption) {
+            defaultOption.textContent = 'All Subcategories';
+        }
+
+        let selectedOptionHidden = false;
+        options.forEach(option => {
+            if (option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Run category/subcategory dependency on initial load
+        filterCraftsmanSubcategories();
+
         const selectAll = document.getElementById('select_all');
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');
@@ -237,9 +300,9 @@
             cb.addEventListener('change', function() {
                 updatePrintButton();
                 if (!this.checked) {
-                    selectAll.checked = false;
+                    if (selectAll) selectAll.checked = false;
                 } else if (document.querySelectorAll('.product-checkbox:checked').length === checkboxes.length) {
-                    selectAll.checked = true;
+                    if (selectAll) selectAll.checked = true;
                 }
             });
         });

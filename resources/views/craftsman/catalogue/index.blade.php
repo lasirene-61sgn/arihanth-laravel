@@ -18,10 +18,6 @@
                 class="hidden inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm">
                 <i class="bi bi-printer me-2"></i> Print Selected
             </button>
-            <!-- <button onclick="window.print()" 
-                    class="inline-flex items-center px-4 py-2 bg-white border border-teal-200 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-50 transition shadow-sm">
-                <i class="bi bi-printer me-2"></i> Print Page
-            </button> -->
         </div>
     </div>
 
@@ -40,28 +36,42 @@
                 type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                 <i class="bi bi-funnel me-2"></i> Filters
             </button>
-            <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 400px;">
+            <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 420px;">
                 <form action="{{ route('craftsman.catalogue.index') }}" method="GET" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Design Code</label>
-                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_design_code') }}">
+                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_design_code') }}" placeholder="Ex: DS-101">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Code</label>
-                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_code') }}">
+                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD-001">
                         </div>
                         <div class="col-span-2">
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Name</label>
-                            <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_name') }}">
+                            <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_name') }}" placeholder="Ex: Gold Ring">
                         </div>
+                        
+                        <!-- Category Dropdown -->
                         <div>
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Category</label>
-                            <input type="text" name="filter_category" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_category') }}">
+                            <select name="filter_category" id="craftsman_cat_category_filter" onchange="filterCraftsmanCatalogueSubcategories()" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">All Categories</option>
+                                @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('filter_category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
+
+                        <!-- Subcategory Dropdown (Linked) -->
                         <div>
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Subcategory</label>
-                            <input type="text" name="filter_subcategory" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_subcategory') }}">
+                            <select name="filter_subcategory" id="craftsman_cat_subcategory_filter" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="" id="craftsman_cat_subcat_default_option">Select Category First</option>
+                                @foreach($subcategories as $sub)
+                                <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="flex gap-2 pt-4 border-t border-emerald-50">
@@ -99,16 +109,16 @@
                     $firstImage = $imagesCount > 0 ? $item->images->first()->path : null;
 
                     if (!$firstImage && $item->product_image) {
-                    $imgs = explode(',', $item->product_image);
-                    $firstImage = trim($imgs[0]);
+                        $imgs = explode(',', $item->product_image);
+                        $firstImage = trim($imgs[0]);
                     }
 
                     $imgSrc = null;
                     if ($firstImage) {
-                    if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-                    elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-                    elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-                    else { $imgSrc = asset('storage/products/' . $firstImage); }
+                        if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                        elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                        elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                        else { $imgSrc = asset('storage/products/' . $firstImage); }
                     }
                     @endphp
 
@@ -146,7 +156,7 @@
                             <span class="text-emerald-900 font-semibold ml-1">{{ $item->product_code }}</span>
                         </div>
                         <div class="px-2 py-0.5 bg-emerald-900 text-white text-[10px] rounded font-bold">
-                            {{ $item->category->name }}
+                            {{ $item->category->name ?? 'N/A' }}
                         </div>
                     </div>
 
@@ -181,7 +191,58 @@
 </form>
 
 <script>
+    function filterCraftsmanCatalogueSubcategories() {
+        const categorySelect = document.getElementById('craftsman_cat_category_filter');
+        const subcategorySelect = document.getElementById('craftsman_cat_subcategory_filter');
+        const defaultOption = document.getElementById('craftsman_cat_subcat_default_option');
+        if (!categorySelect || !subcategorySelect) return;
+
+        const categoryId = categorySelect.value;
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+        if (!categoryId) {
+            // Disable subcategory dropdown when category is unselected
+            subcategorySelect.disabled = true;
+            if (defaultOption) {
+                defaultOption.textContent = 'Select Category First';
+            }
+            subcategorySelect.value = '';
+            options.forEach(opt => {
+                opt.hidden = true;
+                opt.disabled = true;
+            });
+            return;
+        }
+
+        // Enable and filter options matching selected category
+        subcategorySelect.disabled = false;
+        if (defaultOption) {
+            defaultOption.textContent = 'All Subcategories';
+        }
+
+        let selectedOptionHidden = false;
+        options.forEach(option => {
+            if (option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize dropdown filter state on page load
+        filterCraftsmanCatalogueSubcategories();
+
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');
 
@@ -189,8 +250,10 @@
             const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
             if (checkedCount > 0) {
                 printBtn.classList.remove('hidden');
+                printBtn.classList.add('inline-flex');
             } else {
                 printBtn.classList.add('hidden');
+                printBtn.classList.remove('inline-flex');
             }
         }
 

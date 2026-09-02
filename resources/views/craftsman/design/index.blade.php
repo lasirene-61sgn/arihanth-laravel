@@ -36,16 +36,42 @@
                 type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                 <i class="bi bi-funnel me-2"></i> Filters
             </button>
-            <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 400px;">
+            <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 420px;">
                 <form action="{{ route('craftsman.design.index') }}" method="GET" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="col-span-1">
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Design Code</label>
-                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_design_code') }}">
+                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_design_code') }}" placeholder="Ex: DS-101">
                         </div>
                         <div class="col-span-1">
                             <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Code</label>
-                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_code') }}">
+                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD-001">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Product Name</label>
+                            <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500" value="{{ request('filter_product_name') }}" placeholder="Ex: Gold Ring">
+                        </div>
+
+                        <!-- Category Dropdown -->
+                        <div class="col-span-1">
+                            <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Category</label>
+                            <select name="filter_category" id="craftsman_design_category_filter" onchange="filterCraftsmanDesignSubcategories()" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">All Categories</option>
+                                @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('filter_category') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Subcategory Dropdown (Dynamically Loaded) -->
+                        <div class="col-span-1">
+                            <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Subcategory</label>
+                            <select name="filter_subcategory" id="craftsman_design_subcategory_filter" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="" id="craftsman_design_subcat_default_option">Select Category First</option>
+                                @foreach($subcategories as $sub)
+                                <option value="{{ $sub->id }}" data-category="{{ $sub->product_category_id }}" {{ request('filter_subcategory') == $sub->id ? 'selected' : '' }}>{{ $sub->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="flex gap-2 pt-4 border-t border-emerald-50">
@@ -68,16 +94,16 @@
             $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
 
             if (!$firstImage && $design->product_image) {
-            $imgs = explode(',', $design->product_image);
-            $firstImage = trim($imgs[0]);
+                $imgs = explode(',', $design->product_image);
+                $firstImage = trim($imgs[0]);
             }
 
             $imgSrc = null;
             if ($firstImage) {
-            if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-            elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-            elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-            else { $imgSrc = asset('storage/products/' . $firstImage); }
+                if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                else { $imgSrc = asset('storage/products/' . $firstImage); }
             }
             @endphp
 
@@ -94,9 +120,6 @@
                         <div class="bg-white/90 p-3 rounded-full shadow-lg border border-emerald-50">
                             <img src="{{ asset('images/ajlogo.png') }}" class="w-12 h-12 object-contain" alt="Locked">
                         </div>
-                        <!-- <div class="absolute bottom-16 bg-emerald-900 text-white rounded-full p-1 shadow-md translate-y-8">
-                                        <i class="bi bi-lock-fill text-xs"></i>
-                                    </div> -->
                     </div>
                     @elseif($imagesCount > 1)
                     <div class="absolute bottom-3 right-3">
@@ -120,9 +143,6 @@
                                 {{ $design->design_code }}
                             </h6>
                         </div>
-                        <!-- <span class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase">
-                                {{ $design->design_code }}
-                            </span> -->
                     </div>
 
                     <div class="flex justify-between items-center text-sm mb-4">
@@ -165,7 +185,60 @@
         @endif
     </div>
 </div>
+
 <script>
+function filterCraftsmanDesignSubcategories() {
+    const categorySelect = document.getElementById('craftsman_design_category_filter');
+    const subcategorySelect = document.getElementById('craftsman_design_subcategory_filter');
+    const defaultOption = document.getElementById('craftsman_design_subcat_default_option');
+    if (!categorySelect || !subcategorySelect) return;
+
+    const categoryId = categorySelect.value;
+    const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+    if (!categoryId) {
+        // Disable subcategory dropdown when category is empty
+        subcategorySelect.disabled = true;
+        if (defaultOption) {
+            defaultOption.textContent = 'Select Category First';
+        }
+        subcategorySelect.value = '';
+        options.forEach(opt => {
+            opt.hidden = true;
+            opt.disabled = true;
+        });
+        return;
+    }
+
+    // Enable and filter options matching selected category
+    subcategorySelect.disabled = false;
+    if (defaultOption) {
+        defaultOption.textContent = 'All Subcategories';
+    }
+
+    let selectedOptionHidden = false;
+    options.forEach(option => {
+        if (option.getAttribute('data-category') === categoryId) {
+            option.hidden = false;
+            option.disabled = false;
+        } else {
+            option.hidden = true;
+            option.disabled = true;
+            if (option.selected) {
+                selectedOptionHidden = true;
+            }
+        }
+    });
+
+    if (selectedOptionHidden) {
+        subcategorySelect.value = '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterCraftsmanDesignSubcategories();
+});
+
 function addToFavorite(productId) {
     fetch("{{ route('craftsman.favorites.store') }}", {
         method: "POST",
