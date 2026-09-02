@@ -64,6 +64,8 @@ class DetailsAllController extends Controller
                     'weight' => $w,
                     'bp_code' => $wo->bp_code,
                     'business_name' => $wo->customer_name,
+                    'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
+                    'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
                     'due_date' => $wo->due_date ? \Carbon\Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
                     'overdue_days' => $wo->isOverdue() ? intval(\Carbon\Carbon::parse($wo->due_date)->diffInDays(now())) : 0
                 ];
@@ -207,6 +209,76 @@ class DetailsAllController extends Controller
 
         $craftsmenData = $collection->values()->all();
 
-        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder'));
+        $clientStats = [];
+        foreach ($allWorkOrders as $wo) {
+            if (!$wo->customer_name) continue;
+            
+            $code = $wo->bp_code ?? 'N/A';
+            if (!isset($clientStats[$code])) {
+                $clientStats[$code] = [
+                    'name' => $wo->customer_name,
+                    'orders' => 0,
+                    'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'in_process' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'for_approval' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'overdue' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'completed' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'rejected' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                ];
+            }
+            
+            $clientStats[$code]['orders']++;
+            $w = floatval($wo->weight_to ?: $wo->weight_from);
+            
+            $isWoOverdue = (method_exists($wo, 'isOverdue') && $wo->isOverdue());
+            
+            $orderDetails = [
+                'number' => $wo->work_order_number,
+                'qty' => $wo->quantity,
+                'weight' => $w,
+                'bp_code' => $wo->bp_code,
+                'business_name' => $wo->customer_name,
+                'due_date' => $wo->due_date ? \Carbon\Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
+                'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
+                'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
+                'overdue_days' => ($isWoOverdue && $wo->due_date) ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($wo->due_date)->startOfDay()) : 0
+            ];
+
+            if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
+                $clientStats[$code]['new']['count']++;
+                $clientStats[$code]['new']['weight'] += $w;
+                $clientStats[$code]['new']['orders'][] = $orderDetails;
+            }
+            if ($wo->craftsman_status == 'in_process') {
+                $clientStats[$code]['in_process']['count']++;
+                $clientStats[$code]['in_process']['weight'] += $w;
+                $clientStats[$code]['in_process']['orders'][] = $orderDetails;
+            }
+            if ($wo->status == 'for_approval') {
+                $clientStats[$code]['for_approval']['count']++;
+                $clientStats[$code]['for_approval']['weight'] += $w;
+                $clientStats[$code]['for_approval']['orders'][] = $orderDetails;
+            }
+            if ($isWoOverdue) {
+                $clientStats[$code]['overdue']['count']++;
+                $clientStats[$code]['overdue']['weight'] += $w;
+                $clientStats[$code]['overdue']['orders'][] = $orderDetails;
+            }
+            if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') {
+                $clientStats[$code]['completed']['count']++;
+                $clientStats[$code]['completed']['weight'] += $w;
+                $clientStats[$code]['completed']['orders'][] = $orderDetails;
+            }
+            if ($wo->craftsman_status == 'rejected') {
+                $clientStats[$code]['rejected']['count']++;
+                $clientStats[$code]['rejected']['weight'] += $w;
+                $clientStats[$code]['rejected']['orders'][] = $orderDetails;
+            }
+        }
+        
+        uasort($clientStats, function($a, $b) { return $b['orders'] <=> $a['orders']; });
+        $topPicksClientsFull = array_slice($clientStats, 0, 15, true);
+
+        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull'));
     }
 }

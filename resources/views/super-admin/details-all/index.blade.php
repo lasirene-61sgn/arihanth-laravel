@@ -1,23 +1,16 @@
 @extends('super-admin.layouts.app')
 
-@section('title', 'Details ALL Craftsman')
+@section('title', 'Details ALL Craftsman & Clients')
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0 fw-bold">Craftsman Details (All)</h4>
-        <div>
-            <button class="btn btn-outline-primary me-2" onclick="openPrintColumnModal('selected')">
-                <i class="bi bi-printer"></i> Print Selected
-            </button>
-            <button class="btn btn-primary" onclick="openPrintColumnModal('all')">
-                <i class="bi bi-printer-fill"></i> Print All
-            </button>
-        </div>
-    </div>
+    
 
-    <!-- Top Picks Trigger Card -->
+    <!-- ==========================================
+         TOP TRIGGER CARDS (SIDE BY SIDE IN ONE ROW)
+    =========================================== -->
     <div class="row g-3 mb-4">
+        <!-- Craftsman Card -->
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card shadow-sm border-0 h-100 bg-white" onclick="toggleDetailsTable()" style="cursor: pointer;">
                 <div class="card-body p-3">
@@ -32,12 +25,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Client Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card shadow-sm border-0 h-100 bg-white" onclick="toggleClientsTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-primary-subtle text-primary rounded-3 p-2">
+                            <i class="bi bi-building fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleClientsIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ count($topPicksClientsFull) }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">TOP PICKS CLIENTS (CLICK TO VIEW)</p>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <!-- Collapsible Details Container -->
+    <!-- ==========================================
+         COLLAPSIBLE CRAFTSMEN CONTAINER
+    =========================================== -->
     <div id="detailsTableContainer" style="{{ ($status != 'all' || request()->has('sort_by')) ? 'display: block;' : 'display: none;' }}">
         
-        <!-- Summary Cards Inside Container -->
+        <!-- Summary Cards -->
         <div class="row g-3 mb-4">
             <div class="col-xl-4 col-md-6">
                 <div class="card shadow-sm border-0 border-start border-primary border-4 h-100">
@@ -86,7 +97,7 @@
             </div>
         </div>
 
-        <!-- Filters -->
+        <!-- Craftsmen Filters -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body bg-light rounded">
                 <form method="GET" action="{{ route('super-admin.details-all') }}" class="row g-3 align-items-end">
@@ -124,8 +135,8 @@
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="card shadow-sm border-0">
+        <!-- Craftsmen Table -->
+        <div class="card shadow-sm border-0 mb-5">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="detailsTable">
@@ -227,7 +238,7 @@
                             <tr>
                                 <td colspan="12" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                    No craftsmen found with overdue orders.
+                                    No craftsmen found.
                                 </td>
                             </tr>
                             @endforelse
@@ -237,14 +248,191 @@
             </div>
         </div>
     </div>
+
+    <!-- ==========================================
+         COLLAPSIBLE CLIENTS CONTAINER
+    =========================================== -->
+    <div id="clientsTableContainer" style="display: none;">
+        
+        <!-- Summary Cards Inside Clients Container -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="card shadow-sm border-0 border-start border-primary border-4 h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold">NEW ORDERS WEIGHT</p>
+                                <h4 class="fw-bold text-primary mb-0">{{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['new']['weight'] ?? 0), 2) }} g</h4>
+                            </div>
+                            <div class="bg-primary-subtle text-primary rounded-3 p-2">
+                                <i class="bi bi-file-earmark-plus fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card shadow-sm border-0 border-start border-info border-4 h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold">PROCESS WEIGHT</p>
+                                <h4 class="fw-bold text-info mb-0">{{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['in_process']['weight'] ?? 0), 2) }} g</h4>
+                            </div>
+                            <div class="bg-info-subtle text-info rounded-3 p-2">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card shadow-sm border-0 border-start border-danger border-4 h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold">OVERDUE WEIGHT</p>
+                                <h4 class="fw-bold text-danger mb-0">{{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['overdue']['weight'] ?? 0), 2) }} g</h4>
+                            </div>
+                            <div class="bg-danger-subtle text-danger rounded-3 p-2">
+                                <i class="bi bi-exclamation-octagon fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card shadow-sm border-0 border-start border-success border-4 h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold">TOTAL CLIENT ORDERS</p>
+                                <h4 class="fw-bold text-success mb-0">{{ collect($topPicksClientsFull)->sum('orders') }}</h4>
+                            </div>
+                            <div class="bg-success-subtle text-success rounded-3 p-2">
+                                <i class="bi bi-receipt-cutoff fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clients Actions Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0">Client Breakdown (WA)</h5>
+            <div>
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="openClientPrintModal('selected')">
+                    <i class="bi bi-printer"></i> Print Selected Clients
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="openClientPrintModal('all')">
+                    <i class="bi bi-printer-fill"></i> Print All Clients
+                </button>
+            </div>
+        </div>
+
+        <!-- Top Picks Clients Table -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="clientsTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th rowspan="2" class="text-center border-end" style="width: 40px; vertical-align: middle;">
+                                    <input class="form-check-input" type="checkbox" id="selectAllClients">
+                                </th>
+                                <th rowspan="2" class="border-end" style="vertical-align: middle;">{{ __('messages.business_partner') }}</th>
+                                <th rowspan="2" class="text-center border-end" style="vertical-align: middle;">{{ __('messages.bp_code') }}</th>
+                                <th colspan="6" class="text-center bg-secondary-subtle text-dark border-end" style="font-size: 0.8rem;">WORK ORDERS (WA)</th>
+                                <th rowspan="2" class="text-center bg-light" style="vertical-align: middle;">Total Orders</th>
+                            </tr>
+                            <tr class="bg-white">
+                                <th class="text-center py-2 border-end fw-bold" style="font-size: 0.75rem;">NEW (C | W)</th>
+                                <th class="text-center py-2 border-end fw-bold" style="font-size: 0.75rem;">PROCESS (C | W)</th>
+                                <th class="text-center py-2 border-end fw-bold text-info" style="font-size: 0.75rem;">FOR APPROVAL (C | W)</th>
+                                <th class="text-center py-2 border-end fw-bold text-danger" style="font-size: 0.75rem;">OVERDUE (C | W)</th>
+                                <th class="text-center py-2 border-end fw-bold text-danger" style="font-size: 0.75rem;">REJECTED (C | W)</th>
+                                <th class="text-center py-2 border-end fw-bold text-success" style="font-size: 0.75rem;">COMPLETED (C | W)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($topPicksClientsFull as $code => $stat)
+                            <tr class="client-data-row" data-code="{{ $code }}">
+                                <td class="text-center border-end">
+                                    <input class="form-check-input client-row-checkbox" type="checkbox" value="{{ $code }}">
+                                </td>
+                                <td class="border-end">
+                                    <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
+                                </td>
+                                <td class="text-center border-end"><span class="badge bg-light text-dark border">{{ $code }}</span></td>
+                                
+                                <td class="text-center border-end fw-medium text-primary">
+                                    @if(isset($stat['new']) && ($stat['new']['count'] > 0 || $stat['new']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="New Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['new']['orders'] ?? []) }}">
+                                            {{ $stat['new']['count'] }} | {{ number_format($stat['new']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center border-end fw-medium text-primary">
+                                    @if(isset($stat['in_process']) && ($stat['in_process']['count'] > 0 || $stat['in_process']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="In Process Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['in_process']['orders'] ?? []) }}">
+                                            {{ $stat['in_process']['count'] }} | {{ number_format($stat['in_process']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center border-end fw-medium text-info">
+                                    @if(isset($stat['for_approval']) && ($stat['for_approval']['count'] > 0 || $stat['for_approval']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="For Approval Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['for_approval']['orders'] ?? []) }}">
+                                            {{ $stat['for_approval']['count'] }} | {{ number_format($stat['for_approval']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center border-end fw-bold text-danger">
+                                    @if(isset($stat['overdue']) && ($stat['overdue']['count'] > 0 || $stat['overdue']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="Overdue Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['overdue']['orders'] ?? []) }}">
+                                            {{ $stat['overdue']['count'] }} | {{ number_format($stat['overdue']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center border-end fw-bold text-danger">
+                                    @if(isset($stat['rejected']) && ($stat['rejected']['count'] > 0 || $stat['rejected']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="Rejected Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['rejected']['orders'] ?? []) }}">
+                                            {{ $stat['rejected']['count'] }} | {{ number_format($stat['rejected']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center border-end fw-medium text-success">
+                                    @if(isset($stat['completed']) && ($stat['completed']['count'] > 0 || $stat['completed']['weight'] > 0))
+                                        <span class="text-decoration-underline" style="cursor: pointer;" onclick="showOrdersList(this, 'wo')" data-title="Completed Orders - {{ $stat['name'] }}" data-orders="{{ json_encode($stat['completed']['orders'] ?? []) }}">
+                                            {{ $stat['completed']['count'] }} | {{ number_format($stat['completed']['weight'], 2) }}
+                                        </span>
+                                    @else - @endif
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary-subtle text-secondary fs-6">{{ $stat['orders'] }}</span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="10" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Main Table Print Field Selection Modal -->
+<!-- ==========================================
+     MODALS
+=========================================== -->
+
+<!-- Main Craftsmen Table Print Column Modal -->
 <div class="modal fade" id="printFieldsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">Select Columns to Print</h5>
+                <h5 class="modal-title fw-bold">Select Columns to Print (Craftsmen)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -328,6 +516,83 @@
     </div>
 </div>
 
+<!-- Clients Table Print Column Modal -->
+<div class="modal fade" id="printClientFieldsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Select Columns to Print (Clients)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Choose the specific metrics and columns to display on the printed sheet:</p>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="1" id="colClientName" checked disabled>
+                            <label class="form-check-label small" for="colClientName">Business Partner</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="2" id="colClientCode" checked>
+                            <label class="form-check-label small" for="colClientCode">BP Code</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="3" id="colClientNew" checked>
+                            <label class="form-check-label small" for="colClientNew">New</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="4" id="colClientProcess" checked>
+                            <label class="form-check-label small" for="colClientProcess">Process</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="5" id="colClientForAppr" checked>
+                            <label class="form-check-label small" for="colClientForAppr">For Approval</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="6" id="colClientOverdue" checked>
+                            <label class="form-check-label small text-danger" for="colClientOverdue">Overdue</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="7" id="colClientRejected" checked>
+                            <label class="form-check-label small text-danger" for="colClientRejected">Rejected</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="8" id="colClientCompleted" checked>
+                            <label class="form-check-label small text-success" for="colClientCompleted">Completed</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check">
+                            <input class="form-check-input client-print-col-check" type="checkbox" value="9" id="colClientTotalOrders" checked>
+                            <label class="form-check-label small" for="colClientTotalOrders">Total Orders</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="executeClientCustomPrint()">
+                    <i class="bi bi-printer-fill"></i> Proceed to Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Orders List Breakdown Modal -->
 <div class="modal fade" id="ordersListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -352,6 +617,8 @@
                                 <th>Order Number</th>
                                 <th class="bp-col">BP Code</th>
                                 <th class="business-col">Business Name</th>
+                                <th class="craftsman-col">Craftsman Code</th>
+                                <th class="craftsman-col">Craftsman Name</th>
                                 <th class="text-center">Quantity</th>
                                 <th class="text-center">Weight (g)</th>
                                 <th class="text-center">Due Date</th>
@@ -395,6 +662,18 @@
                             <label class="form-check-label small" for="ordColBusiness">Business Name</label>
                         </div>
                     </div>
+                    <div class="col-6" id="fieldCraftsmanCodeContainer">
+                        <div class="form-check">
+                            <input class="form-check-input order-col-check" type="checkbox" value="8" id="ordColCraftsmanCode" checked>
+                            <label class="form-check-label small" for="ordColCraftsmanCode">Craftsman Code</label>
+                        </div>
+                    </div>
+                    <div class="col-6" id="fieldCraftsmanNameContainer">
+                        <div class="form-check">
+                            <input class="form-check-input order-col-check" type="checkbox" value="9" id="ordColCraftsmanName" checked>
+                            <label class="form-check-label small" for="ordColCraftsmanName">Craftsman Name</label>
+                        </div>
+                    </div>
                     <div class="col-6">
                         <div class="form-check">
                             <input class="form-check-input order-col-check" type="checkbox" value="4" id="ordColQty" checked>
@@ -432,6 +711,7 @@
 </div>
 
 <script>
+    // --- Craftsman Collapse Toggle ---
     function toggleDetailsTable() {
         const container = document.getElementById('detailsTableContainer');
         const icon = document.getElementById('toggleIcon');
@@ -444,10 +724,33 @@
         }
     }
 
+    // --- Clients Collapse Toggle ---
+    function toggleClientsTable() {
+        const container = document.getElementById('clientsTableContainer');
+        const icon = document.getElementById('toggleClientsIcon');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+        } else {
+            container.style.display = 'none';
+            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        }
+    }
+
+    // --- Checkbox Handlers ---
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
+    });
+
+    document.getElementById('selectAllClients').addEventListener('change', function() {
+        document.querySelectorAll('.client-row-checkbox').forEach(cb => cb.checked = this.checked);
+    });
+
     document.getElementById('modalSelectAll').addEventListener('change', function() {
         document.querySelectorAll('.modal-row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
+    // --- Dynamic Order Popup Modal ---
     let currentOrderType = 'wo'; 
 
     function showOrdersList(el, type) {
@@ -461,13 +764,16 @@
         
         const bpCols = document.querySelectorAll('.bp-col');
         const businessCols = document.querySelectorAll('.business-col');
+        const craftsmanCols = document.querySelectorAll('.craftsman-col');
         
         if (type === 'po') {
             bpCols.forEach(col => col.style.display = 'none');
             businessCols.forEach(col => col.style.display = 'none');
+            craftsmanCols.forEach(col => col.style.display = 'none');
         } else {
             bpCols.forEach(col => col.style.display = '');
             businessCols.forEach(col => col.style.display = '');
+            craftsmanCols.forEach(col => col.style.display = '');
         }
 
         const isOverdue = title.toLowerCase().includes('overdue');
@@ -475,7 +781,7 @@
         overdueCols.forEach(col => col.style.display = isOverdue ? '' : 'none');
 
         if (orders.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No orders found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No orders found.</td></tr>';
         } else {
             orders.forEach(order => {
                 let html = `
@@ -483,23 +789,27 @@
                         <td class="text-center">
                             <input class="form-check-input modal-row-checkbox" type="checkbox">
                         </td>
-                        <td class="fw-semibold text-dark">${order.number}</td>`;
+                        <td class="fw-semibold text-dark">${order.number || '-'}</td>`;
                         
                 if (type !== 'po') {
                     html += `
-                        <td class="bp-col"><span class="badge bg-light text-dark">${order.bp_code || '-'}</span></td>
-                        <td class="business-col">${order.business_name || '-'}</td>`;
+                        <td class="bp-col"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                        <td class="business-col">${order.business_name || '-'}</td>
+                        <td class="craftsman-col"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                        <td class="craftsman-col text-muted">${order.craftsman_name || '-'}</td>`;
                 } else {
                     html += `
-                        <td class="bp-col" style="display:none;"><span class="badge bg-light text-dark">${order.bp_code || '-'}</span></td>
-                        <td class="business-col" style="display:none;">${order.business_name || '-'}</td>`;
+                        <td class="bp-col" style="display:none;"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                        <td class="business-col" style="display:none;">${order.business_name || '-'}</td>
+                        <td class="craftsman-col" style="display:none;"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                        <td class="craftsman-col text-muted" style="display:none;">${order.craftsman_name || '-'}</td>`;
                 }
 
                 html += `
-                        <td class="text-center">${order.qty}</td>
-                        <td class="text-center fw-medium">${parseFloat(order.weight).toFixed(2)}</td>
-                        <td class="text-center">${order.due_date}</td>
-                        <td class="text-center overdue-col text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days} days</td>
+                        <td class="text-center">${order.qty ?? '-'}</td>
+                        <td class="text-center fw-medium">${order.weight !== undefined ? parseFloat(order.weight).toFixed(2) : '0.00'}</td>
+                        <td class="text-center">${order.due_date || '-'}</td>
+                        <td class="text-center overdue-col text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
                     </tr>`;
                 
                 body.insertAdjacentHTML('beforeend', html);
@@ -509,10 +819,7 @@
         new bootstrap.Modal(document.getElementById('ordersListModal')).show();
     }
 
-    document.getElementById('selectAll').addEventListener('change', function() {
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
-    });
-
+    // --- Craftsman Table Print ---
     let printMode = 'all';
 
     function openPrintColumnModal(mode) {
@@ -615,7 +922,108 @@
         printWindow.document.close();
     }
 
-    // Modal Orders Custom Print
+    // --- Clients Table Print ---
+    let clientPrintMode = 'all';
+
+    function openClientPrintModal(mode) {
+        clientPrintMode = mode;
+        if (mode === 'selected') {
+            const checked = document.querySelectorAll('.client-row-checkbox:checked');
+            if (checked.length === 0) {
+                alert('Please select at least one client to print.');
+                return;
+            }
+        }
+        new bootstrap.Modal(document.getElementById('printClientFieldsModal')).show();
+    }
+
+    function executeClientCustomPrint() {
+        const clientColumnMap = {
+            1: 'Business Partner',
+            2: 'BP Code',
+            3: 'New (C | W)',
+            4: 'Process (C | W)',
+            5: 'For Approval (C | W)',
+            6: 'Overdue (C | W)',
+            7: 'Rejected (C | W)',
+            8: 'Completed (C | W)',
+            9: 'Total Orders'
+        };
+
+        const activeIndices = [];
+        document.querySelectorAll('.client-print-col-check:checked').forEach(cb => {
+            activeIndices.push(parseInt(cb.value));
+        });
+
+        let rowsToPrint = [];
+        if (clientPrintMode === 'selected') {
+            const checkboxes = document.querySelectorAll('.client-row-checkbox:checked');
+            rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+        } else {
+            rowsToPrint = Array.from(document.querySelectorAll('.client-data-row'));
+        }
+
+        if (rowsToPrint.length === 0) {
+            alert('No clients available to print.');
+            return;
+        }
+
+        let html = `
+        <html>
+        <head>
+            <title>Top Picks Clients Report</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    body { -webkit-print-color-adjust: exact; margin: 20px; font-family: sans-serif; }
+                    .table { width: 100%; border-collapse: collapse; }
+                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
+                    .text-danger { color: #dc3545 !important; }
+                    .text-center { text-align: center; }
+                    .bg-light { background-color: #f8f9fa !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <h3 class="text-center mb-4">Top Picks Clients Report (Work Orders)</h3>
+            <table class="table table-bordered">
+                <thead class="bg-light">
+                    <tr>`;
+
+        activeIndices.forEach(idx => {
+            html += `<th class="text-center">${clientColumnMap[idx]}</th>`;
+        });
+
+        html += `   </tr>
+                </thead>
+                <tbody>`;
+
+        rowsToPrint.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            html += '<tr>';
+            activeIndices.forEach(idx => {
+                const cell = cells[idx];
+                html += `<td class="${cell.className}">${cell.innerText.trim()}</td>`;
+            });
+            html += '</tr>';
+        });
+
+        html += `
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() { window.print(); window.close(); }
+            <\/script>
+        </body>
+        </html>`;
+
+        bootstrap.Modal.getInstance(document.getElementById('printClientFieldsModal')).hide();
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+    }
+
+    // --- Order Detail Pop-Up Print ---
     function openOrderFieldsModal() {
         const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
         if (checkboxes.length === 0) {
@@ -629,11 +1037,15 @@
 
         document.getElementById('fieldBpCodeContainer').style.display = isPO ? 'none' : 'block';
         document.getElementById('fieldBusinessContainer').style.display = isPO ? 'none' : 'block';
+        document.getElementById('fieldCraftsmanCodeContainer').style.display = isPO ? 'none' : 'block';
+        document.getElementById('fieldCraftsmanNameContainer').style.display = isPO ? 'none' : 'block';
         document.getElementById('fieldOverdueContainer').style.display = isOverdue ? 'block' : 'none';
 
         if (isPO) {
             document.getElementById('ordColBpCode').checked = false;
             document.getElementById('ordColBusiness').checked = false;
+            document.getElementById('ordColCraftsmanCode').checked = false;
+            document.getElementById('ordColCraftsmanName').checked = false;
         }
 
         new bootstrap.Modal(document.getElementById('orderPrintFieldsModal')).show();
@@ -647,7 +1059,9 @@
             4: 'Quantity',
             5: 'Weight (g)',
             6: 'Due Date',
-            7: 'Overdue Days'
+            7: 'Overdue Days',
+            8: 'Craftsman Code',
+            9: 'Craftsman Name'
         };
 
         const activeIndices = [];

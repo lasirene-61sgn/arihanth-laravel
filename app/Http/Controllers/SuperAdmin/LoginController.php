@@ -397,19 +397,19 @@ class LoginController extends Controller
 
         // Get buyer order counts for top/least picks with BP codes
         $clientStats = [];
-        $wos = \App\Models\WorkOrder::whereNotNull('bp_code')->get();
+        $wos = \App\Models\WorkOrder::with('craftsman')->whereNotNull('bp_code')->get();
         foreach ($wos as $wo) {
             $code = $wo->bp_code;
             if (!isset($clientStats[$code])) {
                 $clientStats[$code] = [
                     'name' => $wo->customer_name ?? 'Unknown',
                     'orders' => 0,
-                    'new' => ['count' => 0, 'weight' => 0],
-                    'in_process' => ['count' => 0, 'weight' => 0],
-                    'for_approval' => ['count' => 0, 'weight' => 0],
-                    'overdue' => ['count' => 0, 'weight' => 0],
-                    'completed' => ['count' => 0, 'weight' => 0],
-                    'rejected' => ['count' => 0, 'weight' => 0]
+                    'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'in_process' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'for_approval' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'overdue' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'completed' => ['count' => 0, 'weight' => 0, 'orders' => []],
+                    'rejected' => ['count' => 0, 'weight' => 0, 'orders' => []]
                 ];
             }
             $clientStats[$code]['orders']++;
@@ -417,29 +417,45 @@ class LoginController extends Controller
             // Use weight_to as requested, fallback to weight_from if missing
             $w = floatval($wo->weight_to ?: $wo->weight_from);
             
+            $orderDetails = [
+                'number' => $wo->work_order_number,
+                'weight' => $w,
+                'qty' => floatval($wo->quantity),
+                'due_date' => $wo->craftsman_due_date ? \Carbon\Carbon::parse($wo->craftsman_due_date)->format('d-m-Y') : 'N/A',
+                'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
+                'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
+                'overdue_days' => ($wo->isOverdue() && $wo->craftsman_due_date) ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($wo->craftsman_due_date)->startOfDay()) : 0
+            ];
+
             if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
                 $clientStats[$code]['new']['count']++;
                 $clientStats[$code]['new']['weight'] += $w;
+                $clientStats[$code]['new']['orders'][] = $orderDetails;
             }
             if ($wo->craftsman_status == 'in_process') {
                 $clientStats[$code]['in_process']['count']++;
                 $clientStats[$code]['in_process']['weight'] += $w;
+                $clientStats[$code]['in_process']['orders'][] = $orderDetails;
             }
             if ($wo->status == 'for_approval') {
                 $clientStats[$code]['for_approval']['count']++;
                 $clientStats[$code]['for_approval']['weight'] += $w;
+                $clientStats[$code]['for_approval']['orders'][] = $orderDetails;
             }
             if ($wo->isOverdue()) {
                 $clientStats[$code]['overdue']['count']++;
                 $clientStats[$code]['overdue']['weight'] += $w;
+                $clientStats[$code]['overdue']['orders'][] = $orderDetails;
             }
             if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') {
                 $clientStats[$code]['completed']['count']++;
                 $clientStats[$code]['completed']['weight'] += $w;
+                $clientStats[$code]['completed']['orders'][] = $orderDetails;
             }
             if ($wo->craftsman_status == 'rejected') {
                 $clientStats[$code]['rejected']['count']++;
                 $clientStats[$code]['rejected']['weight'] += $w;
+                $clientStats[$code]['rejected']['orders'][] = $orderDetails;
             }
         }
 

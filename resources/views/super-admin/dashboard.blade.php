@@ -1106,12 +1106,48 @@
                             <tr style="background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;" class="hover: tw-transition-colors">
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{{ $stat['name'] }}</td>
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{{ $code }}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{!! $stat['new']['weight'] > 0 ? $stat['new']['count'] . ' - ' . number_format($stat['new']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important;">{!! $stat['in_process']['weight'] > 0 ? $stat['in_process']['count'] . ' - ' . number_format($stat['in_process']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important;">{!! $stat['for_approval']['weight'] > 0 ? $stat['for_approval']['count'] . ' - ' . number_format($stat['for_approval']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important;">{!! $stat['overdue']['weight'] > 0 ? $stat['overdue']['count'] . ' - ' . number_format($stat['overdue']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-red-600 dark:tw-text-red-400 tw-font-bold" style="color: #dc2626 !important;">{!! $stat['rejected']['weight'] > 0 ? $stat['rejected']['count'] . ' - ' . number_format($stat['rejected']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important;">{!! $stat['completed']['weight'] > 0 ? $stat['completed']['count'] . ' - ' . number_format($stat['completed']['weight'], 2) : '' !!}</td>
+                                <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">
+                                    @if($stat['new']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-blue-600" data-title="{{ $stat['name'] }} - New Orders" data-orders="{{ json_encode($stat['new']['orders']) }}">
+                                            {{ $stat['new']['count'] }} - {{ number_format($stat['new']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important;">
+                                    @if($stat['in_process']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-blue-600" data-title="{{ $stat['name'] }} - In Process Orders" data-orders="{{ json_encode($stat['in_process']['orders']) }}">
+                                            {{ $stat['in_process']['count'] }} - {{ number_format($stat['in_process']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important;">
+                                    @if($stat['for_approval']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-purple-600" data-title="{{ $stat['name'] }} - For Approval Orders" data-orders="{{ json_encode($stat['for_approval']['orders']) }}">
+                                            {{ $stat['for_approval']['count'] }} - {{ number_format($stat['for_approval']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important;">
+                                    @if($stat['overdue']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-orange-600" data-title="{{ $stat['name'] }} - Overdue Orders" data-orders="{{ json_encode($stat['overdue']['orders']) }}">
+                                            {{ $stat['overdue']['count'] }} - {{ number_format($stat['overdue']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-red-600 dark:tw-text-red-400 tw-font-bold" style="color: #dc2626 !important;">
+                                    @if($stat['rejected']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-red-600" data-title="{{ $stat['name'] }} - Rejected Orders" data-orders="{{ json_encode($stat['rejected']['orders']) }}">
+                                            {{ $stat['rejected']['count'] }} - {{ number_format($stat['rejected']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important;">
+                                    @if($stat['completed']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-emerald-600" data-title="{{ $stat['name'] }} - Completed Orders" data-orders="{{ json_encode($stat['completed']['orders']) }}">
+                                            {{ $stat['completed']['count'] }} - {{ number_format($stat['completed']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
                                 <td class="tw-text-center tw-font-black tw-text-emerald-700 dark:tw-text-emerald-400 tw-py-3 tw-text-[15px] " style="color: #047857 !important;">{{ $stat['orders'] }}</td>
                             </tr>
                             @empty
@@ -1159,12 +1195,48 @@
                             <tr style="background-color: {{ $loop->iteration % 2 != 0 ? '#e5e7eb' : '#ffffff' }} !important;" class="hover:tw-bg-gray-100 tw-transition-colors">
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{{ $stat['name'] }}</td>
                                 <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{{ $code }}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">{!! $stat['new']['weight'] > 0 ? $stat['new']['count'] . ' - ' . number_format($stat['new']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important;">{!! $stat['in_process']['weight'] > 0 ? $stat['in_process']['count'] . ' - ' . number_format($stat['in_process']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important;">{!! $stat['for_approval']['weight'] > 0 ? $stat['for_approval']['count'] . ' - ' . number_format($stat['for_approval']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important;">{!! $stat['overdue']['weight'] > 0 ? $stat['overdue']['count'] . ' - ' . number_format($stat['overdue']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-red-600 dark:tw-text-red-400 tw-font-bold" style="color: #dc2626 !important;">{!! $stat['rejected']['weight'] > 0 ? $stat['rejected']['count'] . ' - ' . number_format($stat['rejected']['weight'], 2) : '' !!}</td>
-                                <td class="tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important;">{!! $stat['completed']['weight'] > 0 ? $stat['completed']['count'] . ' - ' . number_format($stat['completed']['weight'], 2) : '' !!}</td>
+                                <td class="tw-text-center tw-text-[14px] tw-font-bold tw-text-slate-700 dark:tw-text-slate-300" style="color: #334155 !important;">
+                                    @if($stat['new']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-blue-600" data-title="{{ $stat['name'] }} - New Orders" data-orders="{{ json_encode($stat['new']['orders']) }}">
+                                            {{ $stat['new']['count'] }} - {{ number_format($stat['new']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-blue-600 dark:tw-text-blue-400" style="color: #2563eb !important;">
+                                    @if($stat['in_process']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-blue-600" data-title="{{ $stat['name'] }} - In Process Orders" data-orders="{{ json_encode($stat['in_process']['orders']) }}">
+                                            {{ $stat['in_process']['count'] }} - {{ number_format($stat['in_process']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-purple-600 dark:tw-text-purple-400" style="color: #9333ea !important;">
+                                    @if($stat['for_approval']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-purple-600" data-title="{{ $stat['name'] }} - For Approval Orders" data-orders="{{ json_encode($stat['for_approval']['orders']) }}">
+                                            {{ $stat['for_approval']['count'] }} - {{ number_format($stat['for_approval']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-orange-600 dark:tw-text-orange-400 tw-font-bold" style="color: #ea580c !important;">
+                                    @if($stat['overdue']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-orange-600" data-title="{{ $stat['name'] }} - Overdue Orders" data-orders="{{ json_encode($stat['overdue']['orders']) }}">
+                                            {{ $stat['overdue']['count'] }} - {{ number_format($stat['overdue']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-red-600 dark:tw-text-red-400 tw-font-bold" style="color: #dc2626 !important;">
+                                    @if($stat['rejected']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-red-600" data-title="{{ $stat['name'] }} - Rejected Orders" data-orders="{{ json_encode($stat['rejected']['orders']) }}">
+                                            {{ $stat['rejected']['count'] }} - {{ number_format($stat['rejected']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td class="tw-text-center tw-text-[14px] tw-text-emerald-600 dark:tw-text-emerald-400" style="color: #059669 !important;">
+                                    @if($stat['completed']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger hover:tw-underline tw-text-emerald-600" data-title="{{ $stat['name'] }} - Completed Orders" data-orders="{{ json_encode($stat['completed']['orders']) }}">
+                                            {{ $stat['completed']['count'] }} - {{ number_format($stat['completed']['weight'], 2) }}
+                                        </a>
+                                    @endif
+                                </td>
                                 <td class="tw-text-center tw-font-black tw-text-gray-700 dark:tw-text-gray-400 tw-py-3 tw-text-[15px] " style="color: #374151 !important;">{{ $stat['orders'] }}</td>
                             </tr>
                             @empty
@@ -1180,6 +1252,36 @@
     </div>
 </div>
 
+<!-- Client Orders List Modal -->
+<div class="modal fade" id="clientOrdersListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl roboto-font" style="max-width: 90%;">
+        <div class="modal-content dark:tw-bg-slate-900 tw-border-0 tw-rounded-2xl tw-shadow-2xl">
+            <div class="modal-header tw-border-0">
+                <h5 class="modal-title tw-font-extrabold tw-text-emerald-700 dark:tw-text-emerald-400" id="clientOrdersListTitle">Orders List</h5>
+                <button type="button" class="btn-close dark:tw-invert" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body tw-p-6">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle dark:tw-text-gray-300">
+                        <thead class="tw-bg-gray-100 dark:tw-bg-slate-800">
+                            <tr>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Order No</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Weight</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Qty</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Due Date</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Craftsman Code</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider">Craftsman Name</th>
+                                <th class="tw-text-center tw-text-[13px] tw-font-bold tw-uppercase tw-tracking-wider tw-text-red-600">Overdue Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientOrdersListBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -1208,6 +1310,51 @@
         const modal = new bootstrap.Modal(document.getElementById('ordersListModal'));
         modal.show();
     };
+
+    const clientTriggers = document.querySelectorAll('.client-orders-trigger');
+    const clientModalEl = document.getElementById('clientOrdersListModal');
+    if(clientModalEl) {
+        const clientModal = new bootstrap.Modal(clientModalEl);
+        const clientTbody = document.getElementById('clientOrdersListBody');
+        const clientTitleEl = document.getElementById('clientOrdersListTitle');
+
+        clientTriggers.forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const title = this.getAttribute('data-title');
+                const orders = JSON.parse(this.getAttribute('data-orders') || '[]');
+                
+                clientTitleEl.textContent = title;
+                clientTbody.innerHTML = '';
+                
+                if(orders.length === 0) {
+                    clientTbody.innerHTML = '<tr><td colspan="7" class="tw-text-center tw-py-4">No orders found</td></tr>';
+                } else {
+                    orders.forEach((order, index) => {
+                        const row = document.createElement('tr');
+                        row.className = index % 2 !== 0 ? 'tw-bg-gray-50 dark:tw-bg-slate-800/50' : 'tw-bg-white dark:tw-bg-slate-900';
+                        
+                        const overdueText = order.overdue_days > 0 
+                            ? `<span class="tw-font-bold tw-text-red-600">${order.overdue_days} days</span>` 
+                            : '-';
+                            
+                        row.innerHTML = `
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${order.number || '-'}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${Number(order.weight || 0).toFixed(2)}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${order.qty || '-'}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${order.due_date || '-'}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${order.craftsman_code || '-'}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${order.craftsman_name || '-'}</td>
+                            <td class="tw-text-center tw-text-[13px] tw-font-medium">${overdueText}</td>
+                        `;
+                        clientTbody.appendChild(row);
+                    });
+                }
+                
+                clientModal.show();
+            });
+        });
+    }
     });
 </script>
 @endsection

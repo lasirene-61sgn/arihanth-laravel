@@ -1170,7 +1170,7 @@
 </script>
 <!-- Top Picks Clients Modal -->
 <div class="modal fade" id="topPicksClientsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold text-dark">{{ __('messages.top_picks_clients') }} (Top 15)</h5>
@@ -1178,39 +1178,78 @@
             </div>
             <div class="modal-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover table-bordered align-middle text-center">
                         <thead class="bg-light">
                             <tr>
-                                <th class="border-0">{{ __('messages.business_partner') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.bp_code') }}</th>
-                                <th class="border-0 text-center">Orders</th>
-                                <th class="border-0 text-center">Process</th>
-                                <th class="border-0 text-center">Approval</th>
-                                <th class="border-0 text-center">Overdue</th>
+                                <th rowspan="2" class="align-middle border-0">{{ __('messages.business_partner') }}</th>
+                                <th rowspan="2" class="align-middle border-0">{{ __('messages.bp_code') }}</th>
+                                <th colspan="6" class="border-0 bg-secondary-subtle">WORK ORDERS (WA)</th>
+                                <th rowspan="2" class="align-middle border-0 bg-light">Total Orders</th>
+                            </tr>
+                            <tr class="bg-light">
+                                <th class="border-0 fw-bold">NEW</th>
+                                <th class="border-0 fw-bold">PROCESS</th>
+                                <th class="border-0 fw-bold">FOR APPROVAL</th>
+                                <th class="border-0 fw-bold text-danger">OVERDUE</th>
+                                <th class="border-0 fw-bold text-danger">REJECTED</th>
+                                <th class="border-0 fw-bold text-success">COMPLETED</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($topPicksClientsFull as $code => $stat)
                             <tr>
-                                <td>
+                                <td class="text-start">
                                     <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
                                 </td>
-                                <td class="text-center"><span class="badge bg-light text-dark">{{ $code }}</span></td>
-                                <td class="text-center">
-                                    <span class="badge bg-success-subtle text-success fs-6">{{ $stat['orders'] }}</span>
+                                <td><span class="badge bg-light text-dark">{{ $code }}</span></td>
+                                <td>
+                                    @if($stat['new']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - New Orders" data-orders="{{ json_encode($stat['new']['orders']) }}">
+                                            <span class="badge bg-primary-subtle text-primary fs-6">{{ $stat['new']['count'] }} | {{ number_format($stat['new']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-primary-subtle text-primary fs-6">{{ $stat['in_process']['count'] }} | {{ number_format($stat['in_process']['weight'], 2) }}</span>
+                                <td>
+                                    @if($stat['in_process']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - In Process Orders" data-orders="{{ json_encode($stat['in_process']['orders']) }}">
+                                            <span class="badge bg-primary-subtle text-primary fs-6">{{ $stat['in_process']['count'] }} | {{ number_format($stat['in_process']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-info-subtle text-info fs-6">{{ $stat['for_approval']['count'] }} | {{ number_format($stat['for_approval']['weight'], 2) }}</span>
+                                <td>
+                                    @if($stat['for_approval']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - For Approval Orders" data-orders="{{ json_encode($stat['for_approval']['orders']) }}">
+                                            <span class="badge bg-info-subtle text-info fs-6">{{ $stat['for_approval']['count'] }} | {{ number_format($stat['for_approval']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-danger-subtle text-danger fs-6">{{ $stat['overdue']['count'] }} | {{ number_format($stat['overdue']['weight'], 2) }}</span>
+                                <td>
+                                    @if($stat['overdue']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Overdue Orders" data-orders="{{ json_encode($stat['overdue']['orders']) }}">
+                                            <span class="badge bg-danger-subtle text-danger fs-6">{{ $stat['overdue']['count'] }} | {{ number_format($stat['overdue']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['rejected']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Rejected Orders" data-orders="{{ json_encode($stat['rejected']['orders']) }}">
+                                            <span class="badge bg-danger text-white fs-6">{{ $stat['rejected']['count'] }} | {{ number_format($stat['rejected']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['completed']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Completed Orders" data-orders="{{ json_encode($stat['completed']['orders']) }}">
+                                            <span class="badge bg-success-subtle text-success fs-6">{{ $stat['completed']['count'] }} | {{ number_format($stat['completed']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary fs-6">{{ $stat['orders'] }}</span>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="6" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
+                            <tr><td colspan="9" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -1222,7 +1261,7 @@
 
 <!-- Least Picks Clients Modal -->
 <div class="modal fade" id="leastPicksClientsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold text-dark">{{ __('messages.least_pick_clients') }} (Top 15)</h5>
@@ -1230,27 +1269,78 @@
             </div>
             <div class="modal-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover table-bordered align-middle text-center">
                         <thead class="bg-light">
                             <tr>
-                                <th class="border-0">{{ __('messages.business_partner') }}</th>
-                                <th class="border-0 text-center">{{ __('messages.bp_code') }}</th>
-                                <th class="border-0 text-center">Orders</th>
+                                <th rowspan="2" class="align-middle border-0">{{ __('messages.business_partner') }}</th>
+                                <th rowspan="2" class="align-middle border-0">{{ __('messages.bp_code') }}</th>
+                                <th colspan="6" class="border-0 bg-secondary-subtle">WORK ORDERS (WA)</th>
+                                <th rowspan="2" class="align-middle border-0 bg-light">Total Orders</th>
+                            </tr>
+                            <tr class="bg-light">
+                                <th class="border-0 fw-bold">NEW</th>
+                                <th class="border-0 fw-bold">PROCESS</th>
+                                <th class="border-0 fw-bold">FOR APPROVAL</th>
+                                <th class="border-0 fw-bold text-danger">OVERDUE</th>
+                                <th class="border-0 fw-bold text-danger">REJECTED</th>
+                                <th class="border-0 fw-bold text-success">COMPLETED</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($leastPicksClientsFull as $code => $stat)
                             <tr>
-                                <td>
+                                <td class="text-start">
                                     <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
                                 </td>
-                                <td class="text-center"><span class="badge bg-light text-dark">{{ $code }}</span></td>
-                                <td class="text-center">
+                                <td><span class="badge bg-light text-dark">{{ $code }}</span></td>
+                                <td>
+                                    @if($stat['new']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - New Orders" data-orders="{{ json_encode($stat['new']['orders']) }}">
+                                            <span class="badge bg-primary-subtle text-primary fs-6">{{ $stat['new']['count'] }} | {{ number_format($stat['new']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['in_process']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - In Process Orders" data-orders="{{ json_encode($stat['in_process']['orders']) }}">
+                                            <span class="badge bg-primary-subtle text-primary fs-6">{{ $stat['in_process']['count'] }} | {{ number_format($stat['in_process']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['for_approval']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - For Approval Orders" data-orders="{{ json_encode($stat['for_approval']['orders']) }}">
+                                            <span class="badge bg-info-subtle text-info fs-6">{{ $stat['for_approval']['count'] }} | {{ number_format($stat['for_approval']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['overdue']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Overdue Orders" data-orders="{{ json_encode($stat['overdue']['orders']) }}">
+                                            <span class="badge bg-danger-subtle text-danger fs-6">{{ $stat['overdue']['count'] }} | {{ number_format($stat['overdue']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['rejected']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Rejected Orders" data-orders="{{ json_encode($stat['rejected']['orders']) }}">
+                                            <span class="badge bg-danger text-white fs-6">{{ $stat['rejected']['count'] }} | {{ number_format($stat['rejected']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($stat['completed']['weight'] > 0)
+                                        <a href="javascript:void(0)" class="client-orders-trigger text-decoration-none" data-title="{{ $stat['name'] }} - Completed Orders" data-orders="{{ json_encode($stat['completed']['orders']) }}">
+                                            <span class="badge bg-success-subtle text-success fs-6">{{ $stat['completed']['count'] }} | {{ number_format($stat['completed']['weight'], 2) }}</span>
+                                        </a>
+                                    @endif
+                                </td>
+                                <td>
                                     <span class="badge bg-secondary-subtle text-secondary fs-6">{{ $stat['orders'] }}</span>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
+                            <tr><td colspan="9" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -1259,5 +1349,83 @@
         </div>
     </div>
 </div>
+
+<!-- Client Orders List Modal -->
+<div class="modal fade" id="clientOrdersListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-success" id="clientOrdersListTitle">Orders List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle table-hover">
+                        <thead class="bg-light text-center">
+                            <tr>
+                                <th class="fw-bold">Order No</th>
+                                <th class="fw-bold">Weight</th>
+                                <th class="fw-bold">Qty</th>
+                                <th class="fw-bold">Due Date</th>
+                                <th class="fw-bold">Craftsman Code</th>
+                                <th class="fw-bold">Craftsman Name</th>
+                                <th class="fw-bold text-danger">Overdue Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientOrdersListBody" class="text-center">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clientTriggers = document.querySelectorAll('.client-orders-trigger');
+    const clientModalEl = document.getElementById('clientOrdersListModal');
+    if(clientModalEl) {
+        const clientModal = new bootstrap.Modal(clientModalEl);
+        const clientTbody = document.getElementById('clientOrdersListBody');
+        const clientTitleEl = document.getElementById('clientOrdersListTitle');
+
+        clientTriggers.forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const title = this.getAttribute('data-title');
+                const orders = JSON.parse(this.getAttribute('data-orders') || '[]');
+                
+                clientTitleEl.textContent = title;
+                clientTbody.innerHTML = '';
+                
+                if(orders.length === 0) {
+                    clientTbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No orders found</td></tr>';
+                } else {
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const overdueText = order.overdue_days > 0 
+                            ? `<span class="fw-bold text-danger">${order.overdue_days} days</span>` 
+                            : '-';
+                            
+                        row.innerHTML = `
+                            <td>${order.number || '-'}</td>
+                            <td>${Number(order.weight || 0).toFixed(2)}</td>
+                            <td>${order.qty || '-'}</td>
+                            <td>${order.due_date || '-'}</td>
+                            <td>${order.craftsman_code || '-'}</td>
+                            <td>${order.craftsman_name || '-'}</td>
+                            <td>${overdueText}</td>
+                        `;
+                        clientTbody.appendChild(row);
+                    });
+                }
+                
+                clientModal.show();
+            });
+        });
+    }
+});
+</script>
 
 @endsection
