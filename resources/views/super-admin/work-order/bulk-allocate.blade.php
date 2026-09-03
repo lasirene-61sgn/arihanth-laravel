@@ -81,7 +81,7 @@
                                         <i class="bi bi-lightbulb-fill text-warning me-2" style="font-size: 1.2rem;"></i>
                                         <strong>Suggested Craftsmen for these items:</strong>
                                     </div>
-                                    <p class="small mb-2">Based on historical completions of these categories and design codes, we recommend:</p>
+                                    <p class="small mb-2">Based on historical completions of these specific items, we recommend:</p>
                                     <div class="d-flex flex-column gap-2">
                                         @foreach($suggestedCraftsmen as $index => $stat)
                                             @php $c = $stat['craftsman']; @endphp
@@ -89,7 +89,7 @@
                                                 <div>
                                                     <span class="badge bg-{{ $index === 0 ? 'success' : 'secondary' }} me-2">#{{ $index + 1 }}</span>
                                                     <strong>{{ $c->business_name }}</strong> ({{ $c->craftman_code }})
-                                                    <span class="text-muted small ms-2"><i class="bi bi-check-circle-fill text-success"></i> {{ $stat['completed_count'] }} similar completed</span>
+                                                    <span class="text-muted small ms-2"><i class="bi bi-check-circle-fill text-success"></i> {{ $stat['completed_count'] }} total matching completions (matches {{ $stat['distinct_matches'] }} out of {{ $stat['total_work_orders'] }} selected items)</span>
                                                 </div>
                                                 <button type="button" class="btn btn-sm btn-outline-primary select-suggestion-btn" data-code="{{ $c->craftman_code }}">Select</button>
                                             </div>

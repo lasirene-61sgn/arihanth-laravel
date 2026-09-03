@@ -177,7 +177,7 @@ class PurchaseOrderController extends Controller
             ->unique('design_code')
             ->values();
         return view('super-admin.purchase-order.create', compact('categories',
-            'subCategories', 'products', 'designs'));
+            'products', 'designs'));
     }
 
     /**
@@ -485,7 +485,7 @@ class PurchaseOrderController extends Controller
         }
 
         return view('super-admin.purchase-order.edit', compact('purchaseOrder', 'categories',
-            'subCategories', 'products', 'itemsWithDetails', 'designs'));
+             'products', 'itemsWithDetails', 'designs'));
     }
 
     /**

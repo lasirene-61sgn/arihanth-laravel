@@ -12,12 +12,12 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CatalogueController extends Controller
 {
-    
 
-public function index(Request $request)
+
+    public function index(Request $request)
 {
     $craftsman = $this->currentCraftsman();
-    
+
     // Query: Must be mine (bp_code matches) AND Accepted AND have a Design Code
     $query = Product::with(['category', 'subcategory'])
         ->where('bp_code', $craftsman->craftman_code)
@@ -29,10 +29,10 @@ public function index(Request $request)
     // --- SEARCH & FILTERS ---
     if ($request->filled('search')) {
         $search = $request->search;
-        $query->where(function($q) use ($search) {
+        $query->where(function ($q) use ($search) {
             $q->where('product_name', 'like', "%{$search}%")
-              ->orWhere('design_code', 'like', "%{$search}%")
-              ->orWhere('product_code', 'like', "%{$search}%");
+                ->orWhere('design_code', 'like', "%{$search}%")
+                ->orWhere('product_code', 'like', "%{$search}%");
         });
     }
 
@@ -45,11 +45,14 @@ public function index(Request $request)
     if ($request->filled('filter_product_name')) {
         $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
     }
-    if ($request->filled('filter_category')) {
-        $query->whereHas('category', fn($q) => $q->where('name', 'like', '%' . $request->filter_category . '%'));
+    if ($request->filled('product_category_id')) {
+        $query->where('product_category_id', $request->product_category_id);
     }
-    if ($request->filled('filter_subcategory')) {
-        $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
+    if ($request->filled('subcategory_id')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('subcategory_id', $request->subcategory_id)
+              ->orWhere('product_subcategory_id', $request->subcategory_id);
+        });
     }
 
     // --- SORTING ---
@@ -58,18 +61,20 @@ public function index(Request $request)
     elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
     else $query->latest();
 
-    $designs = $query->paginate(15);
+    $designs = $query->paginate(15)->withQueryString();
 
     // Attach creator info (Current Craftsman)
-    $craftsman = $this->currentCraftsman();
-    foreach($designs as $design) {
+    foreach ($designs as $design) {
         $design->creator_name = $craftsman->full_name ?? $craftsman->name ?? 'Craftsman';
         $design->creator_bp_code = $craftsman->craftman_code ?? 'N/A';
     }
 
-    return view('craftsman_staff.catalogue.index', compact('designs'));
-}
+    // Categories & Subcategories for cascading filter dropdowns
+    $categories = \App\Models\ProductCategory::orderBy('name')->get();
+    $subcategories = \App\Models\ProductSubcategory::orderBy('name')->get();
 
+    return view('craftsman_staff.catalogue.index', compact('designs', 'categories', 'subcategories'));
+}
 
 
     /**
@@ -87,7 +92,7 @@ public function index(Request $request)
         return view('craftsman_staff.catalogue.show', compact('design'));
     }
 
-    public function export(Request $request) 
+    public function export(Request $request)
     {
         return Excel::download(new CraftsmanCatalogueExport($request), 'CraftsmanCatalogueExport_' . now()->format('d-m-Y') . '.xlsx');
     }

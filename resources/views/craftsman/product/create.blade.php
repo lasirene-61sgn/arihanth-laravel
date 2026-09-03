@@ -173,7 +173,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="weight_from" class="form-label">Weight From</label>
-                                    <input type="number" 
+                                    <input type="text" 
                                            step="0.001"
                                            class="form-control" 
                                            id="weight_from" 
@@ -185,7 +185,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="weight_to" class="form-label">Weight To</label>
-                                    <input type="number" 
+                                    <input type="text" 
                                            step="0.001"
                                            class="form-control" 
                                            id="weight_to" 

@@ -18,10 +18,6 @@
                 class="hidden inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm">
                 <i class="bi bi-printer me-2"></i> Print Selected
             </button>
-            <!-- <button onclick="window.print()" 
-                    class="inline-flex items-center px-4 py-2 bg-white border border-teal-200 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-50 transition shadow-sm">
-                <i class="bi bi-printer me-2"></i> Print Page
-            </button> -->
         </div>
     </div>
 
@@ -42,28 +38,53 @@
             </button>
             <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 400px;">
                 <form action="{{ route('craftsman_staff.catalogue.index') }}" method="GET" class="space-y-4">
+                    @if(request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Design Code</label>
-                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_design_code') }}">
+                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_design_code') }}" placeholder="Ex: DES001">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Code</label>
-                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_code') }}">
+                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD001">
                         </div>
                         <div class="col-span-2">
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Name</label>
-                            <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_name') }}">
+                            <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_name') }}" placeholder="Enter name...">
                         </div>
+
+                        {{-- Cascading Category & Subcategory Dropdowns --}}
                         <div>
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Category</label>
-                            <input type="text" name="filter_category" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_category') }}">
+                            <select name="product_category_id" id="catalogue_category_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Categories</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('product_category_id') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div>
+
+                        {{-- Subcategory: Shown only if selected category has subcategories --}}
+                        <div id="catalogue_subcategory_wrapper" style="display: none;">
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Subcategory</label>
-                            <input type="text" name="filter_subcategory" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_subcategory') }}">
+                            <select name="subcategory_id" id="catalogue_subcategory_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Subcategories</option>
+                                @foreach($subcategories as $subcat)
+                                    <option value="{{ $subcat->id }}" 
+                                            data-parent="{{ $subcat->product_category_id }}" 
+                                            {{ request('subcategory_id') == $subcat->id ? 'selected' : '' }}>
+                                        {{ $subcat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
+
                     <div class="flex gap-2 pt-4 border-t border-indigo-50">
                         <button type="submit" class="flex-1 bg-indigo-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-indigo-800 transition">Apply</button>
                         <a href="{{ route('craftsman_staff.catalogue.index') }}" class="flex-1 text-center border border-indigo-200 py-2 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-50 transition">Reset</a>
@@ -95,20 +116,20 @@
                         <input type="checkbox" name="selected_products[]" value="{{ $item->id }}" class="product-checkbox w-5 h-5 text-indigo-600 border-indigo-300 rounded focus:ring-indigo-500 shadow-sm transition-transform hover:scale-110 cursor-pointer">
                     </div>
                     @php
-                    $imagesCount = $item->images->count();
+                    $imagesCount = $item->images ? $item->images->count() : 0;
                     $firstImage = $imagesCount > 0 ? $item->images->first()->path : null;
 
                     if (!$firstImage && $item->product_image) {
-                    $imgs = explode(',', $item->product_image);
-                    $firstImage = trim($imgs[0]);
+                        $imgs = explode(',', $item->product_image);
+                        $firstImage = trim($imgs[0]);
                     }
 
                     $imgSrc = null;
                     if ($firstImage) {
-                    if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-                    elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-                    elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-                    else { $imgSrc = asset('storage/products/' . $firstImage); }
+                        if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                        elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                        elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                        else { $imgSrc = asset('storage/products/' . $firstImage); }
                     }
                     @endphp
 
@@ -146,7 +167,7 @@
                             <span class="text-indigo-900 font-semibold ml-1">{{ $item->product_code }}</span>
                         </div>
                         <div class="px-2 py-0.5 bg-indigo-900 text-white text-[10px] rounded font-bold">
-                            {{ $item->category->name }}
+                            {{ $item->category->name ?? 'N/A' }}
                         </div>
                     </div>
 
@@ -161,7 +182,7 @@
             @endforeach
         </div>
         <div class="mt-8 flex justify-center">
-            {{ $designs->appends(request()->query())->links() }}
+            {{ $designs->links() }}
         </div>
         @else
         <div class="bg-white rounded-2xl border border-indigo-100 p-20 text-center shadow-sm">
@@ -182,6 +203,46 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Cascading Category & Subcategory Logic
+        const categorySelect = document.getElementById('catalogue_category_select');
+        const subcategorySelect = document.getElementById('catalogue_subcategory_select');
+        const subcategoryWrapper = document.getElementById('catalogue_subcategory_wrapper');
+        const subcategoryOptions = Array.from(subcategorySelect.querySelectorAll('option[data-parent]'));
+
+        function syncSubcategories() {
+            const selectedCatId = categorySelect.value;
+            const currentSubcatVal = subcategorySelect.value;
+
+            if (!selectedCatId) {
+                subcategoryWrapper.style.display = 'none';
+                subcategorySelect.value = '';
+                return;
+            }
+
+            let matchingCount = 0;
+            subcategoryOptions.forEach(opt => {
+                const parentId = opt.getAttribute('data-parent');
+                if (parentId === selectedCatId) {
+                    opt.style.display = '';
+                    matchingCount++;
+                } else {
+                    opt.style.display = 'none';
+                    if (opt.value === currentSubcatVal) {
+                        subcategorySelect.value = '';
+                    }
+                }
+            });
+
+            // Display subcategory wrapper only if matching subcategories exist for the selected category
+            subcategoryWrapper.style.display = matchingCount > 0 ? 'block' : 'none';
+        }
+
+        if (categorySelect && subcategorySelect && subcategoryWrapper) {
+            categorySelect.addEventListener('change', syncSubcategories);
+            syncSubcategories(); // Evaluate on page load
+        }
+
+        // Checkbox & Print Handler
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');
 
@@ -195,9 +256,7 @@
         }
 
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                updatePrintButton();
-            });
+            cb.addEventListener('change', updatePrintButton);
         });
     });
 

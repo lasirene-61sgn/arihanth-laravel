@@ -16,26 +16,51 @@
                     type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                     <i class="bi bi-funnel me-2"></i> Advanced Filters
                 </button>
-                <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 350px;">
+                <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 380px;">
                     <form action="{{ route('craftsman_staff.product.index') }}" method="GET" class="space-y-4">
+                        @if(request('search'))
+                            <input type="hidden" name="search" value="{{ request('search') }}">
+                        @endif
+
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Code</label>
-                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_product_code') }}">
+                                <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD001">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Name</label>
-                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_product_name') }}">
+                                <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_product_name') }}" placeholder="Enter name...">
                             </div>
+
+                            {{-- Cascading Category & Subcategory --}}
                             <div>
                                 <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Category</label>
-                                <input type="text" name="filter_category" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_category') }}">
+                                <select name="product_category_id" id="craftsman_category_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="">All Categories</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ request('product_category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <div>
+
+                            {{-- Subcategory: Visible only when selected category contains subcategories --}}
+                            <div id="craftsman_subcategory_wrapper" style="display: none;">
                                 <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Subcategory</label>
-                                <input type="text" name="filter_subcategory" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value="{{ request('filter_subcategory') }}">
+                                <select name="subcategory_id" id="craftsman_subcategory_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="">All Subcategories</option>
+                                    @foreach($subcategories as $subcat)
+                                        <option value="{{ $subcat->id }}" 
+                                                data-parent="{{ $subcat->product_category_id }}" 
+                                                {{ request('subcategory_id') == $subcat->id ? 'selected' : '' }}>
+                                            {{ $subcat->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
+
                         <div class="flex gap-2 pt-4 border-t border-indigo-50">
                             <button type="submit" class="flex-1 bg-indigo-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-indigo-800 transition">Apply</button>
                             <a href="{{ route('craftsman_staff.product.index') }}" class="flex-1 text-center border border-indigo-200 py-2 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-50 transition">Reset</a>
@@ -47,9 +72,7 @@
             <button id="print_selected_btn" onclick="printSelected()" class="hidden inline-flex items-center px-3 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm">
                 <i class="bi bi-printer me-2"></i> Print Selected
             </button>
-            <!-- <button onclick="window.print()" class="inline-flex items-center px-3 py-2 bg-white border border-teal-200 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-50 transition shadow-sm">
-                <i class="bi bi-printer me-2"></i> Print Page
-            </button> -->
+            
             @php $staffUser = auth()->guard('craftsman_staff')->user(); @endphp
             @if(!$staffUser || $staffUser->hasPermission('product_create'))
             <a href="{{ route('craftsman_staff.product.create') }}"
@@ -81,30 +104,31 @@
             </div>
         </div>
     </div>
+
     <div class="card shadow-sm mb-4 border-warning">
-    <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="fas fa-hammer"></i> Craftsman Bulk Upload (ZIP)</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ route('craftsman_staff.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="row align-items-center">
-                <div class="col-md-9">
-                    <label class="form-label font-weight-bold">Select ZIP File</label>
-                    <input type="file" name="zip_file" class="form-control" accept=".zip" required>
-                    <div class="form-text mt-2">
-                        Upload a ZIP containing your <b>products.xlsx</b> and all related <b>images</b>.
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-hammer"></i> Craftsman Bulk Upload (ZIP)</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('craftsman_staff.product.bulk-upload') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row align-items-center">
+                    <div class="col-md-9">
+                        <label class="form-label font-weight-bold">Select ZIP File</label>
+                        <input type="file" name="zip_file" class="form-control" accept=".zip" required>
+                        <div class="form-text mt-2">
+                            Upload a ZIP containing your <b>products.xlsx</b> and all related <b>images</b>.
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-dark w-100 mt-3">
+                            <i class="fas fa-upload"></i> Upload Batch
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-dark w-100 mt-3">
-                        <i class="fas fa-upload"></i> Upload Batch
-                    </button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 
     <div class="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
         <div class="overflow-x-auto">
@@ -190,7 +214,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-12 text-indigo-400 italic">
+                        <td colspan="7" class="text-center py-12 text-indigo-400 italic">
                             No products found matching your criteria.
                         </td>
                     </tr>
@@ -205,7 +229,7 @@
                     Showing {{ $products->firstItem() ?? 0 }} to {{ $products->lastItem() ?? 0 }} of {{ $products->total() }} results
                 </div>
                 <div class="tailwind-pagination">
-                    {{ $products->appends(request()->query())->links() }}
+                    {{ $products->links() }}
                 </div>
             </div>
         </div>
@@ -219,6 +243,45 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Cascading Category & Subcategory Logic
+        const categorySelect = document.getElementById('craftsman_category_select');
+        const subcategorySelect = document.getElementById('craftsman_subcategory_select');
+        const subcategoryWrapper = document.getElementById('craftsman_subcategory_wrapper');
+        const subcategoryOptions = Array.from(subcategorySelect.querySelectorAll('option[data-parent]'));
+
+        function syncSubcategories() {
+            const selectedCatId = categorySelect.value;
+            const currentSubcatVal = subcategorySelect.value;
+
+            if (!selectedCatId) {
+                subcategoryWrapper.style.display = 'none';
+                subcategorySelect.value = '';
+                return;
+            }
+
+            let matchingCount = 0;
+            subcategoryOptions.forEach(opt => {
+                const parentId = opt.getAttribute('data-parent');
+                if (parentId === selectedCatId) {
+                    opt.style.display = '';
+                    matchingCount++;
+                } else {
+                    opt.style.display = 'none';
+                    if (opt.value === currentSubcatVal) {
+                        subcategorySelect.value = '';
+                    }
+                }
+            });
+
+            subcategoryWrapper.style.display = matchingCount > 0 ? 'block' : 'none';
+        }
+
+        if (categorySelect && subcategorySelect && subcategoryWrapper) {
+            categorySelect.addEventListener('change', syncSubcategories);
+            syncSubcategories(); // Evaluate on page load
+        }
+
+        // Checkbox & Print Handling
         const selectAll = document.getElementById('select_all');
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');

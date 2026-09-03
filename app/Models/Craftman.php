@@ -235,14 +235,15 @@ class Craftman extends Authenticatable
             'catalogue',
             'purchase_order',
             'work_order',
+            'stock_order',
             'repair',
             'finance',
             'craftsman_creation',
             'craftsman_staff',
             'edit_workorder',
             'favorites',
-            'stock_order',
-            'meetings'
+            'meetings',
+            'messages',
         ];
     }
 

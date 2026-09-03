@@ -108,13 +108,13 @@
                                                         <div class="grams-quantity-row mb-2">
                                                             <div class="row g-1">
                                                                 <div class="col-4">
-                                                                    <input type="number" class="form-control grams-input" name="items[0][grams][]" step="0.01" min="0" placeholder="Grams" required>
+                                                                    <input type="text" class="form-control grams-input" name="items[0][grams][]" step="0.01" min="0" placeholder="Grams" required>
                                                                 </div>
                                                                 <div class="col-4">
-                                                                    <input type="number" class="form-control quantity-input" name="items[0][quantity][]" min="1" placeholder="Qty" required>
+                                                                    <input type="text" class="form-control quantity-input" name="items[0][quantity][]" min="1" placeholder="Qty" required>
                                                                 </div>
                                                                 <div class="col-4">
-                                                                    <input type="number" class="form-control individual-total" name="items[0][individual_totals][]" step="0.01" value="0.00" readonly placeholder="Total">
+                                                                    <input type="text" class="form-control individual-total" name="items[0][individual_totals][]" step="0.01" value="0.00" readonly placeholder="Total">
                                                                 </div>
                                                             </div>
                                                         </div>

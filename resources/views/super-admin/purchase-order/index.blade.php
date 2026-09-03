@@ -247,11 +247,11 @@
                     <div class="card mt-3 shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center bg-white">
                             <h5 class="mb-0">{{ $tab['label'] }} Orders</h5>
-                            @if(($tab['id'] == 'created' || $tab['id'] == 'allocated') && $tab['data']->count() > 0)
+                            <!-- @if(($tab['id'] == 'created' || $tab['id'] == 'allocated') && $tab['data']->count() > 0)
                             <button type="button" class="btn btn-sm btn-indigo bulk-start-btn ms-2" style="display:none; background-color: #6610f2; color: white;">
                                 <i class="bi bi-play-fill"></i> Bulk Start
                             </button>
-                            @endif
+                            @endif -->
 
                             @if($tab['id'] == 'created' && $tab['data']->count() > 0)
                             <button type="button" class="btn btn-sm btn-success bulk-allocate-btn ms-2" style="display:none;" data-bs-toggle="modal" data-bs-target="#bulkAllocateModal">

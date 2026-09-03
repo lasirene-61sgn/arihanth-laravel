@@ -166,12 +166,12 @@
 
                     <div class="space-y-2">
                         <label for="weight_from" class="text-sm font-bold text-slate-700">Weight From</label>
-                        <input type="number" step="0.001" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="weight_from" name="weight_from" value="{{ old('weight_from') }}" placeholder="0.000">
+                        <input type="text" step="0.001" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="weight_from" name="weight_from" value="{{ old('weight_from') }}" placeholder="0.000">
                     </div>
 
                     <div class="space-y-2">
                         <label for="weight_to" class="text-sm font-bold text-slate-700">Weight To</label>
-                        <input type="number" step="0.001" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="weight_to" name="weight_to" value="{{ old('weight_to') }}" placeholder="0.000">
+                        <input type="text" step="0.001" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" id="weight_to" name="weight_to" value="{{ old('weight_to') }}" placeholder="0.000">
                     </div>
 
                     <div class="md:col-span-2 space-y-2">

@@ -156,13 +156,13 @@
 
                     <div class="space-y-1">
                         <label for="weight_from" class="block text-sm font-semibold text-gray-700">Weight From</label>
-                        <input type="number" step="0.001" id="weight_from" name="weight_from" value="{{ old('weight_from', $product->weight_from) }}"
+                        <input type="text" step="0.001" id="weight_from" name="weight_from" value="{{ old('weight_from', $product->weight_from) }}"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
                     </div>
 
                     <div class="space-y-1">
                         <label for="weight_to" class="block text-sm font-semibold text-gray-700">Weight To</label>
-                        <input type="number" step="0.001" id="weight_to" name="weight_to" value="{{ old('weight_to', $product->weight_to) }}"
+                        <input type="text" step="0.001" id="weight_to" name="weight_to" value="{{ old('weight_to', $product->weight_to) }}"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
                     </div>
                 </div>

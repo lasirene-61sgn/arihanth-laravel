@@ -225,7 +225,8 @@ class WorkOrderController extends Controller
     public function allocateForm(WorkOrder $workOrder)
     {
         $craftsmen = Craftman::all();
-        return view('super-admin.work-order.allocate', compact('workOrder', 'craftsmen'));
+        $suggestedCraftsmen = app(\App\Services\CraftsmanSuggestionService::class)->getSuggestionsForWorkOrders(collect([$workOrder]));
+        return view('super-admin.work-order.allocate', compact('workOrder', 'craftsmen', 'suggestedCraftsmen'));
     }
 
     public function allocate(Request $request, WorkOrder $workOrder)
@@ -341,50 +342,7 @@ class WorkOrderController extends Controller
         $craftsmen = Craftman::all();
 
         // ------------------ CRAFTSMAN PERFORMANCE SUGGESTIONS ------------------
-        $categories = $workOrders->pluck('product_category_id')->filter()->unique()->toArray();
-        $designCodes = $workOrders->pluck('design_code')->filter()->unique()->toArray();
-        $productCodes = $workOrders->pluck('product_code')->filter()->unique()->toArray();
-
-        $suggestedCraftsmen = [];
-
-        if (!empty($categories) || !empty($designCodes) || !empty($productCodes)) {
-            $craftsmanStats = [];
-            foreach ($craftsmen as $craftsman) {
-                // Determine completed matching orders count
-                $count = WorkOrder::where('allocated_craftsman_bp_code', $craftsman->craftman_code)
-                    ->where(function ($query) {
-                        $query->where('craftsman_status', 'completed')
-                            ->orWhere('status', 'completed');
-                    })
-                    ->where(function ($query) use ($categories, $designCodes, $productCodes) {
-                        if (!empty($categories)) {
-                            $query->orWhereIn('product_category_id', $categories);
-                        }
-                        if (!empty($designCodes)) {
-                            $query->orWhereIn('design_code', $designCodes);
-                        }
-                        if (!empty($productCodes)) {
-                            $query->orWhereIn('product_code', $productCodes);
-                        }
-                    })
-                    ->count();
-
-                if ($count > 0) {
-                    $craftsmanStats[] = [
-                        'craftsman' => $craftsman,
-                        'completed_count' => $count
-                    ];
-                }
-            }
-
-            // Sort descending by highest completed matching count
-            usort($craftsmanStats, function ($a, $b) {
-                return $b['completed_count'] <=> $a['completed_count'];
-            });
-
-            // Get Top 3
-            $suggestedCraftsmen = array_slice($craftsmanStats, 0, 3);
-        }
+        $suggestedCraftsmen = app(\App\Services\CraftsmanSuggestionService::class)->getSuggestionsForWorkOrders($workOrders);
         // -----------------------------------------------------------------------
 
         return view('super-admin.work-order.bulk-allocate', compact('workOrders', 'craftsmen', 'suggestedCraftsmen'));
@@ -1047,7 +1005,11 @@ class WorkOrderController extends Controller
 
             // Paginate ONLY the active tab
             if ($tabKey === $activeTab) {
-                $query->with(['product.images', 'images', 'buyer', 'craftsman'])->orderBy($sortBy, $sortOrder);
+                if ($tabKey === 'completed-orders' && $sortBy === 'id') {
+                    $query->with(['product.images', 'images', 'buyer', 'craftsman'])->orderBy('updated_at', 'desc');
+                } else {
+                    $query->with(['product.images', 'images', 'buyer', 'craftsman'])->orderBy($sortBy, $sortOrder);
+                }
                 $activeData = $query->paginate($perPage, ['*'], $tabKey . '_page')->withQueryString();
             }
         }

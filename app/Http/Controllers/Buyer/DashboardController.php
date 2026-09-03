@@ -6,6 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Buyer;
+use App\Models\Product;
+use App\Models\WorkOrder;
+use App\Models\User;
+use App\Models\KeyUser;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -13,79 +18,130 @@ class DashboardController extends Controller
     {
         $buyer = Auth::guard('buyer')->user();
         
-        // Check if buyer has key_user permission
-        // Check if buyer has key_user permission
         $canManageKeyUsers = $buyer->hasPermission('key_user');
-        
         $bpCode = $buyer->bp_code;
 
-        $productsCount = \App\Models\Product::where('bp_code', $bpCode)->count();
+        $productsCount = Product::where('bp_code', $bpCode)->count();
 
-        // Count all accepted designs from all sources (matching DesignController logic)
-        $designsCount = \App\Models\Product::whereNotNull('design_code')
+        // Accepted designs
+        $designsCount = Product::whereNotNull('design_code')
             ->where('design_status', 'Accepted')
             ->whereNotNull('type')
             ->where('type', '!=', '')
             ->notFromFrozenAccounts()
             ->count();
 
-        // Count buyer's own accepted designs (matching CatalogueController logic)
-        $cataloguesCount = \App\Models\Product::where('bp_code', $bpCode)
+        // Catalogues count
+        $cataloguesCount = Product::where('bp_code', $bpCode)
             ->where('design_status', 'Accepted')
             ->whereNotNull('design_code')
             ->whereNotNull('type')
             ->where('type', '!=', '')
             ->notFromFrozenAccounts()
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('design_view_unlocked_until')
                   ->orWhere('design_view_unlocked_until', '>=', now());
             })
             ->count();
 
-        $workOrdersCount = \App\Models\WorkOrder::where('bp_code', $bpCode)->count();
-        $woInProcessCount = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('craftsman_status', 'In Process')->count();
-        $woOverdueCount = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('craftsman_status', 'Overdue')->count();
-        $woCompletedCount = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('craftsman_status', 'Completed')->count();
+        $today = Carbon::today();
+
+        // Fetch Work Orders for this Buyer
+        $buyerWorkOrders = WorkOrder::where('bp_code', $bpCode)->get();
+
+        // 1. Completed
+        $woCompletedItems = $buyerWorkOrders->filter(function ($wo) {
+            return strtolower($wo->craftsman_status ?? '') === 'completed';
+        });
+
+        // 2. Overdue
+        $woOverdueItems = $buyerWorkOrders->filter(function ($wo) use ($today) {
+            if (strtolower($wo->craftsman_status ?? '') === 'completed') {
+                return false;
+            }
+            if (strtolower($wo->craftsman_status ?? '') === 'overdue') {
+                return true;
+            }
+            return !empty($wo->due_date) && Carbon::parse($wo->due_date)->startOfDay()->lt($today);
+        });
+
+        $overdueIds = $woOverdueItems->pluck('id')->toArray();
+        $completedIds = $woCompletedItems->pluck('id')->toArray();
+        $excludedIds = array_merge($overdueIds, $completedIds);
+
+        // 3. In Process
+        $woInProcessItems = $buyerWorkOrders->filter(function ($wo) use ($excludedIds) {
+            return !in_array($wo->id, $excludedIds) && strtolower($wo->craftsman_status ?? '') === 'in process';
+        });
+
+        // 4. Allocated
+        $woAllocatedItems = $buyerWorkOrders->filter(function ($wo) use ($excludedIds) {
+            return !in_array($wo->id, $excludedIds) 
+                && strtolower($wo->craftsman_status ?? '') !== 'in process'
+                && !empty($wo->allocated_craftsman_bp_code);
+        });
+
+        // 5. New Orders
+        $woNewItems = $buyerWorkOrders->filter(function ($wo) use ($excludedIds) {
+            return !in_array($wo->id, $excludedIds) 
+                && empty($wo->allocated_craftsman_bp_code)
+                && (strtolower($wo->status ?? '') === 'new' || empty($wo->craftsman_status));
+        });
+
+        // Counts
+        $workOrdersCount   = $buyerWorkOrders->count();
+        $woNewCount        = $woNewItems->count();
+        $woAllocatedCount  = $woAllocatedItems->count();
+        $woInProcessCount  = $woInProcessItems->count();
+        $woCompletedCount  = $woCompletedItems->count();
+        $woOverdueCount    = $woOverdueItems->count();
 
         // Weights
-        $woNewWeight = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('status', 'new')->sum('weight_to');
-        $woInProcessWeight = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('craftsman_status', 'In Process')->sum('weight_to');
-        $woOverdueWeight = \App\Models\WorkOrder::where('bp_code', $bpCode)->where('craftsman_status', 'Overdue')->sum('weight_to');
+        $woNewWeight       = $woNewItems->sum('weight_to');
+        $woAllocatedWeight = $woAllocatedItems->sum('weight_to');
+        $woInProcessWeight = $woInProcessItems->sum('weight_to');
+        $woCompletedWeight = $woCompletedItems->sum('weight_to');
+        $woOverdueWeight   = $woOverdueItems->sum('weight_to');
 
-        $usersCount = \App\Models\User::where('bp_code', $bpCode)->count();
-        $keyUsersCount = \App\Models\KeyUser::where('bp_code', $bpCode)->count();
+        $usersCount    = User::where('bp_code', $bpCode)->count();
+        $keyUsersCount = KeyUser::where('bp_code', $bpCode)->count();
 
-        // Craftsman-wise Progress Analytics for Modal
-        $craftsmanStats = [];
-        $buyerWorkOrders = \App\Models\WorkOrder::where('bp_code', $bpCode)->get();
+        // Prepare Work Orders (Zero Craftsman Data Included)
+        $modalWorkOrders = $buyerWorkOrders->map(function ($wo) use ($today, $woNewItems, $woAllocatedItems, $woInProcessItems, $woCompletedItems, $woOverdueItems) {
+            $categoryBucket = 'other';
+            $daysOverdue = 0;
 
-        $craftsmanCodes = $buyerWorkOrders->pluck('allocated_craftsman_bp_code')
-            ->filter()
-            ->unique();
+            if ($woCompletedItems->contains('id', $wo->id)) {
+                $categoryBucket = 'completed';
+            } elseif ($woOverdueItems->contains('id', $wo->id)) {
+                $categoryBucket = 'overdue';
+                if (!empty($wo->due_date)) {
+                    $dueDate = Carbon::parse($wo->due_date)->startOfDay();
+                    $daysOverdue = max(1, (int) $dueDate->diffInDays($today));
+                } else {
+                    $daysOverdue = 1;
+                }
+            } elseif ($woInProcessItems->contains('id', $wo->id)) {
+                $categoryBucket = 'in_process';
+            } elseif ($woAllocatedItems->contains('id', $wo->id)) {
+                $categoryBucket = 'allocated';
+            } elseif ($woNewItems->contains('id', $wo->id)) {
+                $categoryBucket = 'new';
+            }
 
-        $craftsmen = \App\Models\Craftman::whereIn('craftman_code', $craftsmanCodes)->get();
-
-        foreach ($craftsmen as $craftman) {
-            $code = $craftman->craftman_code;
-            
-            // WA stats
-            $waItems = $buyerWorkOrders->where('allocated_craftsman_bp_code', $code);
-            $waProcess = $waItems->where('craftsman_status', 'In Process');
-            $waOverdue = $waItems->where('craftsman_status', 'Overdue');
-
-            $craftsmanStats[$code] = [
-                'name' => $craftman->business_name ?: $craftman->name,
-                'wa' => [
-                    'process' => ['count' => $waProcess->count(), 'weight' => $waProcess->sum('weight_to')],
-                    'overdue' => ['count' => $waOverdue->count(), 'weight' => $waOverdue->sum('weight_to')],
-                ],
-                'po' => [
-                    'process' => ['count' => 0, 'weight' => 0],
-                    'overdue' => ['count' => 0, 'weight' => 0],
-                ]
+            return [
+                'id'            => $wo->id,
+                'category'      => $categoryBucket,
+                'wo_number'     => $wo->work_order_number ?? $wo->order_number ?? ('WO-' . str_pad($wo->id, 5, '0', STR_PAD_LEFT)),
+                'due_date'      => $wo->due_date ? Carbon::parse($wo->due_date)->format('d M, Y') : 'N/A',
+                'days_overdue'  => $daysOverdue,
+                'qty'           => $wo->quantity ?? $wo->qty ?? 1,
+                'weight_from'   => number_format((float) ($wo->weight_from ?? 0), 3),
+                'weight_to'     => number_format((float) ($wo->weight_to ?? 0), 3),
+                'status_label'  => $wo->craftsman_status ?: ucfirst($wo->status ?? 'New'),
             ];
-        }
-        
+        });
+
         return view('buyer.dashboard', compact(
             'buyer', 
             'canManageKeyUsers',
@@ -93,18 +149,22 @@ class DashboardController extends Controller
             'designsCount',
             'cataloguesCount',
             'workOrdersCount',
+            'woNewCount',
+            'woAllocatedCount',
             'woInProcessCount',
             'woOverdueCount',
             'woCompletedCount',
             'woNewWeight',
+            'woAllocatedWeight',
             'woInProcessWeight',
             'woOverdueWeight',
+            'woCompletedWeight',
             'usersCount',
             'keyUsersCount',
-            'craftsmanStats'
+            'modalWorkOrders'
         ));
     }
-    
+
     public function finance()
     {
         return view('buyer.finance.index');

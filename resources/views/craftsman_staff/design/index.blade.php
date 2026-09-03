@@ -38,16 +38,56 @@
             </button>
             <div class="dropdown-menu p-6 shadow-2xl border-0 rounded-xl" style="min-width: 400px;">
                 <form action="{{ route('craftsman_staff.design.index') }}" method="GET" class="space-y-4">
+                    @if(request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+
                     <div class="grid grid-cols-2 gap-4">
                         <div class="col-span-1">
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Design Code</label>
-                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_design_code') }}">
+                            <input type="text" name="filter_design_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_design_code') }}" placeholder="Ex: DES001">
                         </div>
                         <div class="col-span-1">
                             <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Code</label>
-                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_code') }}">
+                            <input type="text" name="filter_product_code" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_code') }}" placeholder="Ex: PRD001">
                         </div>
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Product Name</label>
+                        <input type="text" name="filter_product_name" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="{{ request('filter_product_name') }}" placeholder="Enter name...">
+                    </div>
+
+                    {{-- Cascading Category & Subcategory Dropdowns --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Category</label>
+                            <select name="product_category_id" id="design_category_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Categories</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('product_category_id') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Subcategory container: only visible when selected category has subcategories --}}
+                        <div id="design_subcategory_wrapper" style="display: none;">
+                            <label class="block text-xs font-bold text-indigo-700 uppercase mb-1">Subcategory</label>
+                            <select name="subcategory_id" id="design_subcategory_select" class="w-full px-3 py-2 border border-indigo-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Subcategories</option>
+                                @foreach($subcategories as $subcat)
+                                    <option value="{{ $subcat->id }}" 
+                                            data-parent="{{ $subcat->product_category_id }}" 
+                                            {{ request('subcategory_id') == $subcat->id ? 'selected' : '' }}>
+                                        {{ $subcat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="flex gap-2 pt-4 border-t border-indigo-50">
                         <button type="submit" class="flex-1 bg-indigo-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-indigo-800 transition">Apply</button>
                         <a href="{{ route('craftsman_staff.design.index') }}" class="flex-1 text-center border border-indigo-200 py-2 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-50 transition">Reset</a>
@@ -62,22 +102,23 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($designs as $design)
             @php
-            $isLocked = $design->isDesignLocked(Auth::guard('craftsman')->user());
+            $activeCraftsman = Auth::guard('craftsman')->user() ?? auth()->user()->craftsman ?? null;
+            $isLocked = method_exists($design, 'isDesignLocked') ? $design->isDesignLocked($activeCraftsman) : false;
 
-            $imagesCount = $design->images->count();
+            $imagesCount = $design->images ? $design->images->count() : 0;
             $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
 
             if (!$firstImage && $design->product_image) {
-            $imgs = explode(',', $design->product_image);
-            $firstImage = trim($imgs[0]);
+                $imgs = explode(',', $design->product_image);
+                $firstImage = trim($imgs[0]);
             }
 
             $imgSrc = null;
             if ($firstImage) {
-            if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-            elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-            elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-            else { $imgSrc = asset('storage/products/' . $firstImage); }
+                if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                else { $imgSrc = asset('storage/products/' . $firstImage); }
             }
             @endphp
 
@@ -94,9 +135,6 @@
                         <div class="bg-white/90 p-3 rounded-full shadow-lg border border-indigo-50">
                             <img src="{{ asset('images/ajlogo.png') }}" class="w-12 h-12 object-contain" alt="Locked">
                         </div>
-                        <!-- <div class="absolute bottom-16 bg-indigo-900 text-white rounded-full p-1 shadow-md translate-y-8">
-                                        <i class="bi bi-lock-fill text-xs"></i>
-                                    </div> -->
                     </div>
                     @elseif($imagesCount > 1)
                     <div class="absolute bottom-3 right-3">
@@ -115,14 +153,11 @@
                 <div class="p-4 flex flex-col flex-grow bg-white border-t border-indigo-50">
                     <div class="flex justify-between items-start mb-2">
                         <div class="max-w-[70%] mx-auto flex justify-center">
-                            <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate"
+                            <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate font-mono text-sm"
                                 title="{{ $design->design_code }}">
                                 {{ $design->design_code }}
                             </h6>
                         </div>
-                        <!-- <span class="text-[10px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase">
-                                {{ $design->design_code }}
-                            </span> -->
                     </div>
 
                     <div class="flex justify-between items-center text-sm mb-4">
@@ -142,18 +177,13 @@
                             <i class="bi bi-lock-fill"></i> LOCKED
                         </button>
                         @endif
-<!-- 
-                        <button onclick="addToFavorite({{ $design->id }})" 
-                            class="p-2 bg-pink-50 text-pink-600 border border-pink-100 rounded-xl hover:bg-pink-100 transition-colors shadow-sm" title="Add to Favorites">
-                            <i class="bi bi-heart"></i>
-                        </button> -->
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
         <div class="mt-8 flex justify-center">
-            {{ $designs->appends(request()->query())->links() }}
+            {{ $designs->links() }}
         </div>
         @else
         <div class="bg-white rounded-2xl border border-indigo-100 p-20 text-center shadow-sm">
@@ -166,4 +196,44 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('design_category_select');
+        const subcategorySelect = document.getElementById('design_subcategory_select');
+        const subcategoryWrapper = document.getElementById('design_subcategory_wrapper');
+        const subcategoryOptions = Array.from(subcategorySelect.querySelectorAll('option[data-parent]'));
+
+        function syncSubcategories() {
+            const selectedCatId = categorySelect.value;
+            const currentSubcatVal = subcategorySelect.value;
+
+            if (!selectedCatId) {
+                subcategoryWrapper.style.display = 'none';
+                subcategorySelect.value = '';
+                return;
+            }
+
+            let matchingCount = 0;
+            subcategoryOptions.forEach(opt => {
+                const parentId = opt.getAttribute('data-parent');
+                if (parentId === selectedCatId) {
+                    opt.style.display = '';
+                    matchingCount++;
+                } else {
+                    opt.style.display = 'none';
+                    if (opt.value === currentSubcatVal) {
+                        subcategorySelect.value = '';
+                    }
+                }
+            });
+
+            subcategoryWrapper.style.display = matchingCount > 0 ? 'block' : 'none';
+        }
+
+        if (categorySelect && subcategorySelect && subcategoryWrapper) {
+            categorySelect.addEventListener('change', syncSubcategories);
+            syncSubcategories(); // Run on initial render
+        }
+    });
+</script>
 @endsection

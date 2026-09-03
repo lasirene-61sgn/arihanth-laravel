@@ -97,12 +97,12 @@
                         <td class="tw-px-6 tw-py-4">
                             <div class="tw-flex tw-flex-wrap tw-gap-1 tw-max-w-[250px]">
                                 @php
-                                    $perms = is_array($user->permissions) ? $user->permissions : json_decode($user->permissions, true) ?? [];
-                                    $defaults = ['work_order', 'product', 'design', 'catalogue'];
-                                    $allPerms = array_unique(array_merge($defaults, $perms));
+                                $perms = is_array($user->permissions) ? $user->permissions : json_decode($user->permissions, true) ?? [];
+                                $defaults = ['work_order', 'product', 'design', 'catalogue'];
+                                $allPerms = array_unique(array_merge($defaults, $perms));
                                 @endphp
                                 @foreach($allPerms as $p)
-                                    <span class="tw-px-1.5 tw-py-0.5 tw-bg-gray-50 tw-text-gray-500 tw-border tw-border-gray-200 tw-rounded tw-text-[9px] tw-font-bold tw-uppercase">{{ str_replace('_', ' ', $p) }}</span>
+                                <span class="tw-px-1.5 tw-py-0.5 tw-bg-gray-50 tw-text-gray-500 tw-border tw-border-gray-200 tw-rounded tw-text-[9px] tw-font-bold tw-uppercase">{{ str_replace('_', ' ', $p) }}</span>
                                 @endforeach
                             </div>
                         </td>
@@ -112,18 +112,22 @@
                                     <input type="password" value="{{ $user->password }}" readonly
                                         class="tw-password-field tw-bg-transparent tw-border-none tw-text-gray-800 tw-font-mono tw-text-xs tw-outline-none tw-w-24" id="pwd-{{ $loop->index }}">
                                 </div>
-                                <div class="tw-flex tw-gap-1 tw-opacity-0 group-hover:tw-opacity-100 tw-transition-opacity">
-                                    <button type="button" onclick="togglePassword(this, 'pwd-{{ $loop->index }}')" class="tw-p-1 tw-text-gray-400 hover:tw-text-[#8B3B16] tw-transition-colors">
+                                <div class="tw-flex tw-gap-1.5 tw-items-center">
+                                    <button type="button" onclick="togglePassword(this, 'pwd-{{ $loop->index }}')" 
+                                        class="tw-p-1.5 tw-rounded-lg tw-bg-blue-50 tw-border tw-border-blue-200 tw-text-blue-600 hover:tw-bg-blue-600 hover:tw-text-white tw-transition-all tw-shadow-xs" 
+                                        title="View / Hide Password">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <button type="button" onclick="copyPassword('pwd-{{ $loop->index }}')" class="tw-p-1 tw-text-gray-400 hover:tw-text-[#8B3B16] tw-transition-colors" title="Copy">
+                                    <button type="button" onclick="copyPassword('pwd-{{ $loop->index }}')" 
+                                        class="tw-p-1.5 tw-rounded-lg tw-bg-indigo-50 tw-border tw-border-indigo-200 tw-text-indigo-600 hover:tw-bg-indigo-600 hover:tw-text-white tw-transition-all tw-shadow-xs" 
+                                        title="Copy Password">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
                                 </div>
                             </div>
                         </td>
                         <td class="tw-px-6 tw-py-4 tw-text-right">
-                            <a href="{{ route('super-admin.user-credentials.show', ['role' => strtolower(str_replace(' ', '-', $user->role)), 'id' => $user->id]) }}" 
+                            <a href="{{ route('super-admin.user-credentials.show', ['role' => strtolower(str_replace(' ', '-', $user->role)), 'id' => $user->id]) }}"
                                 class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-bg-gray-50 tw-text-gray-700 tw-rounded-lg tw-text-xs tw-font-bold hover:tw-bg-orange-600 hover:tw-text-white tw-transition-all tw-border tw-border-gray-200 hover:tw-border-orange-600">
                                 <i class="bi bi-shield-lock"></i>
                                 View Details
@@ -132,7 +136,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="tw-px-6 tw-py-16 tw-text-center tw-text-gray-500">
+                        <td colspan="7" class="tw-px-6 tw-py-16 tw-text-center tw-text-gray-500">
                             <div class="tw-flex tw-flex-col tw-items-center">
                                 <i class="bi bi-person-x tw-text-5xl tw-mb-4 tw-opacity-20 tw-text-[#8B3B16]"></i>
                                 <p class="tw-text-lg tw-font-bold tw-text-gray-400">No users found matching your criteria.</p>
@@ -171,7 +175,7 @@
         const input = document.getElementById(inputId);
         const originalType = input.type;
 
-        // Temporarily change to text to ensure value is copied correctly in some browsers
+        // Temporarily change to text to ensure value is copied correctly in all browsers
         input.type = 'text';
         input.select();
         document.execCommand('copy');
@@ -180,7 +184,7 @@
         // Clear selection
         window.getSelection().removeAllRanges();
 
-        // Show brief notification (optional)
+        // Show brief notification
         alert('Password copied to clipboard!');
     }
 </script>

@@ -17,7 +17,9 @@
         } else {
             document.documentElement.classList.remove('dark');
         }
-        tailwind.config = { darkMode: 'class' }
+        tailwind.config = {
+            darkMode: 'class'
+        }
     </script>
     <style type="text/tailwindcss">
         html.dark body { background-color: #111827; color: #f3f4f6; }
@@ -40,9 +42,17 @@
 
     <style>
         @keyframes custom-blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.2;
+            }
         }
+
         .animate-custom-blink {
             animation: custom-blink 1.2s ease-in-out infinite;
         }
@@ -111,195 +121,218 @@
 
     <div class="flex min-h-screen">
 
-    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <nav id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-emerald-900 text-white flex flex-col lg:translate-x-0 transition-transform duration-300 z-50">
-        <div class="p-6 border-b border-emerald-800">
-            <div class="flex items-center gap-3">
-                <div class="bg-white/10 p-1.5 rounded-lg">
-                    <img src="{{ asset('images/taralogo.png') }}" class="h-20 w-20" alt="AJ Logo">
-                </div>
+        @php
+    $craftsmanUser = auth()->guard('craftsman')->user();
+@endphp
+
+<nav id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-emerald-900 text-white flex flex-col lg:translate-x-0 transition-transform duration-300 z-50">
+    <div class="p-6 border-b border-emerald-800">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/10 p-1.5 rounded-lg">
+                <img src="{{ asset('images/taralogo.png') }}" class="h-20 w-20" alt="AJ Logo">
             </div>
         </div>
+    </div>
 
-        <div class="flex-1 overflow-y-auto py-4">
-            <ul class="space-y-1 px-3">
-                @if(auth()->guard('craftsman')->user()->hasPermission('dashboard'))
-                <li>
-                    <a href="{{ route('craftsman.dashboard') }}"
-                        class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.dashboard') ? 'active bg-emerald-800' : '' }}">
-                        <i class="bi bi-speedometer2 mr-3"></i> Dashboard
-                    </a>
-                </li>
-                @endif
-                <li>
-                    <a href="{{ route('craftsman.global-search') }}"
-                        class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.global-search') ? 'active bg-emerald-800' : '' }}">
-                        <i class="bi bi-search mr-3"></i> Global Search
-                    </a>
-                </li>
-
-                <!-- NEW: Messages (Moved higher for visibility) -->
-                <li>
-                    <a href="{{ route('craftsman.chat.index') }}"
-                        class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.chat.*') ? 'active bg-emerald-800' : '' }}">
-                        <i class="bi bi-chat-dots mr-3"></i> Messages
-                    </a>
-                </li>
-
-                <!-- NEW: Meetings -->
-                <li>
-                    <a href="{{ route('craftsman.meetings.index') }}"
-                        class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.meetings.*') ? 'active bg-emerald-800' : '' }}">
-                        <i class="bi bi-camera-video mr-3"></i> Meetings
-                    </a>
-                </li>
-
-                <div class="my-2 border-t border-emerald-800/50 mx-3"></div>
-
-                <li>
-                    <a href="{{ route('craftsman.profile.edit') }}"
-                        class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.profile.edit') ? 'active bg-emerald-800' : '' }}">
-                        <i class="bi bi-person-circle mr-3"></i> My Profile
-                    </a>
-                </li>
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('work_order'))
-                <li>
-                    <a href="{{ route('craftsman.work-order.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.work-order.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-clipboard mr-3"></i> Work Orders</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('stock_order'))
-                <li>
-                    <a href="{{ route('craftsman.stock-order.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.stock-order.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-box2-heart mr-3"></i> Live Stock Order</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('purchase_order'))
-                <li>
-                    <a href="{{ route('craftsman.purchase-order.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.purchase-order.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-file-earmark-text mr-3"></i> Purchase Orders</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('repair'))
-                <li>
-                    <a href="{{ route('craftsman.repairs.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.repairs.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-tools mr-3"></i> Samples/Repairs</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('product'))
-                <li>
-                    <a href="{{ route('craftsman.product.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.product.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-box-seam mr-3"></i> Products</span>
-                    </a>
-                </li>
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('design'))
-                <li>
-                    <a href="{{ route('craftsman.design.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.design.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-brush mr-3"></i> Designs</span>
-                    </a>
-                </li>
-                @endif
-                @if(auth()->guard('craftsman')->user()->hasPermission('favorites'))
-                <li>
-                    <a href="{{ route('craftsman.favorites.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.favorites.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-heart mr-3"></i> Favorites</span>
-                    </a>
-                </li>
-                
-                @endif
-
-                @if(auth()->guard('craftsman')->user()->hasPermission('catalogue'))
-                <li>
-                    <a href="{{ route('craftsman.catalogue.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.catalogue.index') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-book mr-3"></i> Catalogue</span>
-                    </a>
-                </li>
-                @endif
-                
-                @if(auth()->guard('craftsman')->user()->hasPermission('finance'))
-                <li>
-                    <a href="{{ route('craftsman.finance.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.finance.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-currency-dollar mr-3"></i> Finance</span>
-                    </a>
-                </li>
-                @endif
-                
-                @if(auth()->guard('craftsman')->user()->hasPermission('craftsman_staff'))
-                <li>
-                    <a href="{{ route('craftsman.staff.index') }}"
-                        class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.staff.*') ? 'active bg-emerald-800' : '' }}">
-                        <span><i class="bi bi-people mr-3"></i> Craftsman Staff</span>
-                    </a>
-                </li>
-                @endif
-
-                <div class="my-4 border-t border-emerald-800 mx-3"></div>
-
-                <li>
-                    <a href="{{ route('craftsman.logout') }}"
-                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                        class="flex items-center p-3 rounded-lg text-emerald-300 hover:text-white hover:bg-red-900/30 transition">
-                        <i class="bi bi-box-arrow-right mr-3"></i> Logout
-                    </a>
-                    <form id="logout-form" action="{{ route('craftsman.logout') }}" method="POST" class="hidden">
-                        @csrf
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
-    <!-- Main Content Area -->
-    <div id="content" class="flex-1 flex flex-col lg:ml-64 transition-all duration-300">
-        <header class="h-16 bg-white border-b border-emerald-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40">
-            <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-md bg-emerald-100 text-emerald-800 mr-4">
-                    <i class="bi bi-list text-2xl"></i>
-                </button>
-                <h2 class="text-lg font-semibold text-emerald-900 hidden md:block">
-                    Dashboard
-                </h2>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <!-- Dark Mode Toggle -->
-                <button id="darkModeToggle" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Toggle Dark Mode">
-                    <i id="darkIcon" class="bi bi-moon-stars"></i>
-                    <i id="lightIcon" class="bi bi-sun hidden"></i>
-                </button>
-
-                <!-- Desktop Icons -->
-                <a href="{{ route('craftsman.chat.index') }}" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Messages">
-                    <i class="bi bi-chat-dots"></i>
+    <div class="flex-1 overflow-y-auto py-4">
+        <ul class="space-y-1 px-3">
+            {{-- Dashboard --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('dashboard'))
+            <li>
+                <a href="{{ route('craftsman.dashboard') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.dashboard') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-speedometer2 mr-3"></i> Dashboard
                 </a>
-                <div class="dropdown hidden md:block">
-                    <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
-                        <i class="bi bi-camera-video"></i>
+            </li>
+            @endif
+
+            {{-- Global Search (Common Tool) --}}
+            <li>
+                <a href="{{ route('craftsman.global-search') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.global-search') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-search mr-3"></i> Global Search
+                </a>
+            </li>
+
+            {{-- Messages --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('messages'))
+            <li>
+                <a href="{{ route('craftsman.chat.index') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.chat.*') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-chat-dots mr-3"></i> Messages
+                </a>
+            </li>
+            @endif
+
+            {{-- Meetings --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('meetings'))
+            <li>
+                <a href="{{ route('craftsman.meetings.index') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.meetings.*') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-camera-video mr-3"></i> Meetings
+                </a>
+            </li>
+            @endif
+
+            <div class="my-2 border-t border-emerald-800/50 mx-3"></div>
+
+            {{-- My Profile --}}
+            <li>
+                <a href="{{ route('craftsman.profile.edit') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.profile.edit') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-person-circle mr-3"></i> My Profile
+                </a>
+            </li>
+
+            {{-- Work Orders --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('work_order'))
+            <li>
+                <a href="{{ route('craftsman.work-order.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.work-order.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-clipboard mr-3"></i> Work Orders</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Live Stock Order --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('stock_order'))
+            <li>
+                <a href="{{ route('craftsman.stock-order.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.stock-order.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-box2-heart mr-3"></i> Live Stock Order</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Purchase Orders --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('purchase_order'))
+            <li>
+                <a href="{{ route('craftsman.purchase-order.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.purchase-order.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-file-earmark-text mr-3"></i> Purchase Orders</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Samples/Repairs --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('repair'))
+            <li>
+                <a href="{{ route('craftsman.repairs.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.repairs.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-tools mr-3"></i> Samples/Repairs</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Products --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('product'))
+            <li>
+                <a href="{{ route('craftsman.product.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.product.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-box-seam mr-3"></i> Products</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Designs --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('design'))
+            <li>
+                <a href="{{ route('craftsman.design.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.design.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-brush mr-3"></i> Designs</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Favorites --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('favorites'))
+            <li>
+                <a href="{{ route('craftsman.favorites.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.favorites.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-heart mr-3"></i> Favorites</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Catalogue --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('catalogue'))
+            <li>
+                <a href="{{ route('craftsman.catalogue.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.catalogue.index') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-book mr-3"></i> Catalogue</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Finance --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('finance'))
+            <li>
+                <a href="{{ route('craftsman.finance.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.finance.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-currency-dollar mr-3"></i> Finance</span>
+                </a>
+            </li>
+            @endif
+
+            {{-- Craftsman Staff --}}
+            @if($craftsmanUser && $craftsmanUser->hasPermission('craftsman_staff'))
+            <li>
+                <a href="{{ route('craftsman.staff.index') }}"
+                    class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.staff.*') ? 'active bg-emerald-800' : '' }}">
+                    <span><i class="bi bi-people mr-3"></i> Craftsman Staff</span>
+                </a>
+            </li>
+            @endif
+
+            <div class="my-4 border-t border-emerald-800 mx-3"></div>
+
+            {{-- Logout --}}
+            <li>
+                <a href="{{ route('craftsman.logout') }}"
+                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                    class="flex items-center p-3 rounded-lg text-emerald-300 hover:text-white hover:bg-red-900/30 transition">
+                    <i class="bi bi-box-arrow-right mr-3"></i> Logout
+                </a>
+                <form id="logout-form" action="{{ route('craftsman.logout') }}" method="POST" class="hidden">
+                    @csrf
+                </form>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+        <!-- Main Content Area -->
+        <div id="content" class="flex-1 flex flex-col lg:ml-64 transition-all duration-300">
+            <header class="h-16 bg-white border-b border-emerald-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40">
+                <div class="flex items-center">
+                    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-md bg-emerald-100 text-emerald-800 mr-4">
+                        <i class="bi bi-list text-2xl"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-xl mt-2" aria-labelledby="meetingsDropdown">
-                        <li class="px-4 py-2 text-xs font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100">Latest Meetings</li>
-                        @forelse($latestMeetings as $meeting)
+                    <h2 class="text-lg font-semibold text-emerald-900 hidden md:block">
+                        Dashboard
+                    </h2>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Toggle Dark Mode">
+                        <i id="darkIcon" class="bi bi-moon-stars"></i>
+                        <i id="lightIcon" class="bi bi-sun hidden"></i>
+                    </button>
+
+                    <!-- Desktop Icons -->
+                    <a href="{{ route('craftsman.chat.index') }}" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Messages">
+                        <i class="bi bi-chat-dots"></i>
+                    </a>
+                    <div class="dropdown hidden md:block">
+                        <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
+                            <i class="bi bi-camera-video"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-xl mt-2" aria-labelledby="meetingsDropdown">
+                            <li class="px-4 py-2 text-xs font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100">Latest Meetings</li>
+                            @forelse($latestMeetings as $meeting)
                             <li>
                                 <div class="dropdown-item flex flex-col gap-1 py-2 px-4 hover:bg-gray-50 transition-colors">
                                     <span class="font-bold text-sm text-gray-800">
@@ -309,76 +342,98 @@
                                         {{ \Carbon\Carbon::parse($meeting->scheduled_at)->format('d M, h:i A') }}
                                     </span>
                                     @if($meeting->started_at)
-                                        <a href="{{ route('video.join', $meeting->room_id) }}" class="mt-1 inline-flex items-center justify-center px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition-colors">
-                                            Join Now
-                                        </a>
+                                    <a href="{{ route('video.join', $meeting->room_id) }}" class="mt-1 inline-flex items-center justify-center px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition-colors">
+                                        Join Now
+                                    </a>
                                     @endif
                                 </div>
                             </li>
-                        @empty
+                            @empty
                             <li><span class="dropdown-item px-4 py-3 text-sm text-gray-500">No recent meetings</span></li>
-                        @endforelse
-                        <li><hr class="dropdown-divider my-0"></li>
-                        <li>
-                            <a class="dropdown-item text-center py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors" href="{{ route('craftsman.meetings.index') }}">
-                                View All Meetings
-                            </a>
-                        </li>
-                    </ul>
+                            @endforelse
+                            <li>
+                                <hr class="dropdown-divider my-0">
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-center py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors" href="{{ route('craftsman.meetings.index') }}">
+                                    View All Meetings
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Mobile 'More' Dropdown -->
+                    <div class="dropdown md:hidden">
+                        <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="moreMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-xl" aria-labelledby="moreMenuButton">
+                            <li>
+                                <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.chat.index') }}">
+                                    <i class="bi bi-chat-dots text-emerald-600"></i> Messages
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.meetings.index') }}">
+                                    <i class="bi bi-camera-video text-emerald-600"></i> Meetings
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <button class="dropdown-item flex items-center gap-2" id="mobileDarkModeToggle">
+                                    <i class="bi bi-moon-stars text-emerald-600" id="mobileDarkIcon"></i>
+                                    <span id="mobileDarkText">Dark Mode</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <span class="text-sm font-medium text-emerald-700 hidden sm:block">
+                        Welcome, <span class="font-bold text-emerald-900">{{ Auth::guard('craftsman')->user()->full_name }}</span>
+                    </span>
                 </div>
+            </header>
 
-                <!-- Mobile 'More' Dropdown -->
-                <div class="dropdown md:hidden">
-                    <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="moreMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-xl" aria-labelledby="moreMenuButton">
-                        <li>
-                            <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.chat.index') }}">
-                                <i class="bi bi-chat-dots text-emerald-600"></i> Messages
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.meetings.index') }}">
-                                <i class="bi bi-camera-video text-emerald-600"></i> Meetings
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <button class="dropdown-item flex items-center gap-2" id="mobileDarkModeToggle">
-                                <i class="bi bi-moon-stars text-emerald-600" id="mobileDarkIcon"></i>
-                                <span id="mobileDarkText">Dark Mode</span>
-                            </button>
-                        </li>
-                    </ul>
+            <main class="p-4 lg:p-8">
+                <div class="max-w-7xl mx-auto">
+                    @yield('content')
                 </div>
-
-                <span class="text-sm font-medium text-emerald-700 hidden sm:block">
-                    Welcome, <span class="font-bold text-emerald-900">{{ Auth::guard('craftsman')->user()->full_name }}</span>
-                </span>
-            </div>
-        </header>
-
-        <main class="p-4 lg:p-8">
-            <div class="max-w-7xl mx-auto">
-                @yield('content')
-            </div>
-        </main>
+            </main>
 
 
+        </div>
     </div>
-</div>
 
-<style>
-    @keyframes pulse-green {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-        70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
-    }
-    .pulse-green { animation: pulse-green 2s infinite; }
-    /* Ensure active links are highlighted correctly */
-    .nav-link.active { background-color: #064e3b !important; color: white !important; }
-</style>
+    <style>
+        @keyframes pulse-green {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+            }
+
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+            }
+        }
+
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+
+        /* Ensure active links are highlighted correctly */
+        .nav-link.active {
+            background-color: #064e3b !important;
+            color: white !important;
+        }
+    </style>
 
     <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">

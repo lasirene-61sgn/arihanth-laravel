@@ -36,6 +36,18 @@
                         </div>
                     @endif
 
+                    @php
+                        // Resolve craftsman safely from controller passed variable, staff relation, or guard
+                        $activeCraftsman = $craftsman 
+                            ?? auth()->user()->craftsman 
+                            ?? Auth::guard('craftsman_staff')->user()->craftsman 
+                            ?? Auth::guard('craftsman')->user() 
+                            ?? null;
+
+                        $resolvedCode = $activeCraftsman->craftman_code ?? $activeCraftsman->craftsman_code ?? '';
+                        $resolvedBusiness = $activeCraftsman->business_name ?? $activeCraftsman->name ?? '';
+                    @endphp
+
                     <form action="{{ route('craftsman_staff.product.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         
@@ -48,9 +60,11 @@
                                            class="form-control @error('craftsman_code') is-invalid @enderror" 
                                            id="craftsman_code" 
                                            name="craftsman_code" 
-                                           value="{{ Auth::guard('craftsman')->user()->craftman_code }}" 
+                                           value="{{ old('craftsman_code', $resolvedCode) }}" 
                                            readonly>
-                                    <small class="form-text text-muted">Business: {{ Auth::guard('craftsman')->user()->business_name }}</small>
+                                    @if($resolvedBusiness)
+                                        <small class="form-text text-muted">Business: {{ $resolvedBusiness }}</small>
+                                    @endif
                                     @error('craftsman_code')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -70,17 +84,14 @@
                                 </div>
                             </div>
                             
-
-                            
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="product_name" class="form-label">Product Name <span class="text-danger"></span></label>
+                                    <label for="product_name" class="form-label">Product Name</label>
                                     <input type="text" 
                                            class="form-control @error('product_name') is-invalid @enderror" 
                                            id="product_name" 
                                            name="product_name" 
-                                           value="{{ old('product_name') }}" 
-                                           >
+                                           value="{{ old('product_name') }}">
                                     @error('product_name')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -145,9 +156,7 @@
                                     @enderror
                                 </div>
                             </div>
-                            
 
-                            
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="size" class="form-label">Size</label>
@@ -173,24 +182,26 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="weight_from" class="form-label">Weight From</label>
-                                    <input type="number" 
+                                    <input type="text" 
                                            step="0.001"
                                            class="form-control" 
                                            id="weight_from" 
                                            name="weight_from" 
-                                           value="{{ old('weight_from') }}">
+                                           value="{{ old('weight_from') }}"
+                                           placeholder="0.000">
                                 </div>
                             </div>
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="weight_to" class="form-label">Weight To</label>
-                                    <input type="number" 
+                                    <input type="text" 
                                            step="0.001"
                                            class="form-control" 
                                            id="weight_to" 
                                            name="weight_to" 
-                                           value="{{ old('weight_to') }}">
+                                           value="{{ old('weight_to') }}"
+                                           placeholder="0.000">
                                 </div>
                             </div>
                             
@@ -246,7 +257,7 @@
                             
                             <div class="col-md-12">
                                 <div class="mb-3">
-                                    <label for="images" class="form-label">Product Images(Only white background, *No Logo, No Title .)</label>
+                                    <label for="images" class="form-label">Product Images (Only white background, *No Logo, No Title.)</label>
                                     <input type="file" 
                                            class="form-control @error('images') is-invalid @enderror" 
                                            id="images" 
@@ -280,7 +291,6 @@
         const optionBlocks = document.querySelectorAll('.category-option');
 
         function refreshCategoryOptions(categoryId) {
-            // Hide all dynamic option blocks first
             optionBlocks.forEach(b => b.style.display = 'none');
             if (!categoryId) return;
             
@@ -333,7 +343,7 @@
             refreshCategoryOptions(id);
         });
 
-        // Initialize on load if old value exists
+        // Initialize dynamic options and subcategories on load if category is preselected
         if (categorySelect.value) {
             refreshSubcategories(categorySelect.value);
             refreshCategoryOptions(categorySelect.value);
@@ -368,7 +378,6 @@
                     opt.selected = true;
                     categorySelect.appendChild(opt);
                     refreshCategoryOptions(res.category.id);
-                    // Show subcategory container for new category so user can add subcategories
                     document.getElementById('subcategory-container').style.display = 'block';
                     document.getElementById('product_subcategory_id').innerHTML = '<option value="">Select Sub Category</option>';
                 } else {
@@ -418,18 +427,4 @@
         });
     });
 </script>
-
-<script>
-    // Prevent service worker related errors
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for (let registration of registrations) {
-                registration.unregister();
-            }
-        }).catch(function(error) {
-            console.warn("Service worker not found:", error);
-        });
-    }
-</script>
-
 @endsection

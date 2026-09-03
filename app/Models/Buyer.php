@@ -194,12 +194,14 @@ class Buyer extends Authenticatable
             'design',
             'catalogue',
             'work_order',
-            'user_management',
-            'key_user',
-            'finance',
-            'favorites',
             'stock_order',
-            'meetings'
+            'repairs',
+            'favorites',
+            'finance',
+            'key_user',
+            'user_management',
+            'meetings',
+            'messages',
         ];
     }
 

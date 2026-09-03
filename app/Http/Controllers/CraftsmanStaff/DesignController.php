@@ -14,53 +14,58 @@ class DesignController extends Controller
     /**
      * Display the global approved design catalogue for craftsmen.
      */
-    
-
-public function index(Request $request)
-{
-    $query = Product::with(['category', 'subcategory'])
-        ->whereNotNull('design_code')
-        ->where('design_status', 'Accepted')
-        ->whereNotNull('type'); // Filter out bulk uploaded work orders (which have null type)
 
 
-    // --- SEARCH & FILTERS ---
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('product_name', 'like', "%{$search}%")
-              ->orWhere('design_code', 'like', "%{$search}%")
-              ->orWhere('product_code', 'like', "%{$search}%");
-        });
+    public function index(Request $request)
+    {
+        $query = Product::with(['category', 'subcategory'])
+            ->whereNotNull('design_code')
+            ->where('design_status', 'Accepted')
+            ->whereNotNull('type');
+
+        // --- SEARCH & FILTERS ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('design_code', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('filter_design_code')) {
+            $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+        }
+        if ($request->filled('filter_product_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+        }
+        if ($request->filled('filter_product_name')) {
+            $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
+        }
+        if ($request->filled('product_category_id')) {
+            $query->where('product_category_id', $request->product_category_id);
+        }
+        if ($request->filled('subcategory_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('subcategory_id', $request->subcategory_id)
+                    ->orWhere('product_subcategory_id', $request->subcategory_id);
+            });
+        }
+
+        // --- SORTING ---
+        $sort = $request->get('sort', 'latest');
+        if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
+        elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
+        else $query->latest();
+
+        $designs = $query->paginate(15)->withQueryString();
+
+        // Fetch categories and subcategories for the filter dropdowns
+        $categories = \App\Models\ProductCategory::orderBy('name')->get();
+        $subcategories = \App\Models\ProductSubcategory::orderBy('name')->get();
+
+        return view('craftsman_staff.design.index', compact('designs', 'categories', 'subcategories'));
     }
-
-    if ($request->filled('filter_design_code')) {
-        $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
-    }
-    if ($request->filled('filter_product_code')) {
-        $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
-    }
-    if ($request->filled('filter_product_name')) {
-        $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
-    }
-    if ($request->filled('filter_category')) {
-        $query->whereHas('category', fn($q) => $q->where('name', 'like', '%' . $request->filter_category . '%'));
-    }
-    if ($request->filled('filter_subcategory')) {
-        $query->whereHas('subcategory', fn($q) => $q->where('name', 'like', '%' . $request->filter_subcategory . '%'));
-    }
-
-    // --- SORTING ---
-    $sort = $request->get('sort', 'latest');
-    if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
-    elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
-    else $query->latest();
-
-    $designs = $query->paginate(15);
-
-    return view('craftsman_staff.design.index', compact('designs'));
-}
-
 
 
     /**
@@ -71,7 +76,7 @@ public function index(Request $request)
         $product = Product::with(['category', 'subcategory', 'images'])->findOrFail($id);
 
         if ($product->isDesignLocked($this->currentCraftsmanStaff())) {
-             abort(403, 'This design is currently locked.');
+            abort(403, 'This design is currently locked.');
         }
 
         // Ensure it is an approved design
@@ -82,8 +87,8 @@ public function index(Request $request)
         return view('craftsman_staff.design.show', compact('product'));
     }
 
-    public function export(Request $request) 
-{
-    return Excel::download(new CraftsmanDesignExport($request), 'Global_Design_Catalogue_' . now()->format('d-m-Y') . '.xlsx');
-}
+    public function export(Request $request)
+    {
+        return Excel::download(new CraftsmanDesignExport($request), 'Global_Design_Catalogue_' . now()->format('d-m-Y') . '.xlsx');
+    }
 }

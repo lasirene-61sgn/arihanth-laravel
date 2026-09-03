@@ -261,12 +261,12 @@
 
                 <div class="col-md-6 mb-3">
                     <label for="weight_from" class="form-label">Weight From</label>
-                    <input type="number" step="0.001" class="form-control" id="weight_from" name="weight_from" value="{{ old('weight_from', $product->weight_from) }}">
+                    <input type="text" step="0.001" class="form-control" id="weight_from" name="weight_from" value="{{ old('weight_from', $product->weight_from) }}">
                 </div>
 
                 <div class="col-md-6 mb-3">
                     <label for="weight_to" class="form-label">Weight To</label>
-                    <input type="number" step="0.001" class="form-control" id="weight_to" name="weight_to" value="{{ old('weight_to', $product->weight_to) }}">
+                    <input type="text" step="0.001" class="form-control" id="weight_to" name="weight_to" value="{{ old('weight_to', $product->weight_to) }}">
                 </div>
 
                 <div class="col-md-6 mb-3">

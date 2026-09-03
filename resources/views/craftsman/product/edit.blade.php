@@ -48,11 +48,11 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Weight From (g)</label>
-                        <input type="number" step="0.01" name="weight_from" class="form-control" value="{{ $product->weight_from }}">
+                        <input type="text" step="0.01" name="weight_from" class="form-control" value="{{ $product->weight_from }}">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Weight To (g)</label>
-                        <input type="number" step="0.01" name="weight_to" class="form-control" value="{{ $product->weight_to }}">
+                        <input type="text" step="0.01" name="weight_to" class="form-control" value="{{ $product->weight_to }}">
                     </div>
 
                     <div class="col-12 mb-3">

@@ -21,50 +21,63 @@ class ProductController extends Controller
      * Display a listing of the products created by the key user.
      */
     public function index(Request $request)
-    {
-        $keyUser = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
+{
+    $keyUser = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
 
-        if (!$keyUser) {
-            return redirect()->route('key-user.login')->with('error', 'Please log in to continue.');
-        }
-
-        $query = Product::with(['creator', 'images'])->where('bp_code', $keyUser->bp_code);
-
-        // 1. Quick Search
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%");
-            });
-        }
-
-        // 2. Advanced Filters
-        if ($request->filled('filter_name')) {
-            $query->where('product_name', 'like', '%' . $request->filter_name . '%');
-        }
-        if ($request->filled('filter_code')) {
-            $query->where('product_code', 'like', '%' . $request->filter_code . '%');
-        }
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-        if ($request->filled('order_type')) {
-            $query->where('order_type', $request->order_type);
-        }
-        if ($request->filled('status')) {
-            $query->where('open_close', $request->status);
-        }
-
-        // 3. Sorting
-        $sort = $request->get('sort', 'created_at');
-        $direction = $request->get('direction', 'desc');
-        $query->orderBy($sort, $direction);
-
-        $products = $query->paginate(15); // Use paginate instead of get() for better performance
-
-        return view('key-user.product.index', compact('products'));
+    if (!$keyUser) {
+        return redirect()->route('key-user.login')->with('error', 'Please log in to continue.');
     }
+
+    $query = Product::with(['creator', 'images'])
+        ->where('bp_code', $keyUser->bp_code);
+
+    // 1. Quick Search
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('product_name', 'like', "%{$search}%")
+              ->orWhere('product_code', 'like', "%{$search}%");
+        });
+    }
+
+    // 2. Advanced Filters (Status completely removed)
+    if ($request->filled('filter_name')) {
+        $query->where('product_name', 'like', '%' . $request->filter_name . '%');
+    }
+    if ($request->filled('filter_code')) {
+        $query->where('product_code', 'like', '%' . $request->filter_code . '%');
+    }
+    if ($request->filled('product_category_id')) {
+        $query->where('product_category_id', $request->product_category_id);
+    }
+    if ($request->filled('subcategory_id')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('subcategory_id', $request->subcategory_id)
+              ->orWhere('product_subcategory_id', $request->subcategory_id);
+        });
+    }
+    if ($request->filled('type')) {
+        $query->where('type', $request->type);
+    }
+    if ($request->filled('order_type')) {
+        $query->where('order_type', $request->order_type);
+    }
+
+    // 3. Sorting
+    $sort = $request->get('sort', 'created_at');
+    $direction = $request->get('direction', 'desc');
+    $query->orderBy($sort, $direction);
+
+    $products = $query->paginate(15)->withQueryString();
+
+    // Fetch categories and subcategories for the dropdowns
+    $categories = \App\Models\ProductCategory::orderBy('name')->get();
+    $subcategories = $request->filled('product_category_id')
+        ? \App\Models\ProductSubcategory::where('product_category_id', $request->product_category_id)->orderBy('name')->get()
+        : \App\Models\ProductSubcategory::orderBy('name')->get();
+
+    return view('key-user.product.index', compact('products', 'categories', 'subcategories'));
+}
 
 
 
@@ -151,7 +164,7 @@ class ProductController extends Controller
             $watermarkService = new ImageWatermarkService();
             foreach ($request->file('images') as $image) {
                 $path = $image->store('products', 'public');
-                
+
                 // Apply watermark
                 $watermarkService->addWatermark($path);
 
@@ -171,9 +184,9 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        // Ensure the user can only view their own products
-        $userId = auth()->guard('key_user')->check() ? auth()->guard('key_user')->id() : auth()->guard('buyer')->id();
-        if ($product->created_by != $userId) {
+        // Ensure the user can only view products for their bp_code
+        $user = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
+        if ($product->bp_code != $user->bp_code) {
             abort(403, 'Unauthorized access to product');
         }
 
@@ -186,9 +199,9 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        // Ensure the user can only edit their own products
-        $userId = auth()->guard('key_user')->check() ? auth()->guard('key_user')->id() : auth()->guard('buyer')->id();
-        if ($product->created_by != $userId) {
+        // Ensure the user can only edit products for their bp_code
+        $user = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
+        if ($product->bp_code != $user->bp_code) {
             abort(403, 'Unauthorized access to product');
         }
 
@@ -203,9 +216,9 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        // Ensure the user can only update their own products
-        $userId = auth()->guard('key_user')->check() ? auth()->guard('key_user')->id() : auth()->guard('buyer')->id();
-        if ($product->created_by != $userId) {
+        // Ensure the user can only update products for their bp_code
+        $user = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
+        if ($product->bp_code != $user->bp_code) {
             abort(403, 'Unauthorized access to product');
         }
 
@@ -241,7 +254,7 @@ class ProductController extends Controller
             $watermarkService = new ImageWatermarkService();
             foreach ($request->file('images') as $image) {
                 $path = $image->store('products', 'public');
-                
+
                 // Apply watermark
                 $watermarkService->addWatermark($path);
 
@@ -281,9 +294,9 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        // Ensure the user can only delete their own products
-        $userId = auth()->guard('key_user')->check() ? auth()->guard('key_user')->id() : auth()->guard('buyer')->id();
-        if ($product->created_by != $userId) {
+        // Ensure the user can only delete products for their bp_code
+        $user = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
+        if ($product->bp_code != $user->bp_code) {
             abort(403, 'Unauthorized access to product');
         }
 
@@ -324,7 +337,7 @@ class ProductController extends Controller
     // Add the Export Method too
     public function export(Request $request)
     {
-        
+
         $keyUser = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
         return Excel::download(
             new KeyUserProductExport($request, $keyUser->bp_code),
@@ -336,12 +349,12 @@ class ProductController extends Controller
     {
         $keyUser = auth()->guard('key_user')->user() ?? auth()->guard('buyer')->user();
         $ids = $request->input('selected_products', []);
-        
+
         $products = Product::whereIn('id', $ids)
             ->where('bp_code', $keyUser->bp_code)
             ->with(['category', 'subcategory', 'images'])
             ->get();
-            
+
         return view('admin.product.print-selected', compact('products'));
     }
 }

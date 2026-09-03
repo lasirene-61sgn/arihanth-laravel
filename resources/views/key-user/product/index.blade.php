@@ -15,9 +15,6 @@
             <button id="print_selected_btn" onclick="printSelected()" class="hidden inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
                 <i class="bi bi-printer mr-2"></i> Print Selected
             </button>
-            <!-- <button onclick="window.print()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors shadow-sm">
-                <i class="bi bi-printer mr-2"></i> Print Page
-            </button> -->
             <a href="{{ route('key-user.product.create') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
                 <i class="bi bi-plus-circle mr-2"></i> Add Product
             </a>
@@ -27,6 +24,7 @@
     <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
 
+            {{-- Quick Search --}}
             <form action="{{ route('key-user.product.index') }}" method="GET" class="relative flex-1 max-w-md">
                 <input type="text" name="search" value="{{ request('search') }}"
                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
@@ -38,6 +36,7 @@
             </form>
 
             <div class="flex flex-wrap items-center gap-3 lg:ml-auto">
+                {{-- Advanced Filter Dropdown --}}
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
                         <i class="bi bi-funnel mr-2"></i> Advanced Filter
@@ -46,34 +45,58 @@
                     <div x-show="open" @click.away="open = false" x-cloak
                         class="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-6">
                         <form action="{{ route('key-user.product.index') }}" method="GET" class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Product Code</label>
-                                    <input type="text" name="filter_code" class="w-full p-2 border border-gray-300 rounded-md text-sm" value="{{ request('filter_code') }}" placeholder="Ex: P001">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Product Name</label>
-                                    <input type="text" name="filter_name" class="w-full p-2 border border-gray-300 rounded-md text-sm" value="{{ request('filter_name') }}" placeholder="Ex: Cotton Fabric">
-                                </div>
-                            </div>
+                            
+                            @if(request('search'))
+                                <input type="hidden" name="search" value="{{ request('search') }}">
+                            @endif
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Category</label>
-                                    <input type="text" name="filter_category" class="w-full p-2 border border-gray-300 rounded-md text-sm" value="{{ request('filter_category') }}" placeholder="Category">
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Product Code</label>
+                                    <input type="text" name="filter_code" class="w-full p-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-indigo-500" value="{{ request('filter_code') }}" placeholder="Ex: P001">
                                 </div>
                                 <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Product Name</label>
+                                    <input type="text" name="filter_name" class="w-full p-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-indigo-500" value="{{ request('filter_name') }}" placeholder="Ex: Ring">
+                                </div>
+                            </div>
+
+                            {{-- Category & Conditional Subcategory Grid --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Category</label>
+                                    <select name="product_category_id" id="filter_category_select" class="w-full p-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <option value="">All Categories</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{ $cat->id }}" {{ request('product_category_id') == $cat->id ? 'selected' : '' }}>
+                                                {{ $cat->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Hidden by default; visible only when chosen category contains subcategories --}}
+                                <div id="filter_subcategory_wrapper" style="display: none;">
                                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Subcategory</label>
-                                    <input type="text" name="filter_subcategory" class="w-full p-2 border border-gray-300 rounded-md text-sm" value="{{ request('filter_subcategory') }}" placeholder="Subcategory">
+                                    <select name="subcategory_id" id="filter_subcategory_select" class="w-full p-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <option value="">All Subcategories</option>
+                                        @foreach($subcategories as $subcat)
+                                            <option value="{{ $subcat->id }}" 
+                                                    data-parent="{{ $subcat->product_category_id }}" 
+                                                    {{ request('subcategory_id') == $subcat->id ? 'selected' : '' }}>
+                                                {{ $subcat->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Status</label>
-                                <select name="status" class="w-full p-2 border border-gray-300 rounded-md text-sm">
-                                    <option value="">All Status</option>
-                                    <option value="Open" {{ request('status') == 'Open' ? 'selected' : '' }}>Open</option>
-                                    <option value="Closed" {{ request('status') == 'Closed' ? 'selected' : '' }}>Closed</option>
+                                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Type</label>
+                                <select name="type" class="w-full p-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="">All Types</option>
+                                    <option value="Piece" {{ request('type') == 'Piece' ? 'selected' : '' }}>Piece</option>
+                                    <option value="Pair" {{ request('type') == 'Pair' ? 'selected' : '' }}>Pair</option>
                                 </select>
                             </div>
 
@@ -85,6 +108,7 @@
                     </div>
                 </div>
 
+                {{-- Sort Dropdown --}}
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
                         <i class="bi bi-sort-down mr-2"></i> Sort
@@ -93,6 +117,10 @@
                     <div x-show="open" @click.away="open = false" x-cloak
                         class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-4">
                         <form action="{{ route('key-user.product.index') }}" method="GET" class="space-y-3">
+                            @foreach(request()->except(['sort', 'direction']) as $key => $val)
+                                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                            @endforeach
+
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sort By</label>
                                 <select name="sort" class="w-full p-2 border border-gray-300 rounded-md text-sm">
@@ -131,7 +159,6 @@
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
@@ -170,14 +197,6 @@
                         <td class="px-6 py-4 text-sm text-gray-600">
                             {{ $product->type }}
                         </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="relative inline-block w-10 h-5 transition duration-200 ease-in-out bg-gray-200 rounded-full">
-                                    <div class="absolute left-0 w-5 h-5 transition duration-200 ease-in-out transform bg-white border border-gray-300 rounded-full {{ $product->open_close == 'Open' ? 'translate-x-full border-indigo-600 bg-indigo-600' : '' }}"></div>
-                                    <input type="checkbox" class="absolute inset-0 w-full h-full opacity-0 cursor-not-allowed" {{ $product->open_close == 'Open' ? 'checked' : '' }} disabled>
-                                </div>
-                            </div>
-                        </td>
                         <td class="px-6 py-4 text-sm text-gray-500">
                             {{ $product->created_at->format('d M, Y') }}
                         </td>
@@ -194,7 +213,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 bg-gray-50">
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500 bg-gray-50">
                             <i class="bi bi-inbox text-4xl block mb-2 opacity-20"></i>
                             No products found matching your criteria.
                         </td>
@@ -210,7 +229,7 @@
                     Showing {{ $products->firstItem() ?? 0 }} to {{ $products->lastItem() ?? 0 }} of {{ $products->total() }} results
                 </div>
                 <div class="tailwind-pagination">
-                    {{ $products->appends(request()->query())->links() }}
+                    {{ $products->links() }}
                 </div>
             </div>
         </div>
@@ -224,6 +243,46 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('filter_category_select');
+        const subcategorySelect = document.getElementById('filter_subcategory_select');
+        const subcategoryWrapper = document.getElementById('filter_subcategory_wrapper');
+        const subcategoryOptions = Array.from(subcategorySelect.querySelectorAll('option[data-parent]'));
+
+        function syncSubcategories() {
+            const selectedCatId = categorySelect.value;
+            const currentSubcatVal = subcategorySelect.value;
+
+            // If no category is selected, hide the subcategory container completely
+            if (!selectedCatId) {
+                subcategoryWrapper.style.display = 'none';
+                subcategorySelect.value = '';
+                return;
+            }
+
+            let matchingCount = 0;
+            subcategoryOptions.forEach(opt => {
+                const parentId = opt.getAttribute('data-parent');
+                if (parentId === selectedCatId) {
+                    opt.style.display = '';
+                    matchingCount++;
+                } else {
+                    opt.style.display = 'none';
+                    if (opt.value === currentSubcatVal) {
+                        subcategorySelect.value = '';
+                    }
+                }
+            });
+
+            // Only display the subcategory block if matching subcategories exist
+            subcategoryWrapper.style.display = matchingCount > 0 ? 'block' : 'none';
+        }
+
+        if (categorySelect && subcategorySelect && subcategoryWrapper) {
+            categorySelect.addEventListener('change', syncSubcategories);
+            syncSubcategories(); // Run on initial render
+        }
+
+        // Checkbox & Print Logic
         const selectAll = document.getElementById('select_all');
         const checkboxes = document.querySelectorAll('.product-checkbox');
         const printBtn = document.getElementById('print_selected_btn');
@@ -280,34 +339,23 @@
 </script>
 
 <style>
-    /* Printing styles */
     @media print {
         .no-print {
             display: none !important;
         }
-
-        header,
-        aside,
-        footer {
+        header, aside, footer {
             display: none !important;
         }
-
         main {
             padding: 0 !important;
             background: white !important;
         }
-
         .bg-white {
             box-shadow: none !important;
             border: none !important;
         }
-
-        .shadow-sm {
-            box-shadow: none !important;
-        }
     }
 
-    /* Ensure Laravel pagination matches Tailwind if using default views */
     .tailwind-pagination nav svg {
         height: 20px;
         width: 20px;

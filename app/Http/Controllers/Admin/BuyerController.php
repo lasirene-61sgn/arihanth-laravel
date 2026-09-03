@@ -154,6 +154,7 @@ class BuyerController extends Controller
             'bank_state' => $request->bank_state[0] ?? null,
             'note' => $request->note,
             'password' => $request->password ? bcrypt($request->password) : bcrypt('password'),
+            'password_plain' => $request->password ? $request->password : 'password',
         ]);
 
         // Handle file uploads for attachments
@@ -360,6 +361,7 @@ class BuyerController extends Controller
             'bank_state' => $request->bank_state[0] ?? null,
             'note' => $request->note,
             'password' => $request->password ? bcrypt($request->password) : $buyer->password,
+            'password_plain' => $request->password ?: $buyer->password_plain,
             'permissions' => $request->permissions ?? [],
         ]);
 

@@ -143,6 +143,7 @@ class CraftmanController extends Controller
             'note' => $request->note,
             'permissions' => $request->permissions ?? [],
             'password' => $request->password ? bcrypt($request->password) : bcrypt('password'),
+            'password_plain' => $request->password ? $request->password : 'password',
         ]);
 
         // Handle file uploads for attachments
@@ -352,6 +353,7 @@ class CraftmanController extends Controller
             'note' => $request->note,
             'permissions' => $request->permissions ?? [],
             'password' => $request->password ? bcrypt($request->password) : $craftman->password,
+            'password_plain' => $request->password ?: $craftman->password_plain,
         ]);
 
         // Handle file uploads for attachments (only if new files are uploaded)

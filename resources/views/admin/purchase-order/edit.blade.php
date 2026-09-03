@@ -172,13 +172,13 @@
                                                                 <div class="grams-quantity-row mb-2">
                                                                     <div class="row g-1">
                                                                         <div class="col-4">
-                                                                            <input type="number" class="form-control grams-input" name="items[{{ $index }}][grams][]" step="0.01" min="0" value="{{ $grams }}" required>
+                                                                            <input type="text" class="form-control grams-input" name="items[{{ $index }}][grams][]" step="0.01" min="0" value="{{ $grams }}" required>
                                                                         </div>
                                                                         <div class="col-4">
-                                                                            <input type="number" class="form-control quantity-input" name="items[{{ $index }}][quantity][]" min="1" value="{{ $qtyArr[$k] ?? 1 }}" required>
+                                                                            <input type="text" class="form-control quantity-input" name="items[{{ $index }}][quantity][]" min="1" value="{{ $qtyArr[$k] ?? 1 }}" required>
                                                                         </div>
                                                                         <div class="col-4">
-                                                                            <input type="number" class="form-control individual-total" name="items[{{ $index }}][individual_totals][]" step="0.01" value="{{ $item['individual_totals'][$k] ?? 0 }}" readonly placeholder="Total">
+                                                                            <input type="text" class="form-control individual-total" name="items[{{ $index }}][individual_totals][]" step="0.01" value="{{ $item['individual_totals'][$k] ?? 0 }}" readonly placeholder="Total">
                                                                         </div>
                                                                     </div>
                                                                 </div>
