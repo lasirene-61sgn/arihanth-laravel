@@ -71,11 +71,16 @@
 
                     <div class="p-4 flex flex-col flex-grow bg-white border-t border-emerald-50">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="max-w-[70%] mx-auto flex justify-center">
-                                <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate"
+                            <div class="max-w-[70%] mx-auto flex flex-col items-center justify-center gap-1">
+                                <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate w-full"
                                     title="{{ $design->design_code }}">
                                     {{ $design->design_code }}
                                 </h6>
+                                @if($favorite->design_name)
+                                <span class="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded truncate max-w-full" title="{{ $favorite->design_name }}">
+                                    {{ $favorite->design_name }}
+                                </span>
+                                @endif
                             </div>
                         </div>
 

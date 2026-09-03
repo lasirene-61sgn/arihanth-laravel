@@ -140,15 +140,23 @@
                                 <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Added On</label>
                                 <p class="mt-1 text-xs text-gray-600">{{ $product->created_at->format('d M, Y') }}</p>
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Craftsman Info</label>
-                                <p class="mt-1 text-xs text-gray-900 font-medium">
-                                    {{ $product->craftsman->craftman_code ?? 'N/A' }}
-                                    @if($product->craftsmanStaff)
-                                        <br><span class="text-[10px] text-indigo-600">(Created By Staff: {{ $product->craftsmanStaff->staff_code ?? '' }} - {{ $product->craftsmanStaff->name ?? '' }})</span>
-                                    @endif
-                                </p>
-                            </div>
+                              <div>
+                                  <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Craftsman Info</label>
+                                  <p class="mt-1 text-xs text-gray-900 font-medium">
+                                      {{ $product->craftsman->craftman_code ?? 'N/A' }}
+                                      @if($product->craftsmanStaff)
+                                          <br><span class="text-[10px] text-indigo-600">(Created By Staff: {{ $product->craftsmanStaff->staff_code ?? '' }} - {{ $product->craftsmanStaff->name ?? '' }})</span>
+                                      @endif
+                                  </p>
+                              </div>
+                              <div>
+                                  <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Created By</label>
+                                  <p class="mt-1 text-xs text-gray-900 font-medium">
+                                      @php $creator = $product->creator_details; @endphp
+                                      <strong>{{ $creator['code'] }}</strong> - {{ $creator['name'] }}
+                                      <span class="text-[10px] text-gray-400 font-bold ml-1 bg-gray-100 px-1.5 py-0.5 rounded">{{ $creator['type'] }}</span>
+                                  </p>
+                              </div>
                         </div>
                     </div>
                 </div>

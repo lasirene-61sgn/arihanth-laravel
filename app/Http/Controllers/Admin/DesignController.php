@@ -219,6 +219,7 @@ class DesignController extends Controller
             'design_code' => $designCode,
             'design_status' => 'Accepted',
             'qr_code' => $qrPath,
+            'accepted_by' => auth()->guard('admin')->id() ?? auth()->id(),
         ]);
 
         // Create the Design record

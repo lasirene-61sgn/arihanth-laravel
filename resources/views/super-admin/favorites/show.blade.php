@@ -176,6 +176,7 @@
                     <tr>
                         <th>Design Image</th>
                         <th>Design Code</th>
+                        <th>Design Name</th>
                         <th>Added At</th>
                         <th style="text-align: center;">Actions</th>
                     </tr>
@@ -214,6 +215,9 @@
                             <span class="design-code-badge">
                                 {{ $favorite->product->design_code ?? 'N/A' }}
                             </span>
+                        </td>
+                        <td style="font-size: 14px; font-weight: 500; color: #374151;">
+                            {{ $favorite->design_name ?? 'N/A' }}
                         </td>
                         <td style="white-space: nowrap; font-size: 14px; color: #6b7280;">
                             {{ $favorite->created_at->format('M d, Y H:i') }}

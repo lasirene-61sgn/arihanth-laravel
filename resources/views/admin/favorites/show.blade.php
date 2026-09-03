@@ -27,6 +27,7 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Design Image</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Design Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Design Name</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Added At</th>
                         <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -64,6 +65,9 @@
                             <span class="text-sm font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
                                 {{ $favorite->product->design_code ?? 'N/A' }}
                             </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
+                            {{ $favorite->design_name ?? 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $favorite->created_at->format('M d, Y H:i') }}

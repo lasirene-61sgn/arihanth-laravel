@@ -166,13 +166,30 @@
                         <div>
                             <dt class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Created By</dt>
                             <dd class="text-sm text-gray-700 flex items-center gap-2 font-medium">
+                                @php $creator = $product->creator_details; @endphp
                                 <div class="w-6 h-6 rounded-full bg-magenta-100 flex items-center justify-center text-[10px] font-bold text-magenta-800">
-                                    {{ substr($product->creator_name, 0, 1) }}
+                                    {{ substr($creator['name'] ?? 'U', 0, 1) }}
                                 </div>
-                                {{ $product->creator_name }}
-                                <span class="text-[10px] text-gray-400 font-bold">({{ $product->created_at->format('d M Y') }})</span>
+                                {{ $creator['code'] }} - {{ $creator['name'] }}
+                                <span class="text-[10px] text-gray-400 font-bold ml-1 bg-gray-100 px-1.5 py-0.5 rounded">({{ $creator['type'] }})</span>
+                                <span class="text-[10px] text-gray-400 font-bold ml-1">({{ $product->created_at->format('d M Y') }})</span>
                             </dd>
                         </div>
+
+                        <!-- Accepted By -->
+                        @if($product->design_status === 'Accepted' && $product->acceptor_details)
+                        <div>
+                            <dt class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Accepted By</dt>
+                            <dd class="text-sm text-gray-700 flex items-center gap-2 font-medium">
+                                @php $acceptor = $product->acceptor_details; @endphp
+                                <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-800">
+                                    {{ substr($acceptor['name'] ?? 'A', 0, 1) }}
+                                </div>
+                                {{ $acceptor['code'] }} - {{ $acceptor['name'] }}
+                                <span class="text-[10px] text-gray-400 font-bold ml-1 bg-gray-100 px-1.5 py-0.5 rounded">({{ $acceptor['type'] }})</span>
+                            </dd>
+                        </div>
+                        @endif
 
                         <!-- Access Control Section -->
                         <div class="col-span-1 md:col-span-2 border-t border-gray-50 pt-6 mt-2">

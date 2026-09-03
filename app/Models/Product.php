@@ -18,6 +18,7 @@ class Product extends Model
         'type',
         'order_type',
         'design_status',
+        'accepted_by',
         'design_code',
         'bp_code',
         'open_close',
@@ -137,6 +138,80 @@ class Product extends Model
         }
 
         return 'Unknown';
+    }
+
+    public function getAcceptorDetailsAttribute()
+    {
+        if (!$this->accepted_by) {
+            return null;
+        }
+
+        $processOwner = \App\Models\ProcessOwner::find($this->accepted_by);
+        if ($processOwner) {
+            return [
+                'code' => $processOwner->user_code ?? 'N/A',
+                'name' => $processOwner->full_name ?? $processOwner->name ?? 'Process Owner',
+                'type' => 'Admin'
+            ];
+        }
+        
+        return null;
+    }
+
+    public function getCreatorDetailsAttribute()
+    {
+        if (!$this->created_by) {
+            return ['code' => 'N/A', 'name' => 'Unknown', 'type' => 'Unknown'];
+        }
+
+        if ($this->bp_code) {
+            $buyer = \App\Models\Buyer::where('bp_code', $this->bp_code)->where('id', $this->created_by)->first();
+            if ($buyer) {
+                return [
+                    'code' => $buyer->bp_code,
+                    'name' => $buyer->business_name ?? $buyer->name ?? 'Unknown Buyer',
+                    'type' => 'Buyer'
+                ];
+            }
+
+            $craftsman = \App\Models\Craftman::where('craftman_code', $this->bp_code)->where('id', $this->created_by)->first();
+            if ($craftsman) {
+                return [
+                    'code' => $craftsman->craftman_code,
+                    'name' => $craftsman->business_name ?? $craftsman->name ?? 'Unknown Craftsman',
+                    'type' => 'Craftsman'
+                ];
+            }
+        }
+        
+        $processOwner = \App\Models\ProcessOwner::find($this->created_by);
+        if ($processOwner) {
+            return [
+                'code' => $processOwner->user_code ?? 'N/A',
+                'name' => $processOwner->full_name ?? $processOwner->name ?? 'Process Owner',
+                'type' => 'Admin'
+            ];
+        }
+
+        $keyUser = \App\Models\KeyUser::find($this->created_by);
+        if ($keyUser) {
+            return [
+                'code' => $keyUser->user_code ?? 'N/A',
+                'name' => $keyUser->full_name ?? $keyUser->name ?? 'Key User',
+                'type' => 'Key User'
+            ];
+        }
+
+        $user = \App\Models\User::find($this->created_by);
+        if ($user) {
+            return [
+                'code' => $user->user_code ?? 'N/A',
+                'name' => $user->full_name ?? $user->name ?? 'User',
+                'type' => 'User'
+            ];
+        }
+
+        return ['code' => 'N/A', 'name' => 'Unknown', 'type' => 'Unknown'];
     }
 
     /**

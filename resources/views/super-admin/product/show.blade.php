@@ -66,6 +66,14 @@
                                 @endif
                             </td>
                         </tr>
+                        <tr>
+                            <th class="bg-light">Created By</th>
+                            <td>
+                                @php $creator = $product->creator_details; @endphp
+                                <strong>{{ $creator['code'] }}</strong> - {{ $creator['name'] }}
+                                <span class="badge bg-secondary ms-1">{{ $creator['type'] }}</span>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

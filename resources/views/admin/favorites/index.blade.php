@@ -24,14 +24,26 @@
         padding: 2px 6px;
         border-radius: 4px;
     }
+    .view-btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+        display: inline-block;
+    }
 </style>
 
 @section('content')
 <div class="space-y-6">
     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">Favorites Management</h1>
-            <p class="text-sm text-gray-500">Monitor and manage favorited designs across all users</p>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Favorites Management</h1>
+                <p class="text-sm text-gray-500">Monitor and manage favorited designs across all users</p>
+            </div>
+            <a href="{{ route('favorites.create') }}" class="btn btn-primary" style="background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
+                <i class="bi bi-plus-lg"></i> Add Favorite
+            </a>
         </div>
 
         <div class="w-full xl:w-96">
@@ -61,7 +73,7 @@
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User Type</th>
                         <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Total Favorites</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Design Codes</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Design Names / Codes</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Last Activity</th>
                         <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -96,12 +108,15 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-wrap gap-1 max-w-[200px]">
-                                @php $codes = array_filter(explode(', ', $favGroup->design_codes)); @endphp
-                                @foreach(array_slice($codes, 0, 4) as $code)
-                                    <span class="design-badge">{{ $code }}</span>
+                                @php 
+                                    $names = array_filter(explode(', ', $favGroup->design_names ?? $favGroup->design_codes)); 
+                                    $names = array_unique($names);
+                                @endphp
+                                @foreach(array_slice($names, 0, 4) as $name)
+                                    <span class="design-badge">{{ $name }}</span>
                                 @endforeach
-                                @if(count($codes) > 4)
-                                    <span class="text-[10px] text-gray-400 font-bold self-center">+{{ count($codes) - 4 }}</span>
+                                @if(count($names) > 4)
+                                    <span class="text-[10px] text-gray-400 font-bold self-center">+{{ count($names) - 4 }}</span>
                                 @endif
                             </div>
                         </td>
@@ -110,9 +125,10 @@
                             <div class="text-[10px] text-gray-400">{{ \Carbon\Carbon::parse($favGroup->last_added_at)->format('H:i') }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <a href="{{ route('admin.favorites.show', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" 
-                               class="text-indigo-600 hover:bg-indigo-600 hover:text-white p-2 rounded-lg border border-indigo-100 transition-all inline-block shadow-sm" 
-                               title="View Details">
+                            <a href="{{ route('favorites.edit', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn" title="Edit Details" style="background-color: #fef3c7; color: #d97706; margin-right: 4px;">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ route('favorites.show', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn text-indigo-600 hover:bg-indigo-600 hover:text-white border-indigo-100 shadow-sm" title="View Details">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
                         </td>

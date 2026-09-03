@@ -220,9 +220,14 @@
 <div class="fav-wrapper">
     <!-- Header -->
     <div class="header-section">
-        <div class="header-title">
-            <h1>Favorites Management</h1>
-            <p>Monitor and manage favorited designs across all users</p>
+        <div class="header-title" style="display: flex; align-items: center; gap: 16px;">
+            <div>
+                <h1>Favorites Management</h1>
+                <p>Monitor and manage favorited designs across all users</p>
+            </div>
+            <a href="{{ route('super-admin.favorites.create') }}" class="btn btn-primary" style="background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
+                <i class="bi bi-plus-lg"></i> Add Favorite Collection
+            </a>
         </div>
         
         <form method="GET" action="{{ route('super-admin.favorites.index') }}" class="search-container">
@@ -249,7 +254,7 @@
                     <th>User</th>
                     <th>User Type</th>
                     <th style="text-align: center;">Total Favorites</th>
-                    <th>Design Codes</th>
+                    <th>Design Names / Codes</th>
                     <th>Last Activity</th>
                     <th style="text-align: center;">Actions</th>
                 </tr>
@@ -278,12 +283,16 @@
                     </td>
                     <td>
                         <div style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px;">
-                            @php $codes = explode(', ', $favGroup->design_codes); @endphp
-                            @foreach(array_slice($codes, 0, 5) as $code)
-                                <span class="code-tag">{{ $code }}</span>
+                            @php 
+                                $names = explode(', ', $favGroup->design_names ?? $favGroup->design_codes);
+                                // unique names
+                                $names = array_unique(array_filter($names));
+                            @endphp
+                            @foreach(array_slice($names, 0, 5) as $name)
+                                <span class="code-tag">{{ $name }}</span>
                             @endforeach
-                            @if(count($codes) > 5)
-                                <span style="font-size: 11px; color: #9ca3af; margin-left: 4px;">+{{ count($codes) - 5 }} more</span>
+                            @if(count($names) > 5)
+                                <span style="font-size: 11px; color: #9ca3af; margin-left: 4px;">+{{ count($names) - 5 }} more</span>
                             @endif
                         </div>
                     </td>
@@ -291,6 +300,9 @@
                         {{ \Carbon\Carbon::parse($favGroup->last_added_at)->format('M d, Y H:i') }}
                     </td>
                     <td style="text-align: center;">
+                        <a href="{{ route('super-admin.favorites.edit', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn" title="Edit Details" style="background-color: #fef3c7; color: #d97706; margin-right: 4px;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                         <a href="{{ route('super-admin.favorites.show', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>

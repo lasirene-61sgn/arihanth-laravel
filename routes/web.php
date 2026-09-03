@@ -610,7 +610,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Favorites Routes
         Route::prefix('favorites')->name('favorites.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\FavoriteController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\FavoriteController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\FavoriteController::class, 'store'])->name('store');
             Route::get('/show/{user_id}/{user_type}', [App\Http\Controllers\Admin\FavoriteController::class, 'show'])->name('show');
+            Route::get('/edit/{user_id}/{user_type}', [App\Http\Controllers\Admin\FavoriteController::class, 'edit'])->name('edit');
+            Route::put('/{user_id}/{user_type}', [App\Http\Controllers\Admin\FavoriteController::class, 'update'])->name('update');
             Route::delete('/{id}', [App\Http\Controllers\Admin\FavoriteController::class, 'destroy'])->name('destroy');
         });
 
@@ -994,7 +998,11 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         // Favorites Routes
         Route::prefix('favorites')->name('favorites.')->group(function () {
             Route::get('/', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'store'])->name('store');
             Route::get('/show/{user_id}/{user_type}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'show'])->name('show');
+            Route::get('/edit/{user_id}/{user_type}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'edit'])->name('edit');
+            Route::put('/{user_id}/{user_type}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'update'])->name('update');
             Route::delete('/{id}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'destroy'])->name('destroy');
         });
         Route::resource('updates', NewUpdatesController::class);

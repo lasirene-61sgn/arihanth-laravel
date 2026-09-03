@@ -13,6 +13,7 @@ class Favorite extends Model
         'user_id',
         'user_type',
         'product_id',
+        'design_name',
     ];
 
     /**

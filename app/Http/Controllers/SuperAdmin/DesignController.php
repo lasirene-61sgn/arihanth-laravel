@@ -228,6 +228,7 @@ class DesignController extends Controller
             'design_code' => $designCode,
             'design_status' => 'Accepted',
             'qr_code' => $qrPath,
+            'accepted_by' => auth()->guard('super_admin')->id() ?? auth()->id(),
         ]);
 
         $imagePath = $product->images->first() ? $product->images->first()->path : null;
