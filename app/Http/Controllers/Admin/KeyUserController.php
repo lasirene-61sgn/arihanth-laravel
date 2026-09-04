@@ -93,6 +93,7 @@ class KeyUserController extends Controller
         $data = $request->except(['profile_picture', 'aadhar_photo', 'password_confirmation']);
         $data['user_code'] = KeyUser::generateUserCode();
         $data['password'] = Hash::make($request->password);
+        $data['password_plain'] = $request->password;
         // Add permissions if provided
         if ($request->has('permissions')) {
             $data['permissions'] = json_encode($request->permissions);
@@ -156,7 +157,12 @@ class KeyUserController extends Controller
             'aadhar_number' => 'nullable|string|max:20',
         ]);
 
-        $data = $request->except(['profile_picture', 'aadhar_photo']);
+        $data = $request->except(['profile_picture', 'aadhar_photo', 'password', 'password_confirmation']);
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+            $data['password_plain'] = $request->password;
+        }
 
         // Add permissions if provided
         if ($request->has('permissions')) {

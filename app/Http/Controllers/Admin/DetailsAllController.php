@@ -279,6 +279,88 @@ class DetailsAllController extends Controller
         uasort($clientStats, function($a, $b) { return $b['orders'] <=> $a['orders']; });
         $topPicksClientsFull = array_slice($clientStats, 0, 15, true);
 
-        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull'));
+        $acceptedProducts = \App\Models\Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
+
+        $craftsmanDesignStats = [];
+        foreach ($craftsmen as $c) {
+            $code = $c->craftman_code;
+            $name = $c->name ?? $c->business_name;
+            $cProducts = $acceptedProducts->where('bp_code', $code);
+            if ($cProducts->count() > 0) {
+                $catCounts = [];
+                $designs = [];
+                $lastAccepted = null;
+                foreach ($cProducts as $p) {
+                    $catName = $p->category ? $p->category->name : 'Uncategorized';
+                    if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
+                    $catCounts[$catName]++;
+                    if (!$lastAccepted || $p->updated_at > $lastAccepted) {
+                        $lastAccepted = $p->updated_at;
+                    }
+                }
+                $craftsmanDesignStats[$code] = [
+                    'code' => $code,
+                    'name' => $name,
+                    'total_accepted' => $cProducts->count(),
+                    'last_accepted_date' => $lastAccepted ? \Carbon\Carbon::parse($lastAccepted)->format('d M, Y h:i A') : 'N/A',
+                    'categories' => $catCounts
+                ];
+            }
+        }
+
+        $buyerDesignStats = [];
+        $allBuyers = \App\Models\Buyer::all();
+        foreach ($allBuyers as $b) {
+            $code = $b->bp_code;
+            $name = $b->name ?? $b->business_name;
+            $bProducts = $acceptedProducts->where('bp_code', $code);
+            if ($bProducts->count() > 0) {
+                $catCounts = [];
+                $designs = [];
+                $lastAccepted = null;
+                foreach ($bProducts as $p) {
+                    $catName = $p->category ? $p->category->name : 'Uncategorized';
+                    if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
+                    $catCounts[$catName]++;
+                    if (!$lastAccepted || $p->updated_at > $lastAccepted) {
+                        $lastAccepted = $p->updated_at;
+                    }
+                }
+                $buyerDesignStats[$code] = [
+                    'code' => $code,
+                    'name' => $name,
+                    'total_accepted' => $bProducts->count(),
+                    'last_accepted_date' => $lastAccepted ? \Carbon\Carbon::parse($lastAccepted)->format('d M, Y h:i A') : 'N/A',
+                    'categories' => $catCounts
+                ];
+            }
+        }
+
+        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'buyerDesignStats'));
+    }
+
+    public function getAcceptedDesigns($bp_code)
+    {
+        $products = \App\Models\Product::with(['category', 'images'])
+            ->whereIn('design_status', ['Accepted', 'accepted'])
+            ->where('bp_code', $bp_code)
+            ->get();
+
+        $designs = [];
+        foreach ($products as $p) {
+            $catName = $p->category ? $p->category->name : 'Uncategorized';
+            $imageUrl = $p->images && $p->images->first() ? $p->images->first()->image_url : asset('images/ajlogo.png');
+
+            $designs[] = [
+                'id' => $p->id,
+                'image' => $imageUrl,
+                'weight' => $p->weight_from,
+                'design_code' => $p->design_code ?? $p->product_code,
+                'design_name' => $p->product_name ?? 'N/A',
+                'category' => $catName,
+            ];
+        }
+
+        return response()->json(['designs' => $designs]);
     }
 }

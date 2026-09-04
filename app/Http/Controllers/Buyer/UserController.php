@@ -87,6 +87,7 @@ class UserController extends Controller
             'email_id' => $request->email, // Syncing both if schema requires
             'mobile_no' => $request->mobile_no,
             'password' => bcrypt($request->password),
+            'password_plain' => $request->password,
             'permissions' => $request->permissions ?? [],
             'status' => 1,
             'is_frozen' => false,
@@ -143,6 +144,7 @@ class UserController extends Controller
             'email_id' => $request->email,
             'mobile_no' => $request->mobile_no,
             'password' => $request->password ? bcrypt($request->password) : $user->password,
+            'password_plain' => $request->password ? $request->password : $user->password_plain,
             'permissions' => $request->permissions ?? $user->permissions,
         ]);
 

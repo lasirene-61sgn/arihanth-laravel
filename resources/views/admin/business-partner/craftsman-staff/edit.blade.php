@@ -190,6 +190,126 @@
                     </div>
                 </div>
 
+                <!-- Permissions Section -->
+                @php
+                    $currentPermissions = old('permissions', is_array($staff->permissions) ? $staff->permissions : json_decode($staff->permissions ?? '[]', true) ?? []);
+                @endphp
+                <div class="mt-4 mb-4">
+                    <h5 class="border-bottom pb-2 mb-3 text-dark">Permissions</h5>
+                    <div class="row g-3">
+                        <!-- Work Orders -->
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 shadow-none h-100">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="fw-bold text-secondary mb-2">Work Orders</h6>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_view" id="perm_wo_view" {{ in_array('wo_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_wo_view">View</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_accept" id="perm_wo_accept" {{ in_array('wo_accept', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_wo_accept">Accept</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_reject" id="perm_wo_reject" {{ in_array('wo_reject', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_wo_reject">Reject</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Purchase Orders -->
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 shadow-none h-100">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="fw-bold text-secondary mb-2">Purchase Orders</h6>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="po_view" id="perm_po_view" {{ in_array('po_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_po_view">View</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="po_accept" id="perm_po_accept" {{ in_array('po_accept', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_po_accept">Accept</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="po_reject" id="perm_po_reject" {{ in_array('po_reject', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_po_reject">Reject</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Repairs -->
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 shadow-none h-100">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="fw-bold text-secondary mb-2">Repairs</h6>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="repair_view" id="perm_repair_view" {{ in_array('repair_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_repair_view">View</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="repair_accept" id="perm_repair_accept" {{ in_array('repair_accept', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_repair_accept">Accept</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="repair_reject" id="perm_repair_reject" {{ in_array('repair_reject', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_repair_reject">Reject</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Products -->
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 shadow-none h-100">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="fw-bold text-secondary mb-2">Products</h6>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="product_view" id="perm_product_view" {{ in_array('product_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_product_view">View</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="product_create" id="perm_product_create" {{ in_array('product_create', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_product_create">Create</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="product_edit" id="perm_product_edit" {{ in_array('product_edit', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_product_edit">Edit</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Design & Catalogue -->
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 shadow-none h-100">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="fw-bold text-secondary mb-2">Design & Catalogue</h6>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="design_view" id="perm_design_view" {{ in_array('design_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_design_view">Design (View)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="catalogue_view" id="perm_catalogue_view" {{ in_array('catalogue_view', $currentPermissions) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_catalogue_view">Catalogue (View)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary">Update Staff</button>
                     <a href="{{ route('admin.business-partner.craftsman-staff') }}" class="btn btn-secondary">Cancel</a>

@@ -61,6 +61,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- Craftsman Designs Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleCraftsmanDesignsTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-success-subtle text-success rounded-3 p-2">
+                            <i class="bi bi-palette fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleCraftsmanDesignsIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ count($craftsmanDesignStats) }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">CRAFTSMAN DESIGNS (CLICK TO VIEW)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buyer Designs Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleBuyerDesignsTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-danger-subtle text-danger rounded-3 p-2">
+                            <i class="bi bi-image fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleBuyerDesignsIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ count($buyerDesignStats) }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">BUYER DESIGNS (CLICK TO VIEW)</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ==========================================
@@ -381,6 +413,100 @@
             </div>
         </div>
     </div>
+
+    <!-- ==========================================
+         COLLAPSIBLE CRAFTSMAN DESIGNS CONTAINER
+    =========================================== -->
+    <div id="craftsmanDesignsTableContainer" style="display: none;">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold text-success"><i class="bi bi-palette me-2"></i>Craftsman Accepted Designs</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Craftsman</th>
+                                <th>Code</th>
+                                <th>Category Breakdown</th>
+                                <th class="text-center">Total Accepted</th>
+                                <th>Last Accepted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($craftsmanDesignStats as $code => $stat)
+                            <tr>
+                                <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
+                                <td><span class="badge bg-secondary">{{ $code }}</span></td>
+                                <td>
+                                    @foreach($stat['categories'] as $cat => $count)
+                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-success">{{ $count }}</strong></span>
+                                    @endforeach
+                                </td>
+                                <td class="text-center">
+                                    <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                        {{ $stat['total_accepted'] }}
+                                    </span>
+                                </td>
+                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         COLLAPSIBLE BUYER DESIGNS CONTAINER
+    =========================================== -->
+    <div id="buyerDesignsTableContainer" style="display: none;">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-image me-2"></i>Buyer Accepted Designs</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Buyer</th>
+                                <th>Code</th>
+                                <th>Category Breakdown</th>
+                                <th class="text-center">Total Accepted</th>
+                                <th>Last Accepted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($buyerDesignStats as $code => $stat)
+                            <tr>
+                                <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
+                                <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
+                                <td>
+                                    @foreach($stat['categories'] as $cat => $count)
+                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-danger">{{ $count }}</strong></span>
+                                    @endforeach
+                                </td>
+                                <td class="text-center">
+                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                        {{ $stat['total_accepted'] }}
+                                    </span>
+                                </td>
+                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ==========================================
@@ -477,6 +603,48 @@
     </div>
 </div>
 
+<!-- ==========================================
+     DESIGNS LIST MODAL
+=========================================== -->
+<div class="modal fade" id="designsListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="designsListModalTitle">Accepted Designs</h5>
+                    <span class="text-muted small">Design details and remarks</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill" onclick="printSelectedDesigns()">
+                        <i class="bi bi-printer-fill me-1"></i> Print Selected
+                    </button>
+                </div>
+                <div class="table-responsive border rounded">
+                    <table class="table table-hover align-middle mb-0" id="modalDesignsTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center" style="width: 40px;">
+                                    <input class="form-check-input" type="checkbox" id="modalDesignsSelectAll">
+                                </th>
+                                <th class="text-center">Image</th>
+                                <th>Design Code</th>
+                                <th>Design Name</th>
+                                <th>Category</th>
+                                <th class="text-center">Weight From (g)</th>
+                                <th>Notes / Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="designsListModalBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // --- Craftsman Table Toggle (Click to Show/Hide) ---
     function toggleDetailsTable() {
@@ -504,6 +672,50 @@
         // Hide craftsmen table if open
         document.getElementById('detailsTableContainer').style.display = 'none';
         document.getElementById('toggleIcon').classList.replace('bi-chevron-up', 'bi-chevron-down');
+
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+        } else {
+            container.style.display = 'none';
+            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        }
+    }
+
+    // --- Craftsman Designs Toggle (Click to Show/Hide) ---
+    function toggleCraftsmanDesignsTable() {
+        const container = document.getElementById('craftsmanDesignsTableContainer');
+        const icon = document.getElementById('toggleCraftsmanDesignsIcon');
+
+        // Hide others
+        document.getElementById('detailsTableContainer').style.display = 'none';
+        document.getElementById('toggleIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        document.getElementById('clientsTableContainer').style.display = 'none';
+        document.getElementById('toggleClientsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        document.getElementById('buyerDesignsTableContainer').style.display = 'none';
+        document.getElementById('toggleBuyerDesignsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+        } else {
+            container.style.display = 'none';
+            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        }
+    }
+
+    // --- Buyer Designs Toggle (Click to Show/Hide) ---
+    function toggleBuyerDesignsTable() {
+        const container = document.getElementById('buyerDesignsTableContainer');
+        const icon = document.getElementById('toggleBuyerDesignsIcon');
+
+        // Hide others
+        document.getElementById('detailsTableContainer').style.display = 'none';
+        document.getElementById('toggleIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        document.getElementById('clientsTableContainer').style.display = 'none';
+        document.getElementById('toggleClientsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+        document.getElementById('craftsmanDesignsTableContainer').style.display = 'none';
+        document.getElementById('toggleCraftsmanDesignsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
 
         if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
@@ -878,6 +1090,147 @@
         }
         const printWindow = window.open('', '_blank');
         printWindow.document.write(generateClientsPrintHtml(Array.from(rows)));
+        printWindow.document.close();
+    }
+
+    // --- Designs Modal Logic ---
+    document.getElementById('modalDesignsSelectAll')?.addEventListener('change', function() {
+        document.querySelectorAll('.modal-design-checkbox').forEach(cb => cb.checked = this.checked);
+    });
+
+    function showDesignsList(el, type) {
+        const title = el.getAttribute('data-title');
+        const bpcode = el.getAttribute('data-bpcode');
+        
+        document.getElementById('designsListModalTitle').innerText = title;
+        const body = document.getElementById('designsListModalBody');
+        body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
+        
+        new bootstrap.Modal(document.getElementById('designsListModal')).show();
+
+        const fetchUrl = "{{ route('admin.details-all.accepted-designs', ':bpcode') }}".replace(':bpcode', bpcode);
+        fetch(fetchUrl)
+            .then(response => response.json())
+            .then(data => {
+                const designs = data.designs || [];
+                body.innerHTML = '';
+                
+                if (designs.length === 0) {
+                    body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No designs found.</td></tr>';
+                } else {
+                    designs.forEach(design => {
+                        let html = `
+                            <tr class="modal-design-row">
+                                <td class="text-center" style="vertical-align: middle;">
+                                    <input class="form-check-input modal-design-checkbox" type="checkbox">
+                                </td>
+                                <td class="text-center">
+                                    <img src="${design.image}" alt="Design" style="height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd;" class="design-img-preview">
+                                </td>
+                                <td style="vertical-align: middle;">${design.design_code}</td>
+                                <td style="vertical-align: middle;">${design.design_name}</td>
+                                <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category}</span></td>
+                                <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
+                                <td style="vertical-align: middle;">
+                                    <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
+                                </td>
+                            </tr>
+                        `;
+                        body.innerHTML += html;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching designs:', error);
+                body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load designs. Please try again.</td></tr>';
+            });
+    }
+
+    function printSelectedDesigns() {
+        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one design to print.');
+            return;
+        }
+
+        const title = document.getElementById('designsListModalTitle').innerText;
+        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+
+        let theadHtml = `
+            <tr>
+                <th style="text-align: center; width: 150px;">Image</th>
+                <th>Design Code</th>
+                <th>Design Name</th>
+                <th>Category</th>
+                <th style="text-align: center;">Weight From (g)</th>
+                <th>Notes / Remarks</th>
+            </tr>
+        `;
+
+        let tbodyHtml = '';
+        rowsToPrint.forEach(row => {
+            const imgSrc = row.querySelector('.design-img-preview').src;
+            const code = row.cells[2].innerText;
+            const name = row.cells[3].innerText;
+            const category = row.cells[4].innerText;
+            const weight = row.cells[5].innerText;
+            const notes = row.querySelector('.design-notes').value;
+
+            tbodyHtml += `
+                <tr>
+                    <td style="text-align: center; vertical-align: middle; padding: 10px;">
+                        <img src="${imgSrc}" style="max-height: 120px; max-width: 120px; object-fit: contain;">
+                    </td>
+                    <td style="vertical-align: middle; font-weight: bold;">${code}</td>
+                    <td style="vertical-align: middle;">${name}</td>
+                    <td style="vertical-align: middle;">${category}</td>
+                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
+                    <td style="vertical-align: middle;">${notes}</td>
+                </tr>
+            `;
+        });
+
+        // The admin view uses generatePrintHtml but it's specific to the main tables. 
+        // We can just open a print window directly for designs.
+        let html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Print - ${title}</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
+                    .table { width: 100%; border-collapse: collapse; }
+                    .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 13px; }
+                    .text-center { text-align: center; }
+                    img { max-height: 100px; max-width: 100px; object-fit: contain; }
+                }
+            </style>
+        </head>
+        <body>
+            <h4 class="text-center mb-4 fw-bold">${title} - Print View</h4>
+            <table class="table table-bordered">
+                <thead class="bg-light">
+                    ${theadHtml}
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() { 
+                    setTimeout(() => {
+                        window.print(); 
+                        window.close(); 
+                    }, 500); // Give images time to load
+                }
+            <\/script>
+        </body>
+        </html>`;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
         printWindow.document.close();
     }
 </script>

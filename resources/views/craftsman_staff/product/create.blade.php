@@ -205,7 +205,7 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
+                            <!-- <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="hallmark" class="form-label">Hallmark</label>
                                     <input type="text" 
@@ -217,7 +217,7 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                            </div>
+                            </div> -->
                             
                             <div class="col-md-6 mb-3 category-option" data-opt="has_rodium" style="display:none;">
                                 <label for="rodium" class="form-label">Rodium</label>

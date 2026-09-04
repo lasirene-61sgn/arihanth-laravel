@@ -107,6 +107,7 @@ class KeyUserController extends Controller
             'email_id' => $request->email_id,
             'mobile_no' => $request->mobile_no,
             'password' => bcrypt($request->password),
+            'password_plain' => $request->password,
             'permissions' => $request->permissions ?? [],
             'status' => 1, // 1 for active, 0 for inactive
         ]);
@@ -179,6 +180,7 @@ class KeyUserController extends Controller
             'email_id' => $request->email_id,
             'mobile_no' => $request->mobile_no,
             'password' => $request->password ? bcrypt($request->password) : $keyUser->password,
+            'password_plain' => $request->password ? $request->password : $keyUser->password_plain,
             'permissions' => $request->permissions ?? $keyUser->permissions,
             // 'status' => $request->status ?? $keyUser->status,
         ]);

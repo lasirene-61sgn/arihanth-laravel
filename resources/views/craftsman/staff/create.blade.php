@@ -7,19 +7,19 @@
     </div>
 
     @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>- {{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+        <ul>
+            @foreach ($errors->all() as $error)
+            <li>- {{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
     @endif
 
     <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
         <form action="{{ route('craftsman.staff.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
             @csrf
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Name *</label>

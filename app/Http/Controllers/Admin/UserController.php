@@ -108,6 +108,7 @@ public function index(Request $request)
             'email' => $request->email_id,
             'mobile_no' => $request->mobile_no,
             'password' => Hash::make($request->password),
+            'password_plain' => $request->password,
             'status' => 'active', // Always create as active
             'city' => $request->city,
             'state' => $request->state,
@@ -180,7 +181,10 @@ public function index(Request $request)
         ]);
 
         if ($request->password) {
-            $user->update(['password' => Hash::make($request->password)]);
+            $user->update([
+                'password' => Hash::make($request->password),
+                'password_plain' => $request->password
+            ]);
         }
 
         return redirect()->route('admin.user.index')
