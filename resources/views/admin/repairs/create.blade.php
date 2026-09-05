@@ -205,6 +205,79 @@
                                 <textarea class="form-control" id="sample_details" name="sample_details" rows="3">{{ old('sample_details') }}</textarea>
                             </div>
 
+                            <!-- Item Tracking Fields -->
+                            <div class="col-md-6 mb-3">
+                                <label for="item_received_by" class="form-label">Item Received By</label>
+                                <input class="form-control" list="receivedByDatalist" id="item_received_by" name="item_received_by" value="{{ old('item_received_by') }}" placeholder="Type or select...">
+                                <datalist id="receivedByDatalist">
+                                    @foreach($receivedByOptions as $option)
+                                        <option value="{{ $option }}">
+                                    @endforeach
+                                </datalist>
+                                @error('item_received_by')
+                                    <span class="text-danger small">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="item_received_through" class="form-label">Item Received Through</label>
+                                <input class="form-control" list="receivedThroughDatalist" id="item_received_through" name="item_received_through" value="{{ old('item_received_through') }}" placeholder="Type or select...">
+                                <datalist id="receivedThroughDatalist">
+                                    @foreach($receivedThroughOptions as $option)
+                                        <option value="{{ $option }}">
+                                    @endforeach
+                                </datalist>
+                                @error('item_received_through')
+                                    <span class="text-danger small">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Item Delivered By Type</label>
+                                <div class="mt-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="item_delivered_by_type" id="delivered_type_self" value="Self" {{ old('item_delivered_by_type') == 'Self' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="delivered_type_self">Self (BP Code)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="item_delivered_by_type" id="delivered_type_ajpl" value="AJPL" {{ old('item_delivered_by_type') == 'AJPL' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="delivered_type_ajpl">AJPL</label>
+                                    </div>
+                                </div>
+                                @error('item_delivered_by_type')
+                                    <span class="text-danger small">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3" id="delivered_by_container" style="display: none;">
+                                <label for="item_delivered_by" class="form-label" id="delivered_by_label">Item Delivered By</label>
+                                
+                                <!-- Select for Self -->
+                                <select class="form-select" id="item_delivered_by_select" style="display: none;">
+                                    <option value="" selected disabled>Select Buyer BP Code</option>
+                                    @foreach($buyers as $buyer)
+                                        <option value="{{ $buyer->bp_code }}" {{ old('item_delivered_by') == $buyer->bp_code ? 'selected' : '' }}>
+                                            {{ $buyer->bp_code }} - {{ $buyer->business_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <!-- Input for AJPL -->
+                                <input class="form-control" list="deliveredByDatalist" id="item_delivered_by_input" value="{{ old('item_delivered_by') }}" placeholder="Type or select..." style="display: none;">
+                                <datalist id="deliveredByDatalist">
+                                    @foreach($deliveredByOptions as $option)
+                                        <option value="{{ $option }}">
+                                    @endforeach
+                                </datalist>
+
+                                <!-- Hidden input that actually gets submitted -->
+                                <input type="hidden" name="item_delivered_by" id="item_delivered_by" value="{{ old('item_delivered_by') }}">
+
+                                @error('item_delivered_by')
+                                    <span class="text-danger small">{{ $message }}</span>
+                                @enderror
+                            </div>
+
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -303,6 +376,74 @@
 
         // Initialize BP Code Dropdown
         initSearchableDropdown('buyer_id_container', 'buyer_id_display', 'buyer_id_menu', 'buyer_id_search', 'buyer_id_list', 'buyer_id', '--Select BP Code--');
+
+        // Delivered By Type Toggle Logic
+        const typeRadios = document.querySelectorAll('input[name="item_delivered_by_type"]');
+        const deliveredContainer = document.getElementById('delivered_by_container');
+        const selectSelf = document.getElementById('item_delivered_by_select');
+        const inputAjpl = document.getElementById('item_delivered_by_input');
+        const hiddenInput = document.getElementById('item_delivered_by');
+
+        function updateDeliveredByView() {
+            let selectedType = null;
+            typeRadios.forEach(radio => {
+                if (radio.checked) selectedType = radio.value;
+            });
+
+            if (selectedType) {
+                deliveredContainer.style.display = 'block';
+                if (selectedType === 'Self') {
+                    selectSelf.style.display = 'block';
+                    inputAjpl.style.display = 'none';
+                    // Sync value to hidden if currently AJPL
+                    if(document.activeElement !== selectSelf && selectSelf.value) {
+                       hiddenInput.value = selectSelf.value;
+                    }
+                } else {
+                    selectSelf.style.display = 'none';
+                    inputAjpl.style.display = 'block';
+                    if(document.activeElement !== inputAjpl && inputAjpl.value) {
+                       hiddenInput.value = inputAjpl.value;
+                    }
+                }
+            } else {
+                deliveredContainer.style.display = 'none';
+            }
+        }
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Clear the hidden input when switching types to avoid submitting old data
+                hiddenInput.value = '';
+                selectSelf.value = '';
+                inputAjpl.value = '';
+                updateDeliveredByView();
+            });
+        });
+
+        selectSelf.addEventListener('change', function() {
+            hiddenInput.value = this.value;
+        });
+
+        inputAjpl.addEventListener('input', function() {
+            hiddenInput.value = this.value;
+        });
+
+        // Initial setup on page load
+        updateDeliveredByView();
+        
+        // If old value exists, set it correctly
+        if (hiddenInput.value) {
+            let selectedType = null;
+            typeRadios.forEach(radio => {
+                if (radio.checked) selectedType = radio.value;
+            });
+            if (selectedType === 'Self') {
+                selectSelf.value = hiddenInput.value;
+            } else if (selectedType === 'AJPL') {
+                inputAjpl.value = hiddenInput.value;
+            }
+        }
     });
 </script>
 @endsection

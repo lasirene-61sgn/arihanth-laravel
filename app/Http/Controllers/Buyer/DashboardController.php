@@ -24,7 +24,8 @@ class DashboardController extends Controller
         $productsCount = Product::where('bp_code', $bpCode)->count();
 
         // Accepted designs
-        $designsCount = Product::whereNotNull('design_code')
+        $designsCount = Product::where('bp_code', $bpCode)
+            ->whereNotNull('design_code')
             ->where('design_status', 'Accepted')
             ->whereNotNull('type')
             ->where('type', '!=', '')

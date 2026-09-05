@@ -178,7 +178,10 @@ class LoginController extends Controller
         ];
 
         $totalProducts = Product::where('bp_code', $craftsmanCode)->count();
-        $totalDesigns = Product::where('bp_code', $craftsmanCode)->count();
+        $totalDesigns = Product::where('bp_code', $craftsmanCode)
+            ->whereNotNull('design_code')
+            ->where('design_status', 'Accepted')
+            ->count();
 
         // Progress Analytics (Self)
         $craftsmanStats = [

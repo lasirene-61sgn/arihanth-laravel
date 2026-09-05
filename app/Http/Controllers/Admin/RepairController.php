@@ -134,7 +134,10 @@ class RepairController extends Controller
     public function create()
     {
         $buyers = Buyer::all();
-        return view('admin.repairs.create', compact('buyers'));
+        $receivedByOptions = Repair::whereNotNull('item_received_by')->distinct()->pluck('item_received_by');
+        $receivedThroughOptions = Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+        $deliveredByOptions = Repair::where('item_delivered_by_type', 'AJPL')->whereNotNull('item_delivered_by')->distinct()->pluck('item_delivered_by');
+        return view('admin.repairs.create', compact('buyers', 'receivedByOptions', 'receivedThroughOptions', 'deliveredByOptions'));
     }
 
     public function store(Request $request)
@@ -151,6 +154,10 @@ class RepairController extends Controller
             'repair' => 'nullable|string',
             'ref' => 'nullable|string',
             'notes' => 'nullable',
+            'item_received_by' => 'nullable|string|max:255',
+            'item_received_through' => 'nullable|string|max:255',
+            'item_delivered_by_type' => 'nullable|in:Self,AJPL',
+            'item_delivered_by' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -178,6 +185,10 @@ class RepairController extends Controller
             'repair' => $request->repair,
             'ref' => $request->ref,
             'notes' => $request->notes,
+            'item_received_by' => $request->item_received_by,
+            'item_received_through' => $request->item_received_through,
+            'item_delivered_by_type' => $request->item_delivered_by_type,
+            'item_delivered_by' => $request->item_delivered_by,
             'status' => 'Pending',
             'created_by' => auth()->id(),
             'creator_type' => 'admin',
@@ -192,7 +203,10 @@ class RepairController extends Controller
         $repair = Repair::findOrFail($id);
         $buyers = Buyer::all();
         $craftsmen = Craftman::all();
-        return view('admin.repairs.edit', compact('repair', 'buyers', 'craftsmen'));
+        $receivedByOptions = Repair::whereNotNull('item_received_by')->distinct()->pluck('item_received_by');
+        $receivedThroughOptions = Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+        $deliveredByOptions = Repair::where('item_delivered_by_type', 'AJPL')->whereNotNull('item_delivered_by')->distinct()->pluck('item_delivered_by');
+        return view('admin.repairs.edit', compact('repair', 'buyers', 'craftsmen', 'receivedByOptions', 'receivedThroughOptions', 'deliveredByOptions'));
     }
 
     public function update(Request $request, $id)
@@ -211,13 +225,17 @@ class RepairController extends Controller
             'repair' => 'nullable|string',
             'ref' => 'nullable|string',
             'notes' => 'nullable|string',
+            'item_received_by' => 'nullable|string|max:255',
+            'item_received_through' => 'nullable|string|max:255',
+            'item_delivered_by_type' => 'nullable|in:Self,AJPL',
+            'item_delivered_by' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $data = $request->only(['buyer_id', 'product_name', 'weight', 'repair_details', 'sample_details', 'item_given_to', 'order_no', 'repair', 'ref', 'notes']);
+        $data = $request->only(['buyer_id', 'product_name', 'weight', 'repair_details', 'sample_details', 'item_given_to', 'order_no', 'repair', 'ref', 'notes', 'item_received_by', 'item_received_through', 'item_delivered_by_type', 'item_delivered_by']);
 
         if ($request->hasFile('image_proof')) {
             $image = $request->file('image_proof');

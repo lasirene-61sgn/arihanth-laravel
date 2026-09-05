@@ -8,6 +8,9 @@ use Carbon\Carbon;
 use App\Models\Craftman;
 use App\Models\WorkOrder;
 use App\Models\PurchaseOrder;
+use App\Models\Buyer;
+use App\Models\Product;
+use App\Models\Favorite;
 
 class DetailsAllController extends Controller
 {
@@ -208,7 +211,6 @@ class DetailsAllController extends Controller
         } elseif ($status === 'completed') {
             $collection = $collection->filter(fn($s) => $s['completed'] > 0);
         } elseif ($status === 'overdue') {
-            // Must have overdue > 0. If overdue is 0 (even if all completed), they are NOT shown.
             $collection = $collection->filter(fn($s) => $s['overdue'] > 0);
         }
 
@@ -253,10 +255,10 @@ class DetailsAllController extends Controller
                 'weight' => $w,
                 'bp_code' => $wo->bp_code,
                 'business_name' => $wo->customer_name,
-                'due_date' => $wo->due_date ? \Carbon\Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
+                'due_date' => $wo->due_date ? Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
                 'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
                 'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
-                'overdue_days' => ($isWoOverdue && $wo->due_date) ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($wo->due_date)->startOfDay()) : 0
+                'overdue_days' => ($isWoOverdue && $wo->due_date) ? Carbon::now()->startOfDay()->diffInDays(Carbon::parse($wo->due_date)->startOfDay()) : 0
             ];
 
             if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
@@ -294,21 +296,24 @@ class DetailsAllController extends Controller
         uasort($clientStats, function($a, $b) { return $b['orders'] <=> $a['orders']; });
         $topPicksClientsFull = array_slice($clientStats, 0, 15, true);
 
-        $acceptedProducts = \App\Models\Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
+        $acceptedProducts = Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
 
         $craftsmanDesignStats = [];
+        $craftsmanAllCategories = [];
         foreach ($craftsmen as $c) {
             $code = $c->craftman_code;
             $name = $c->name ?? $c->business_name;
             $cProducts = $acceptedProducts->where('bp_code', $code);
             if ($cProducts->count() > 0) {
                 $catCounts = [];
-                $designs = [];
                 $lastAccepted = null;
                 foreach ($cProducts as $p) {
                     $catName = $p->category ? $p->category->name : 'Uncategorized';
                     if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
                     $catCounts[$catName]++;
+                    if (!in_array($catName, $craftsmanAllCategories)) {
+                        $craftsmanAllCategories[] = $catName;
+                    }
                     if (!$lastAccepted || $p->updated_at > $lastAccepted) {
                         $lastAccepted = $p->updated_at;
                     }
@@ -322,25 +327,52 @@ class DetailsAllController extends Controller
                 ];
             }
         }
+        sort($craftsmanAllCategories);
 
         $buyerDesignStats = [];
-        $allBuyers = \App\Models\Buyer::all();
+        $buyerAllCategories = [];
+        $categoryBuyerStats = []; // Category-wise Buyer & Design Counts breakdown
+        
+        $allBuyers = Buyer::all();
         foreach ($allBuyers as $b) {
             $code = $b->bp_code;
             $name = $b->name ?? $b->business_name;
             $bProducts = $acceptedProducts->where('bp_code', $code);
             if ($bProducts->count() > 0) {
                 $catCounts = [];
-                $designs = [];
                 $lastAccepted = null;
                 foreach ($bProducts as $p) {
                     $catName = $p->category ? $p->category->name : 'Uncategorized';
                     if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
                     $catCounts[$catName]++;
+                    if (!in_array($catName, $buyerAllCategories)) {
+                        $buyerAllCategories[] = $catName;
+                    }
+                    
                     if (!$lastAccepted || $p->updated_at > $lastAccepted) {
                         $lastAccepted = $p->updated_at;
                     }
+
+                    // Structure data grouped by Category
+                    if (!isset($categoryBuyerStats[$catName])) {
+                        $categoryBuyerStats[$catName] = [
+                            'category' => $catName,
+                            'total_designs' => 0,
+                            'buyers' => []
+                        ];
+                    }
+                    $categoryBuyerStats[$catName]['total_designs']++;
+                    
+                    if (!isset($categoryBuyerStats[$catName]['buyers'][$code])) {
+                        $categoryBuyerStats[$catName]['buyers'][$code] = [
+                            'code' => $code,
+                            'name' => $name,
+                            'count' => 0
+                        ];
+                    }
+                    $categoryBuyerStats[$catName]['buyers'][$code]['count']++;
                 }
+
                 $buyerDesignStats[$code] = [
                     'code' => $code,
                     'name' => $name,
@@ -350,28 +382,65 @@ class DetailsAllController extends Controller
                 ];
             }
         }
+        sort($buyerAllCategories);
 
-        return view('super-admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'buyerDesignStats'));
+        return view('super-admin.details-all.index', compact(
+            'craftsmenData', 
+            'status', 
+            'sortBy', 
+            'sortOrder', 
+            'topPicksClientsFull', 
+            'craftsmanDesignStats', 
+            'craftsmanAllCategories',
+            'buyerDesignStats',
+            'buyerAllCategories',
+            'categoryBuyerStats'
+        ));
     }
 
     public function getAcceptedDesigns($bp_code)
     {
-        $products = \App\Models\Product::with(['category', 'images'])
+        $products = Product::with(['category', 'images'])
             ->whereIn('design_status', ['Accepted', 'accepted'])
             ->where('bp_code', $bp_code)
             ->get();
+
+        $userType = null;
+        $userId = null;
+        
+        $buyer = Buyer::where('bp_code', $bp_code)->first();
+        if ($buyer) {
+            $userType = 'buyer';
+            $userId = $buyer->id;
+        } else {
+            $craftsman = Craftman::where('craftman_code', $bp_code)->first();
+            if ($craftsman) {
+                $userType = 'craftsman';
+                $userId = $craftsman->id;
+            }
+        }
+
+        $favorites = collect();
+        if ($userId && $userType) {
+            $favorites = Favorite::where('user_id', $userId)
+                ->where('user_type', $userType)
+                ->pluck('design_name', 'product_id');
+        }
 
         $designs = [];
         foreach ($products as $p) {
             $catName = $p->category ? $p->category->name : 'Uncategorized';
             $imageUrl = $p->images && $p->images->first() ? $p->images->first()->image_url : asset('images/ajlogo.png');
             
+            $favDesignName = $favorites->has($p->id) ? $favorites[$p->id] : null;
+            $designName = $favDesignName ?: ($p->product_name ?? 'N/A');
+
             $designs[] = [
                 'id' => $p->id,
                 'image' => $imageUrl,
                 'weight' => $p->weight_from,
                 'design_code' => $p->design_code ?? $p->product_code,
-                'design_name' => $p->product_name ?? 'N/A',
+                'design_name' => $designName,
                 'category' => $catName,
             ];
         }

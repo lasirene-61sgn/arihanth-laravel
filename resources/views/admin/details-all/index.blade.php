@@ -26,9 +26,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         TOP TRIGGER CARDS (SIDE BY SIDE IN ONE ROW)
-    =========================================== -->
+    <!-- KPI CARDS -->
     <div class="row g-3 mb-4">
         <!-- Top Picks Craftsmen Card -->
         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -95,11 +93,8 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         CRAFTSMEN DETAILS CONTAINER (HIDDEN BY DEFAULT)
-    =========================================== -->
+    <!-- CRAFTSMEN DETAILS CONTAINER -->
     <div id="detailsTableContainer" style="display: none;">
-        <!-- Header & Action Buttons -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="fw-bold text-dark mb-0">Craftsman Details Table</h5>
             <div>
@@ -119,28 +114,28 @@
                     <div class="col-md-3">
                         <label class="form-label text-muted small fw-bold mb-1">Status Workflow</label>
                         <select name="status" id="statusFilterSelect" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="all" {{ $status == 'all' ? 'selected' : '' }}>All Statuses</option>
-                            <option value="in_process" {{ $status == 'in_process' ? 'selected' : '' }}>In Process</option>
-                            <option value="for_approval" {{ $status == 'for_approval' ? 'selected' : '' }}>For Approval</option>
-                            <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Completed</option>
-                            <option value="overdue" {{ $status == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                            <option value="all" {{ ($status ?? 'all') == 'all' ? 'selected' : '' }}>All Statuses</option>
+                            <option value="in_process" {{ ($status ?? '') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                            <option value="for_approval" {{ ($status ?? '') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                            <option value="completed" {{ ($status ?? '') == 'completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="overdue" {{ ($status ?? '') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-muted small fw-bold mb-1">Sort Metric</label>
                         <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="allocated" {{ $sortBy == 'allocated' ? 'selected' : '' }}>Allocated Count</option>
-                            <option value="in_process" {{ $sortBy == 'in_process' ? 'selected' : '' }}>In Process</option>
-                            <option value="completed" {{ $sortBy == 'completed' ? 'selected' : '' }}>Completed</option>
-                            <option value="overdue" {{ $sortBy == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                            <option value="total_weight" {{ $sortBy == 'total_weight' ? 'selected' : '' }}>Total Weight</option>
+                            <option value="allocated" {{ ($sortBy ?? '') == 'allocated' ? 'selected' : '' }}>Allocated Count</option>
+                            <option value="in_process" {{ ($sortBy ?? '') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                            <option value="completed" {{ ($sortBy ?? '') == 'completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="overdue" {{ ($sortBy ?? '') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                            <option value="total_weight" {{ ($sortBy ?? '') == 'total_weight' ? 'selected' : '' }}>Total Weight</option>
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label text-muted small fw-bold mb-1">Sort Order</label>
                         <select name="sort_order" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="desc" {{ $sortOrder == 'desc' ? 'selected' : '' }}>Descending (High to Low)</option>
-                            <option value="asc" {{ $sortOrder == 'asc' ? 'selected' : '' }}>Ascending (Low to High)</option>
+                            <option value="desc" {{ ($sortOrder ?? 'desc') == 'desc' ? 'selected' : '' }}>Descending (High to Low)</option>
+                            <option value="asc" {{ ($sortOrder ?? '') == 'asc' ? 'selected' : '' }}>Ascending (Low to High)</option>
                         </select>
                     </div>
                 </form>
@@ -183,27 +178,28 @@
                                 <td class="text-center border-end">
                                     <span class="badge bg-light text-dark border">{{ $stat['code'] }}</span>
                                 </td>
-                                
-                                {{-- Work Orders --}}
+
+                                {{-- WO In Process --}}
                                 <td class="text-center border-end">
-                                    @if($stat['wo']['in_process']['count'] > 0)
+                                    @if(($stat['wo']['in_process']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-semibold" 
                                             onclick="showOrdersList(this, 'wo')" 
                                             data-title="In Process (WO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['wo']['in_process']['orders']) }}">
+                                            data-orders='@json($stat['wo']['in_process']['orders'] ?? [])'>
                                             {{ $stat['wo']['in_process']['count'] }} | {{ number_format($stat['wo']['in_process']['weight'], 2) }}
                                         </button>
                                     @else
                                         <span class="text-muted small">-</span>
                                     @endif
                                 </td>
-                                
+
+                                {{-- WO For Approval --}}
                                 <td class="text-center border-end">
-                                    @if($stat['wo']['for_approval']['count'] > 0)
+                                    @if(($stat['wo']['for_approval']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
                                             onclick="showOrdersList(this, 'wo')" 
                                             data-title="For Approval (WO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['wo']['for_approval']['orders']) }}">
+                                            data-orders='@json($stat['wo']['for_approval']['orders'] ?? [])'>
                                             {{ $stat['wo']['for_approval']['count'] }} | {{ number_format($stat['wo']['for_approval']['weight'], 2) }}
                                         </button>
                                     @else
@@ -211,39 +207,41 @@
                                     @endif
                                 </td>
 
+                                {{-- WO Overdue --}}
                                 <td class="text-center border-end">
-                                    @if($stat['wo']['overdue']['count'] > 0)
+                                    @if(($stat['wo']['overdue']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
                                             onclick="showOrdersList(this, 'wo')" 
                                             data-title="Overdue (WO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['wo']['overdue']['orders']) }}">
+                                            data-orders='@json($stat['wo']['overdue']['orders'] ?? [])'>
                                             {{ $stat['wo']['overdue']['count'] }} | {{ number_format($stat['wo']['overdue']['weight'], 2) }}
                                         </button>
                                     @else
                                         <span class="text-muted small">-</span>
                                     @endif
                                 </td>
-                                
-                                {{-- Purchase Orders --}}
+
+                                {{-- PO In Process --}}
                                 <td class="text-center border-end">
-                                    @if($stat['po']['in_process']['count'] > 0)
+                                    @if(($stat['po']['in_process']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-info text-decoration-none p-0 fw-semibold" 
                                             onclick="showOrdersList(this, 'po')" 
                                             data-title="In Process (PO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['po']['in_process']['orders']) }}">
+                                            data-orders='@json($stat['po']['in_process']['orders'] ?? [])'>
                                             {{ $stat['po']['in_process']['count'] }} | {{ number_format($stat['po']['in_process']['weight'], 2) }}
                                         </button>
                                     @else
                                         <span class="text-muted small">-</span>
                                     @endif
                                 </td>
-                                
+
+                                {{-- PO For Approval --}}
                                 <td class="text-center border-end">
-                                    @if($stat['po']['for_approval']['count'] > 0)
+                                    @if(($stat['po']['for_approval']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
                                             onclick="showOrdersList(this, 'po')" 
                                             data-title="For Approval (PO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['po']['for_approval']['orders']) }}">
+                                            data-orders='@json($stat['po']['for_approval']['orders'] ?? [])'>
                                             {{ $stat['po']['for_approval']['count'] }} | {{ number_format($stat['po']['for_approval']['weight'], 2) }}
                                         </button>
                                     @else
@@ -251,12 +249,13 @@
                                     @endif
                                 </td>
 
+                                {{-- PO Overdue --}}
                                 <td class="text-center">
-                                    @if($stat['po']['overdue']['count'] > 0)
+                                    @if(($stat['po']['overdue']['count'] ?? 0) > 0)
                                         <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
                                             onclick="showOrdersList(this, 'po')" 
                                             data-title="Overdue (PO) - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['po']['overdue']['orders']) }}">
+                                            data-orders='@json($stat['po']['overdue']['orders'] ?? [])'>
                                             {{ $stat['po']['overdue']['count'] }} | {{ number_format($stat['po']['overdue']['weight'], 2) }}
                                         </button>
                                     @else
@@ -279,9 +278,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         CLIENTS DETAILS CONTAINER (HIDDEN BY DEFAULT)
-    =========================================== -->
+    <!-- CLIENTS DETAILS CONTAINER -->
     <div id="clientsTableContainer" style="display: none;">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="fw-bold text-dark mb-0">Top Picks Clients Table</h5>
@@ -328,80 +325,25 @@
                                     <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
                                 </td>
                                 <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
+                                
+                                {{-- Client Status Columns --}}
+                                @foreach(['new' => 'text-primary', 'in_process' => 'text-primary', 'for_approval' => 'text-purple', 'overdue' => 'text-danger', 'rejected' => 'text-danger', 'completed' => 'text-success'] as $type => $textClass)
+                                    <td>
+                                        @if(isset($stat[$type]['weight']) && $stat[$type]['weight'] > 0)
+                                            <button type="button" class="btn btn-sm btn-link {{ $textClass }} text-decoration-none p-0 fw-semibold" 
+                                                onclick="showOrdersList(this, 'wo')" 
+                                                data-title="{{ ucfirst(str_replace('_', ' ', $type)) }} Orders - {{ $stat['name'] }}" 
+                                                data-orders='@json($stat[$type]['orders'] ?? [])'>
+                                                {{ $stat[$type]['count'] }} | {{ number_format($stat[$type]['weight'], 2) }}
+                                            </button>
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                @endforeach
+
                                 <td>
-                                    @if(isset($stat['new']['weight']) && $stat['new']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-semibold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="New Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['new']['orders'] ?? []) }}">
-                                            {{ $stat['new']['count'] }} | {{ number_format($stat['new']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(isset($stat['in_process']['weight']) && $stat['in_process']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-semibold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="In Process Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['in_process']['orders'] ?? []) }}">
-                                            {{ $stat['in_process']['count'] }} | {{ number_format($stat['in_process']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(isset($stat['for_approval']['weight']) && $stat['for_approval']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="For Approval Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['for_approval']['orders'] ?? []) }}">
-                                            {{ $stat['for_approval']['count'] }} | {{ number_format($stat['for_approval']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(isset($stat['overdue']['weight']) && $stat['overdue']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="Overdue Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['overdue']['orders'] ?? []) }}">
-                                            {{ $stat['overdue']['count'] }} | {{ number_format($stat['overdue']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(isset($stat['rejected']['weight']) && $stat['rejected']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="Rejected Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['rejected']['orders'] ?? []) }}">
-                                            {{ $stat['rejected']['count'] }} | {{ number_format($stat['rejected']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(isset($stat['completed']['weight']) && $stat['completed']['weight'] > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-success text-decoration-none p-0 fw-semibold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="Completed Orders - {{ $stat['name'] }}" 
-                                            data-orders="{{ json_encode($stat['completed']['orders'] ?? []) }}">
-                                            {{ $stat['completed']['count'] }} | {{ number_format($stat['completed']['weight'], 2) }}
-                                        </button>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary-subtle text-secondary fs-6">{{ $stat['orders'] }}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary fs-6">{{ $stat['orders'] ?? 0 }}</span>
                                 </td>
                             </tr>
                             @empty
@@ -414,9 +356,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         COLLAPSIBLE CRAFTSMAN DESIGNS CONTAINER
-    =========================================== -->
+    <!-- CRAFTSMAN DESIGNS CONTAINER -->
     <div id="craftsmanDesignsTableContainer" style="display: none;">
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white border-bottom">
@@ -429,41 +369,67 @@
                             <tr>
                                 <th>Craftsman</th>
                                 <th>Code</th>
-                                <th>Category Breakdown</th>
+                                @foreach($craftsmanAllCategories as $cat)
+                                    <th class="text-center">{{ $cat }}</th>
+                                @endforeach
                                 <th class="text-center">Total Accepted</th>
                                 <th>Last Accepted</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $totalCraftsmanAccepted = 0;
+                                $categoryTotals = array_fill_keys($craftsmanAllCategories, 0);
+                            @endphp
                             @forelse($craftsmanDesignStats as $code => $stat)
                             <tr>
                                 <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
                                 <td><span class="badge bg-secondary">{{ $code }}</span></td>
-                                <td>
-                                    @foreach($stat['categories'] as $cat => $count)
-                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-success">{{ $count }}</strong></span>
-                                    @endforeach
-                                </td>
+                                @foreach($craftsmanAllCategories as $cat)
+                                    <td class="text-center">
+                                        @if(isset($stat['categories'][$cat]))
+                                            @php
+                                                $categoryTotals[$cat] += $stat['categories'][$cat];
+                                            @endphp
+                                            <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                                {{ $stat['categories'][$cat] }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                @endforeach
                                 <td class="text-center">
-                                    <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                    @php
+                                        $totalCraftsmanAccepted += $stat['total_accepted'];
+                                    @endphp
+                                    <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman')" data-title="Accepted Designs (All) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
                                         {{ $stat['total_accepted'] }}
                                     </span>
                                 </td>
-                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
+                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] ?? '-' }}</span></td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            <tr><td colspan="{{ count($craftsmanAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
                             @endforelse
                         </tbody>
+                        <tfoot class="bg-light fw-bold">
+                            <tr>
+                                <td colspan="2" class="text-end">Total:</td>
+                                @foreach($craftsmanAllCategories as $cat)
+                                    <td class="text-center text-success">{{ $categoryTotals[$cat] ?? 0 }}</td>
+                                @endforeach
+                                <td class="text-center text-primary fs-5">{{ $totalCraftsmanAccepted }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==========================================
-         COLLAPSIBLE BUYER DESIGNS CONTAINER
-    =========================================== -->
+    <!-- BUYER DESIGNS CONTAINER -->
     <div id="buyerDesignsTableContainer" style="display: none;">
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white border-bottom">
@@ -476,32 +442,60 @@
                             <tr>
                                 <th>Buyer</th>
                                 <th>Code</th>
-                                <th>Category Breakdown</th>
+                                @foreach($buyerAllCategories as $cat)
+                                    <th class="text-center">{{ $cat }}</th>
+                                @endforeach
                                 <th class="text-center">Total Accepted</th>
                                 <th>Last Accepted</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $totalBuyerAccepted = 0;
+                                $buyerCategoryTotals = array_fill_keys($buyerAllCategories, 0);
+                            @endphp
                             @forelse($buyerDesignStats as $code => $stat)
                             <tr>
                                 <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
                                 <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
-                                <td>
-                                    @foreach($stat['categories'] as $cat => $count)
-                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-danger">{{ $count }}</strong></span>
-                                    @endforeach
-                                </td>
+                                @foreach($buyerAllCategories as $cat)
+                                    <td class="text-center">
+                                        @if(isset($stat['categories'][$cat]))
+                                            @php
+                                                $buyerCategoryTotals[$cat] += $stat['categories'][$cat];
+                                            @endphp
+                                            <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                                {{ $stat['categories'][$cat] }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                @endforeach
                                 <td class="text-center">
-                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                    @php
+                                        $totalBuyerAccepted += $stat['total_accepted'];
+                                    @endphp
+                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer')" data-title="Accepted Designs (All) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
                                         {{ $stat['total_accepted'] }}
                                     </span>
                                 </td>
-                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
+                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] ?? '-' }}</span></td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            <tr><td colspan="{{ count($buyerAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
                             @endforelse
                         </tbody>
+                        <tfoot class="bg-light fw-bold">
+                            <tr>
+                                <td colspan="2" class="text-end">Total:</td>
+                                @foreach($buyerAllCategories as $cat)
+                                    <td class="text-center text-danger">{{ $buyerCategoryTotals[$cat] ?? 0 }}</td>
+                                @endforeach
+                                <td class="text-center text-primary fs-5">{{ $totalBuyerAccepted }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -509,9 +503,7 @@
     </div>
 </div>
 
-<!-- ==========================================
-     ORDERS BREAKDOWN MODAL WITH COLUMN SELECTOR
-=========================================== -->
+<!-- ORDERS MODAL -->
 <div class="modal fade" id="ordersListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -524,12 +516,24 @@
             </div>
             
             <div class="modal-body p-4">
-                <!-- Print Field Customization Section -->
                 <div class="bg-light p-3 rounded-3 mb-3 border">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold small text-secondary"><i class="bi bi-sliders me-1"></i> Customize Print Columns:</span>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill" onclick="printModalSelected()">
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="ordersPerPage" class="form-select form-select-sm" style="width: auto;">
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="150">150</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                            </select>
+                            <span class="small text-muted">per page</span>
+                            
+                            <button class="btn btn-outline-secondary btn-sm ms-2" id="ordersPrevPage">Prev</button>
+                            <span class="small fw-bold" id="ordersPageInfo">Page 1 of 1</span>
+                            <button class="btn btn-outline-secondary btn-sm" id="ordersNextPage">Next</button>
+                            
+                            <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill ms-3" onclick="printModalSelected()">
                                 <i class="bi bi-printer-fill me-1"></i> Print Selected
                             </button>
                         </div>
@@ -574,13 +578,12 @@
                     </div>
                 </div>
 
-                <!-- Modal Table -->
                 <div class="table-responsive border rounded">
                     <table class="table table-hover align-middle mb-0" id="modalOrdersTable">
                         <thead class="bg-light">
                             <tr>
                                 <th class="text-center" style="width: 40px;">
-                                    <input class="form-check-input" type="checkbox" id="modalSelectAll">
+                                    <input class="form-check-input" type="checkbox" id="modalSelectAll" checked>
                                 </th>
                                 <th class="col-order-num">Order Number</th>
                                 <th class="bp-col col-bp">BP Code</th>
@@ -593,9 +596,7 @@
                                 <th class="text-center overdue-col col-overdue" style="display: none;">Overdue Days</th>
                             </tr>
                         </thead>
-                        <tbody id="ordersListModalBody">
-                            <!-- Populated dynamically by JavaScript -->
-                        </tbody>
+                        <tbody id="ordersListModalBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -603,9 +604,7 @@
     </div>
 </div>
 
-<!-- ==========================================
-     DESIGNS LIST MODAL
-=========================================== -->
+<!-- DESIGNS MODAL -->
 <div class="modal fade" id="designsListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -617,7 +616,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="d-flex justify-content-end mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <select id="designsPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="150">150</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                        <span class="small text-muted me-3">per page</span>
+                        
+                        <button class="btn btn-outline-secondary btn-sm" id="designsPrevPage">Prev</button>
+                        <span class="mx-2 small fw-bold" id="designsPageInfo">Page 1 of 1</span>
+                        <button class="btn btn-outline-secondary btn-sm" id="designsNextPage">Next</button>
+                    </div>
                     <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill" onclick="printSelectedDesigns()">
                         <i class="bi bi-printer-fill me-1"></i> Print Selected
                     </button>
@@ -646,196 +659,159 @@
 </div>
 
 <script>
-    // --- Craftsman Table Toggle (Click to Show/Hide) ---
-    function toggleDetailsTable() {
-        const container = document.getElementById('detailsTableContainer');
-        const icon = document.getElementById('toggleIcon');
-        
-        // Hide clients table if open
-        document.getElementById('clientsTableContainer').style.display = 'none';
-        document.getElementById('toggleClientsIcon').classList.replace('bi-chevron-up', 'bi-chevron-down');
+    let ordersModalInstance = null;
+    let designsModalInstance = null;
 
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
-            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
-        } else {
-            container.style.display = 'none';
-            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        ordersModalInstance = new bootstrap.Modal(document.getElementById('ordersListModal'));
+        designsModalInstance = new bootstrap.Modal(document.getElementById('designsListModal'));
+    });
+
+    // Helper to toggle container visibility and icon state
+    function toggleSection(containerId, iconId) {
+        const sections = [
+            { id: 'detailsTableContainer', icon: 'toggleIcon' },
+            { id: 'clientsTableContainer', icon: 'toggleClientsIcon' },
+            { id: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
+            { id: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' }
+        ];
+
+        sections.forEach(sec => {
+            const el = document.getElementById(sec.id);
+            const ic = document.getElementById(sec.icon);
+            if (!el) return;
+
+            if (sec.id === containerId) {
+                const isCurrentlyHidden = el.style.display === 'none' || el.style.display === '';
+                el.style.display = isCurrentlyHidden ? 'block' : 'none';
+                if (ic) {
+                    ic.classList.toggle('bi-chevron-down', !isCurrentlyHidden);
+                    ic.classList.toggle('bi-chevron-up', isCurrentlyHidden);
+                }
+            } else {
+                el.style.display = 'none';
+                if (ic) {
+                    ic.classList.remove('bi-chevron-up');
+                    ic.classList.add('bi-chevron-down');
+                }
+            }
+        });
     }
 
-    // --- Clients Table Toggle (Click to Show/Hide) ---
-    function toggleClientsTable() {
-        const container = document.getElementById('clientsTableContainer');
-        const icon = document.getElementById('toggleClientsIcon');
+    function toggleDetailsTable() { toggleSection('detailsTableContainer', 'toggleIcon'); }
+    function toggleClientsTable() { toggleSection('clientsTableContainer', 'toggleClientsIcon'); }
+    function toggleCraftsmanDesignsTable() { toggleSection('craftsmanDesignsTableContainer', 'toggleCraftsmanDesignsIcon'); }
+    function toggleBuyerDesignsTable() { toggleSection('buyerDesignsTableContainer', 'toggleBuyerDesignsIcon'); }
 
-        // Hide craftsmen table if open
-        document.getElementById('detailsTableContainer').style.display = 'none';
-        document.getElementById('toggleIcon').classList.replace('bi-chevron-up', 'bi-chevron-down');
-
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
-            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
-        } else {
-            container.style.display = 'none';
-            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        }
-    }
-
-    // --- Craftsman Designs Toggle (Click to Show/Hide) ---
-    function toggleCraftsmanDesignsTable() {
-        const container = document.getElementById('craftsmanDesignsTableContainer');
-        const icon = document.getElementById('toggleCraftsmanDesignsIcon');
-
-        // Hide others
-        document.getElementById('detailsTableContainer').style.display = 'none';
-        document.getElementById('toggleIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        document.getElementById('clientsTableContainer').style.display = 'none';
-        document.getElementById('toggleClientsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        document.getElementById('buyerDesignsTableContainer').style.display = 'none';
-        document.getElementById('toggleBuyerDesignsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
-            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
-        } else {
-            container.style.display = 'none';
-            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        }
-    }
-
-    // --- Buyer Designs Toggle (Click to Show/Hide) ---
-    function toggleBuyerDesignsTable() {
-        const container = document.getElementById('buyerDesignsTableContainer');
-        const icon = document.getElementById('toggleBuyerDesignsIcon');
-
-        // Hide others
-        document.getElementById('detailsTableContainer').style.display = 'none';
-        document.getElementById('toggleIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        document.getElementById('clientsTableContainer').style.display = 'none';
-        document.getElementById('toggleClientsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        document.getElementById('craftsmanDesignsTableContainer').style.display = 'none';
-        document.getElementById('toggleCraftsmanDesignsIcon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
-
-        if (container.style.display === 'none' || container.style.display === '') {
-            container.style.display = 'block';
-            icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
-        } else {
-            container.style.display = 'none';
-            icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
-        }
-    }
-
-    function applyStatusFilter(statusVal) {
-        const select = document.getElementById('statusFilterSelect');
-        if (select) {
-            select.value = statusVal;
-            document.getElementById('filterForm').submit();
-        }
-    }
-
-    // --- Checkbox Handlers ---
-    document.getElementById('selectAll').addEventListener('change', function() {
+    // Checkbox toggles
+    document.getElementById('selectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
-    document.getElementById('selectAllClients').addEventListener('change', function() {
+    document.getElementById('selectAllClients')?.addEventListener('change', function() {
         document.querySelectorAll('.client-row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
-    document.getElementById('modalSelectAll').addEventListener('change', function() {
+    document.getElementById('modalSelectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.modal-row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
-    // --- Order Popup Logic ---
+    document.getElementById('modalDesignsSelectAll')?.addEventListener('change', function() {
+        document.querySelectorAll('.modal-design-checkbox').forEach(cb => cb.checked = this.checked);
+    });
+
+    // Orders Modal State
     let currentOrderType = 'wo';
     let currentModalOrders = [];
+    let currentOrdersPage = 1;
+    let ordersPerPage = 50;
 
     function showOrdersList(el, type) {
         currentOrderType = type;
-        const title = el.getAttribute('data-title');
+        const title = el.getAttribute('data-title') || 'Orders List';
         const orders = JSON.parse(el.getAttribute('data-orders') || '[]');
         currentModalOrders = orders;
         
         document.getElementById('ordersListModalTitle').innerText = title;
         document.getElementById('ordersModalSubtitle').innerText = `${orders.length} total item(s) found`;
         
+        const isPO = (type === 'po');
+        const isOverdue = title.toLowerCase().includes('overdue');
+
+        document.querySelectorAll('.bp-col, .business-col, .craftsman-col, .bp-print-toggle, .craftsman-print-toggle')
+            .forEach(col => col.style.display = isPO ? 'none' : '');
+
+        document.querySelectorAll('.overdue-col, .overdue-print-toggle')
+            .forEach(col => col.style.display = isOverdue ? '' : 'none');
+
+        currentOrdersPage = 1;
+        renderOrdersPage();
+        ordersModalInstance.show();
+    }
+
+    function renderOrdersPage() {
         const body = document.getElementById('ordersListModalBody');
         body.innerHTML = '';
         
-        const bpCols = document.querySelectorAll('.bp-col');
-        const businessCols = document.querySelectorAll('.business-col');
-        const craftsmanCols = document.querySelectorAll('.craftsman-col');
-        const bpPrintToggles = document.querySelectorAll('.bp-print-toggle');
-        const craftsmanPrintToggles = document.querySelectorAll('.craftsman-print-toggle');
-        
-        if (type === 'po') {
-            bpCols.forEach(col => col.style.display = 'none');
-            businessCols.forEach(col => col.style.display = 'none');
-            craftsmanCols.forEach(col => col.style.display = 'none');
-            bpPrintToggles.forEach(t => t.style.display = 'none');
-            craftsmanPrintToggles.forEach(t => t.style.display = 'none');
-        } else {
-            bpCols.forEach(col => col.style.display = '');
-            businessCols.forEach(col => col.style.display = '');
-            craftsmanCols.forEach(col => col.style.display = '');
-            bpPrintToggles.forEach(t => t.style.display = '');
-            craftsmanPrintToggles.forEach(t => t.style.display = '');
-        }
+        const totalPages = Math.ceil(currentModalOrders.length / ordersPerPage) || 1;
+        document.getElementById('ordersPageInfo').innerText = `Page ${currentOrdersPage} of ${totalPages}`;
+        document.getElementById('ordersPrevPage').disabled = (currentOrdersPage === 1);
+        document.getElementById('ordersNextPage').disabled = (currentOrdersPage === totalPages);
 
-        const isOverdue = title.toLowerCase().includes('overdue');
-        const overdueCols = document.querySelectorAll('.overdue-col');
-        const overduePrintToggles = document.querySelectorAll('.overdue-print-toggle');
-        
-        overdueCols.forEach(col => col.style.display = isOverdue ? '' : 'none');
-        overduePrintToggles.forEach(t => t.style.display = isOverdue ? '' : 'none');
-
-        if (orders.length === 0) {
+        if (currentModalOrders.length === 0) {
             body.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No orders found.</td></tr>';
-        } else {
-            orders.forEach(order => {
-                let html = `
-                    <tr class="modal-data-row">
-                        <td class="text-center">
-                            <input class="form-check-input modal-row-checkbox" type="checkbox" checked>
-                        </td>
-                        <td class="fw-semibold text-dark col-order-num">${order.number || '-'}</td>`;
-                        
-                if (type !== 'po') {
-                    html += `
-                        <td class="bp-col col-bp"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
-                        <td class="business-col col-business text-muted">${order.business_name || '-'}</td>
-                        <td class="craftsman-col col-craftsman-code"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
-                        <td class="craftsman-col col-craftsman-name text-muted">${order.craftsman_name || '-'}</td>`;
-                } else {
-                    html += `
-                        <td class="bp-col col-bp" style="display:none;"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
-                        <td class="business-col col-business text-muted" style="display:none;">${order.business_name || '-'}</td>
-                        <td class="craftsman-col col-craftsman-code" style="display:none;"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
-                        <td class="craftsman-col col-craftsman-name text-muted" style="display:none;">${order.craftsman_name || '-'}</td>`;
-                }
-
-                html += `
-                        <td class="text-center col-qty">${order.qty || 0}</td>
-                        <td class="text-center fw-medium col-weight">${parseFloat(order.weight || 0).toFixed(2)}</td>
-                        <td class="text-center col-due">${order.due_date || '-'}</td>`;
-                        
-                if (isOverdue) {
-                    html += `<td class="text-center overdue-col col-overdue text-danger fw-bold">${order.overdue_days || 0} days</td>`;
-                } else {
-                    html += `<td class="text-center overdue-col col-overdue text-danger fw-bold" style="display:none;">${order.overdue_days || 0} days</td>`;
-                }
-
-                html += `</tr>`;
-                body.insertAdjacentHTML('beforeend', html);
-            });
+            return;
         }
-        
-        const modal = new bootstrap.Modal(document.getElementById('ordersListModal'));
-        modal.show();
+
+        const startIndex = (currentOrdersPage - 1) * ordersPerPage;
+        const pageItems = currentModalOrders.slice(startIndex, startIndex + ordersPerPage);
+        const title = document.getElementById('ordersListModalTitle').innerText;
+        const isOverdue = title.toLowerCase().includes('overdue');
+        const isPO = (currentOrderType === 'po');
+
+        let rowsHtml = '';
+        pageItems.forEach(order => {
+            rowsHtml += `
+                <tr class="modal-data-row">
+                    <td class="text-center">
+                        <input class="form-check-input modal-row-checkbox" type="checkbox" checked>
+                    </td>
+                    <td class="fw-semibold text-dark col-order-num">${order.number || '-'}</td>
+                    <td class="bp-col col-bp" style="${isPO ? 'display:none;' : ''}"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                    <td class="business-col col-business text-muted" style="${isPO ? 'display:none;' : ''}">${order.business_name || '-'}</td>
+                    <td class="craftsman-col col-craftsman-code" style="${isPO ? 'display:none;' : ''}"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                    <td class="craftsman-col col-craftsman-name text-muted" style="${isPO ? 'display:none;' : ''}">${order.craftsman_name || '-'}</td>
+                    <td class="text-center col-qty">${order.qty || 0}</td>
+                    <td class="text-center fw-medium col-weight">${parseFloat(order.weight || 0).toFixed(2)}</td>
+                    <td class="text-center col-due">${order.due_date || '-'}</td>
+                    <td class="text-center overdue-col col-overdue text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
+                </tr>`;
+        });
+        body.innerHTML = rowsHtml;
     }
 
-    // --- Modal Custom Print ---
+    document.getElementById('ordersPerPage')?.addEventListener('change', function() {
+        ordersPerPage = parseInt(this.value);
+        currentOrdersPage = 1;
+        renderOrdersPage();
+    });
+
+    document.getElementById('ordersPrevPage')?.addEventListener('click', function() {
+        if (currentOrdersPage > 1) {
+            currentOrdersPage--;
+            renderOrdersPage();
+        }
+    });
+
+    document.getElementById('ordersNextPage')?.addEventListener('click', function() {
+        const totalPages = Math.ceil(currentModalOrders.length / ordersPerPage) || 1;
+        if (currentOrdersPage < totalPages) {
+            currentOrdersPage++;
+            renderOrdersPage();
+        }
+    });
+
+    // Print Modal Orders
     function printModalSelected() {
         const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
         if (checkboxes.length === 0) {
@@ -884,221 +860,105 @@
             rowsHtml += '</tr>';
         });
 
-        const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print - ${title}</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-center { text-align: center; }
-                    .header-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="text-center mb-3">
-                <div class="header-title">${title}</div>
-                <div class="text-muted small">Generated on ${new Date().toLocaleDateString()}</div>
-            </div>
-            <table class="table table-bordered">
-                <thead class="table-light">
-                    <tr>${headersHtml}</tr>
-                </thead>
-                <tbody>${rowsHtml}</tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
         const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print - ${title}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
+                        .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                        .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
+                        .text-danger { color: #dc3545 !important; }
+                        .text-center { text-align: center; }
+                        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="text-center mb-3">
+                    <div class="header-title">${title}</div>
+                    <div class="text-muted small">Generated on ${new Date().toLocaleDateString()}</div>
+                </div>
+                <table class="table table-bordered">
+                    <thead class="table-light"><tr>${headersHtml}</tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+                <script>window.onload = function() { window.print(); window.close(); }<\/script>
+            </body>
+            </html>`);
         printWindow.document.close();
     }
 
-    // --- Craftsman Table Print Logic ---
-    function generatePrintHtml(rowsToPrint) {
-        let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print - Craftsman Details</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 8px; font-size: 11px; }
-                    .bg-primary { background-color: #0d6efd !important; color: white !important; }
-                    .bg-info { background-color: #0dcaf0 !important; color: white !important; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-center { text-align: center; }
-                }
-            </style>
-        </head>
-        <body>
-            <h4 class="text-center mb-3 fw-bold">Craftsman Workflow Overview</h4>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="vertical-align: middle;">Craftsman Profile</th>
-                        <th rowspan="2" class="text-center" style="vertical-align: middle;">Code</th>
-                        <th colspan="3" class="text-center bg-primary text-white">WORK ORDERS (WO)</th>
-                        <th colspan="3" class="text-center bg-info text-white">PURCHASE ORDERS (PO)</th>
-                    </tr>
-                    <tr class="table-light">
-                        <th class="text-center">IN PROCESS</th>
-                        <th class="text-center">FOR APPROVAL</th>
-                        <th class="text-center text-danger">OVERDUE</th>
-                        <th class="text-center">IN PROCESS</th>
-                        <th class="text-center">FOR APPROVAL</th>
-                        <th class="text-center text-danger">OVERDUE</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+    // Designs Modal State & Logic
+    let currentDesigns = [];
+    let currentDesignsPage = 1;
+    let designsPerPage = 50;
 
-        rowsToPrint.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            html += '<tr>';
-            for (let i = 1; i < cells.length; i++) {
-                html += `<td class="${cells[i].className}">${cells[i].innerText.trim()}</td>`;
-            }
-            html += '</tr>';
+    function renderDesignsPage() {
+        const body = document.getElementById('designsListModalBody');
+        body.innerHTML = '';
+        
+        const totalPages = Math.ceil(currentDesigns.length / designsPerPage) || 1;
+        document.getElementById('designsPageInfo').innerText = `Page ${currentDesignsPage} of ${totalPages}`;
+        document.getElementById('designsPrevPage').disabled = (currentDesignsPage === 1);
+        document.getElementById('designsNextPage').disabled = (currentDesignsPage === totalPages);
+
+        if (currentDesigns.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No designs found.</td></tr>';
+            return;
+        }
+
+        const startIndex = (currentDesignsPage - 1) * designsPerPage;
+        const pageItems = currentDesigns.slice(startIndex, startIndex + designsPerPage);
+
+        let rowsHtml = '';
+        pageItems.forEach(design => {
+            rowsHtml += `
+                <tr class="modal-design-row">
+                    <td class="text-center" style="vertical-align: middle;">
+                        <input class="form-check-input modal-design-checkbox" type="checkbox">
+                    </td>
+                    <td class="text-center">
+                        <img src="${design.image || ''}" alt="Design" style="height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd;" class="design-img-preview" onerror="this.src='';">
+                    </td>
+                    <td style="vertical-align: middle;">${design.design_code || '-'}</td>
+                    <td style="vertical-align: middle;">${design.design_name || '-'}</td>
+                    <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category || '-'}</span></td>
+                    <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
+                    <td style="vertical-align: middle;">
+                        <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
+                    </td>
+                </tr>`;
         });
-
-        html += `
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
-        return html;
+        body.innerHTML = rowsHtml;
     }
 
-    function printSelected() {
-        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-        if (checkboxes.length === 0) {
-            alert('Please select at least one row to print.');
-            return;
-        }
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(generatePrintHtml(rowsToPrint));
-        printWindow.document.close();
-    }
-
-    function printAllFiltered() {
-        const rows = document.querySelectorAll('.data-row');
-        if (rows.length === 0) {
-            alert('No data to print.');
-            return;
-        }
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(generatePrintHtml(Array.from(rows)));
-        printWindow.document.close();
-    }
-
-    // --- Clients Table Print Logic ---
-    function generateClientsPrintHtml(rowsToPrint) {
-        let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print - Top Picks Clients</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 6px 8px; font-size: 11px; }
-                    .text-danger { color: #dc3545 !important; }
-                    .text-success { color: #198754 !important; }
-                    .text-center { text-align: center; }
-                    .bg-light { background-color: #f8f9fa !important; }
-                }
-            </style>
-        </head>
-        <body>
-            <h4 class="text-center mb-3 fw-bold">Top Picks Clients Report (Work Orders)</h4>
-            <table class="table table-bordered">
-                <thead class="bg-light">
-                    <tr>
-                        <th rowspan="2" class="align-middle">Business Partner</th>
-                        <th rowspan="2" class="align-middle text-center">BP Code</th>
-                        <th colspan="6" class="text-center">WORK ORDERS (WA)</th>
-                        <th rowspan="2" class="align-middle text-center">Total Orders</th>
-                    </tr>
-                    <tr>
-                        <th class="text-center">NEW</th>
-                        <th class="text-center">PROCESS</th>
-                        <th class="text-center">FOR APPROVAL</th>
-                        <th class="text-center text-danger">OVERDUE</th>
-                        <th class="text-center text-danger">REJECTED</th>
-                        <th class="text-center text-success">COMPLETED</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        rowsToPrint.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            html += '<tr>';
-            for (let i = 1; i < cells.length; i++) {
-                html += `<td class="${cells[i].className}">${cells[i].innerText.trim()}</td>`;
-            }
-            html += '</tr>';
-        });
-
-        html += `
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>`;
-
-        return html;
-    }
-
-    function printSelectedClients() {
-        const checkboxes = document.querySelectorAll('.client-row-checkbox:checked');
-        if (checkboxes.length === 0) {
-            alert('Please select at least one client to print.');
-            return;
-        }
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(generateClientsPrintHtml(rowsToPrint));
-        printWindow.document.close();
-    }
-
-    function printAllClients() {
-        const rows = document.querySelectorAll('.client-data-row');
-        if (rows.length === 0) {
-            alert('No clients to print.');
-            return;
-        }
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(generateClientsPrintHtml(Array.from(rows)));
-        printWindow.document.close();
-    }
-
-    // --- Designs Modal Logic ---
-    document.getElementById('modalDesignsSelectAll')?.addEventListener('change', function() {
-        document.querySelectorAll('.modal-design-checkbox').forEach(cb => cb.checked = this.checked);
+    document.getElementById('designsPerPage')?.addEventListener('change', function() {
+        designsPerPage = parseInt(this.value);
+        currentDesignsPage = 1;
+        renderDesignsPage();
     });
 
-    function showDesignsList(el, type) {
+    document.getElementById('designsPrevPage')?.addEventListener('click', function() {
+        if (currentDesignsPage > 1) {
+            currentDesignsPage--;
+            renderDesignsPage();
+        }
+    });
+
+    document.getElementById('designsNextPage')?.addEventListener('click', function() {
+        const totalPages = Math.ceil(currentDesigns.length / designsPerPage) || 1;
+        if (currentDesignsPage < totalPages) {
+            currentDesignsPage++;
+            renderDesignsPage();
+        }
+    });
+
+    function showDesignsList(el, type, categoryFilter = null) {
         const title = el.getAttribute('data-title');
         const bpcode = el.getAttribute('data-bpcode');
         
@@ -1106,39 +966,19 @@
         const body = document.getElementById('designsListModalBody');
         body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
         
-        new bootstrap.Modal(document.getElementById('designsListModal')).show();
+        designsModalInstance.show();
 
-        const fetchUrl = "{{ route('admin.details-all.accepted-designs', ':bpcode') }}".replace(':bpcode', bpcode);
+        const fetchUrl = "{{ route('admin.details-all.accepted-designs', ':bpcode') }}".replace(':bpcode', encodeURIComponent(bpcode));
         fetch(fetchUrl)
             .then(response => response.json())
             .then(data => {
-                const designs = data.designs || [];
-                body.innerHTML = '';
-                
-                if (designs.length === 0) {
-                    body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No designs found.</td></tr>';
-                } else {
-                    designs.forEach(design => {
-                        let html = `
-                            <tr class="modal-design-row">
-                                <td class="text-center" style="vertical-align: middle;">
-                                    <input class="form-check-input modal-design-checkbox" type="checkbox">
-                                </td>
-                                <td class="text-center">
-                                    <img src="${design.image}" alt="Design" style="height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd;" class="design-img-preview">
-                                </td>
-                                <td style="vertical-align: middle;">${design.design_code}</td>
-                                <td style="vertical-align: middle;">${design.design_name}</td>
-                                <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category}</span></td>
-                                <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
-                                <td style="vertical-align: middle;">
-                                    <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
-                                </td>
-                            </tr>
-                        `;
-                        body.innerHTML += html;
-                    });
+                let designs = data.designs || [];
+                if (categoryFilter) {
+                    designs = designs.filter(d => d.category === categoryFilter);
                 }
+                currentDesigns = designs;
+                currentDesignsPage = 1;
+                renderDesignsPage();
             })
             .catch(error => {
                 console.error('Error fetching designs:', error);
@@ -1156,82 +996,174 @@
         const title = document.getElementById('designsListModalTitle').innerText;
         const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
 
-        let theadHtml = `
-            <tr>
-                <th style="text-align: center; width: 150px;">Image</th>
-                <th>Design Code</th>
-                <th>Design Name</th>
-                <th>Category</th>
-                <th style="text-align: center;">Weight From (g)</th>
-                <th>Notes / Remarks</th>
-            </tr>
-        `;
-
         let tbodyHtml = '';
         rowsToPrint.forEach(row => {
-            const imgSrc = row.querySelector('.design-img-preview').src;
-            const code = row.cells[2].innerText;
-            const name = row.cells[3].innerText;
-            const category = row.cells[4].innerText;
-            const weight = row.cells[5].innerText;
-            const notes = row.querySelector('.design-notes').value;
+            const imgEl = row.querySelector('.design-img-preview');
+            const imgSrc = imgEl ? imgEl.src : '';
+            const code = row.cells[2]?.innerText || '';
+            const name = row.cells[3]?.innerText || '';
+            const category = row.cells[4]?.innerText || '';
+            const weight = row.cells[5]?.innerText || '';
+            const notes = row.querySelector('.design-notes')?.value || '';
 
             tbodyHtml += `
                 <tr>
-                    <td style="text-align: center; vertical-align: middle; padding: 10px;">
-                        <img src="${imgSrc}" style="max-height: 120px; max-width: 120px; object-fit: contain;">
+                    <td style="text-align: center; vertical-align: middle; padding: 8px;">
+                        ${imgSrc ? `<img src="${imgSrc}" style="max-height: 80px; max-width: 80px; object-fit: contain;">` : '-'}
                     </td>
                     <td style="vertical-align: middle; font-weight: bold;">${code}</td>
                     <td style="vertical-align: middle;">${name}</td>
                     <td style="vertical-align: middle;">${category}</td>
                     <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
                     <td style="vertical-align: middle;">${notes}</td>
-                </tr>
-            `;
+                </tr>`;
         });
 
-        // The admin view uses generatePrintHtml but it's specific to the main tables. 
-        // We can just open a print window directly for designs.
-        let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print - ${title}</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-                @media print {
-                    body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
-                    .table { width: 100%; border-collapse: collapse; }
-                    .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 13px; }
-                    .text-center { text-align: center; }
-                    img { max-height: 100px; max-width: 100px; object-fit: contain; }
-                }
-            </style>
-        </head>
-        <body>
-            <h4 class="text-center mb-4 fw-bold">${title} - Print View</h4>
-            <table class="table table-bordered">
-                <thead class="bg-light">
-                    ${theadHtml}
-                </thead>
-                <tbody>
-                    ${tbodyHtml}
-                </tbody>
-            </table>
-            <script>
-                window.onload = function() { 
-                    setTimeout(() => {
-                        window.print(); 
-                        window.close(); 
-                    }, 500); // Give images time to load
-                }
-            <\/script>
-        </body>
-        </html>`;
-
         const printWindow = window.open('', '_blank');
-        printWindow.document.write(html);
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print - ${title}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
+                        .table { width: 100%; border-collapse: collapse; }
+                        .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 12px; }
+                        .text-center { text-align: center; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h4 class="text-center mb-4 fw-bold">${title}</h4>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align: center; width: 100px;">Image</th>
+                            <th>Design Code</th>
+                            <th>Design Name</th>
+                            <th>Category</th>
+                            <th style="text-align: center;">Weight From (g)</th>
+                            <th>Notes / Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tbodyHtml}</tbody>
+                </table>
+                <script>
+                    window.onload = function() { 
+                        setTimeout(() => { window.print(); window.close(); }, 400); 
+                    }
+                <\/script>
+            </body>
+            </html>`);
         printWindow.document.close();
+    }
+
+    // Craftsmen and Clients Main Table Print logic
+    function generatePrintHtml(rowsToPrint, title, isClients = false) {
+        let rowsHtml = '';
+        rowsToPrint.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            rowsHtml += '<tr>';
+            for (let i = 1; i < cells.length; i++) {
+                rowsHtml += `<td class="${cells[i].className}">${cells[i].innerText.trim()}</td>`;
+            }
+            rowsHtml += '</tr>';
+        });
+
+        let headersHtml = isClients ? `
+            <tr class="table-light">
+                <th rowspan="2" class="align-middle">Business Partner</th>
+                <th rowspan="2" class="align-middle text-center">BP Code</th>
+                <th colspan="6" class="text-center">WORK ORDERS (WA)</th>
+                <th rowspan="2" class="align-middle text-center">Total Orders</th>
+            </tr>
+            <tr class="table-light">
+                <th class="text-center">NEW</th>
+                <th class="text-center">PROCESS</th>
+                <th class="text-center">FOR APPROVAL</th>
+                <th class="text-center text-danger">OVERDUE</th>
+                <th class="text-center text-danger">REJECTED</th>
+                <th class="text-center text-success">COMPLETED</th>
+            </tr>` : `
+            <tr>
+                <th rowspan="2" style="vertical-align: middle;">Craftsman Profile</th>
+                <th rowspan="2" class="text-center" style="vertical-align: middle;">Code</th>
+                <th colspan="3" class="text-center bg-primary text-white">WORK ORDERS (WO)</th>
+                <th colspan="3" class="text-center bg-info text-white">PURCHASE ORDERS (PO)</th>
+            </tr>
+            <tr class="table-light">
+                <th class="text-center">IN PROCESS</th>
+                <th class="text-center">FOR APPROVAL</th>
+                <th class="text-center text-danger">OVERDUE</th>
+                <th class="text-center">IN PROCESS</th>
+                <th class="text-center">FOR APPROVAL</th>
+                <th class="text-center text-danger">OVERDUE</th>
+            </tr>`;
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print - ${title}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
+                        .table { width: 100%; border-collapse: collapse; }
+                        .table th, .table td { border: 1px solid #dee2e6; padding: 6px 8px; font-size: 11px; }
+                        .bg-primary { background-color: #0d6efd !important; color: white !important; }
+                        .bg-info { background-color: #0dcaf0 !important; color: white !important; }
+                        .text-danger { color: #dc3545 !important; }
+                        .text-success { color: #198754 !important; }
+                        .text-center { text-align: center; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h4 class="text-center mb-3 fw-bold">${title}</h4>
+                <table class="table table-bordered">
+                    <thead>${headersHtml}</thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+                <script>window.onload = function() { window.print(); window.close(); }<\/script>
+            </body>
+            </html>`;
+    }
+
+    function printSelected() {
+        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+        if (checkboxes.length === 0) return alert('Please select at least one row to print.');
+        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+        const w = window.open('', '_blank');
+        w.document.write(generatePrintHtml(rowsToPrint, 'Craftsman Workflow Overview', false));
+        w.document.close();
+    }
+
+    function printAllFiltered() {
+        const rows = document.querySelectorAll('#detailsTable tbody tr.data-row');
+        if (rows.length === 0) return alert('No data to print.');
+        const w = window.open('', '_blank');
+        w.document.write(generatePrintHtml(Array.from(rows), 'Craftsman Workflow Overview', false));
+        w.document.close();
+    }
+
+    function printSelectedClients() {
+        const checkboxes = document.querySelectorAll('.client-row-checkbox:checked');
+        if (checkboxes.length === 0) return alert('Please select at least one client to print.');
+        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+        const w = window.open('', '_blank');
+        w.document.write(generatePrintHtml(rowsToPrint, 'Top Picks Clients Report (Work Orders)', true));
+        w.document.close();
+    }
+
+    function printAllClients() {
+        const rows = document.querySelectorAll('#clientsTable tbody tr.client-data-row');
+        if (rows.length === 0) return alert('No clients to print.');
+        const w = window.open('', '_blank');
+        w.document.write(generatePrintHtml(Array.from(rows), 'Top Picks Clients Report (Work Orders)', true));
+        w.document.close();
     }
 </script>
 @endsection

@@ -40,9 +40,7 @@
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="row g-3 mb-4">
+
         <!-- Craftsman Designs Card -->
         <div class="col-xl-3 col-lg-6 col-md-6">
             <div class="card shadow-sm border-0 h-100 bg-white" onclick="toggleCraftsmanDesignsTable()" style="cursor: pointer;">
@@ -480,7 +478,9 @@
                             <tr>
                                 <th>Craftsman</th>
                                 <th>Code</th>
-                                <th>Category Breakdown</th>
+                                @foreach($craftsmanAllCategories as $catName)
+                                    <th class="text-center">{{ $catName }}</th>
+                                @endforeach
                                 <th class="text-center">Total Accepted</th>
                                 <th>Last Accepted</th>
                             </tr>
@@ -490,22 +490,45 @@
                             <tr>
                                 <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
                                 <td><span class="badge bg-secondary">{{ $code }}</span></td>
-                                <td>
-                                    @foreach($stat['categories'] as $cat => $count)
-                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-success">{{ $count }}</strong></span>
-                                    @endforeach
-                                </td>
+                                @foreach($craftsmanAllCategories as $catName)
+                                    <td class="text-center">
+                                        @if(isset($stat['categories'][$catName]) && $stat['categories'][$catName] > 0)
+                                            <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman', '{{ $catName }}')" data-title="Accepted Designs - {{ $stat['name'] }} ({{ $catName }})" data-bpcode="{{ $code }}">
+                                                {{ $stat['categories'][$catName] }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                @endforeach
                                 <td class="text-center">
-                                    <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                    <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman', 'All')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
                                         {{ $stat['total_accepted'] }}
                                     </span>
                                 </td>
                                 <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            <tr><td colspan="{{ 4 + count($craftsmanAllCategories) }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
                             @endforelse
                         </tbody>
+                        @if(count($craftsmanDesignStats) > 0)
+                        <tfoot class="bg-light fw-bold border-top border-2">
+                            <tr>
+                                <td colspan="2" class="text-end">Total:</td>
+                                @foreach($craftsmanAllCategories as $catName)
+                                    @php
+                                        $catTotal = collect($craftsmanDesignStats)->sum(function($stat) use ($catName) {
+                                            return $stat['categories'][$catName] ?? 0;
+                                        });
+                                    @endphp
+                                    <td class="text-center text-success">{{ $catTotal }}</td>
+                                @endforeach
+                                <td class="text-center text-primary fs-5">{{ collect($craftsmanDesignStats)->sum('total_accepted') }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
@@ -516,46 +539,138 @@
          COLLAPSIBLE BUYER DESIGNS CONTAINER
     =========================================== -->
     <div id="buyerDesignsTableContainer" style="display: none;">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-image me-2"></i>Buyer Accepted Designs</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Buyer</th>
-                                <th>Code</th>
-                                <th>Category Breakdown</th>
-                                <th class="text-center">Total Accepted</th>
-                                <th>Last Accepted</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($buyerDesignStats as $code => $stat)
-                            <tr>
-                                <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
-                                <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
-                                <td>
-                                    @foreach($stat['categories'] as $cat => $count)
-                                        <span class="badge bg-light text-dark border me-1">{{ $cat }}: <strong class="text-danger">{{ $count }}</strong></span>
-                                    @endforeach
-                                </td>
-                                <td class="text-center">
-                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
-                                        {{ $stat['total_accepted'] }}
-                                    </span>
-                                </td>
-                                <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="5" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+        
+        <!-- Tab Navigation for Buyer Designs -->
+        <ul class="nav nav-pills mb-3" id="buyerDesignsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="buyer-summary-tab" data-bs-toggle="pill" data-bs-target="#buyer-summary" type="button" role="tab">
+                    <i class="bi bi-person-lines-fill me-1"></i> Buyer Wise Designs
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="category-summary-tab" data-bs-toggle="pill" data-bs-target="#category-summary" type="button" role="tab">
+                    <i class="bi bi-grid-3x3-gap-fill me-1"></i> Category Wise Buyers
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="buyerDesignsTabContent">
+            
+            <!-- 1. Buyer Wise View -->
+            <div class="tab-pane fade show active" id="buyer-summary" role="tabpanel">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-image me-2"></i>Buyer Accepted Designs Breakdown</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Buyer</th>
+                                        <th>Code</th>
+                                        @foreach($buyerAllCategories as $catName)
+                                            <th class="text-center">{{ $catName }}</th>
+                                        @endforeach
+                                        <th class="text-center">Total Accepted</th>
+                                        <th>Last Accepted</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($buyerDesignStats as $code => $stat)
+                                    <tr>
+                                        <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
+                                        <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
+                                        @foreach($buyerAllCategories as $catName)
+                                            <td class="text-center">
+                                                @if(isset($stat['categories'][$catName]) && $stat['categories'][$catName] > 0)
+                                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer', '{{ $catName }}')" data-title="Accepted Designs - {{ $stat['name'] }} ({{ $catName }})" data-bpcode="{{ $code }}">
+                                                        {{ $stat['categories'][$catName] }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                        <td class="text-center">
+                                            <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer', 'All')" data-title="Accepted Designs - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                                {{ $stat['total_accepted'] }}
+                                            </span>
+                                        </td>
+                                        <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] }}</span></td>
+                                    </tr>
+                                    @empty
+                                    <tr><td colspan="{{ 4 + count($buyerAllCategories) }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                                    @endforelse
+                                </tbody>
+                                @if(count($buyerDesignStats) > 0)
+                                <tfoot class="bg-light fw-bold border-top border-2">
+                                    <tr>
+                                        <td colspan="2" class="text-end">Total:</td>
+                                        @foreach($buyerAllCategories as $catName)
+                                            @php
+                                                $catTotal = collect($buyerDesignStats)->sum(function($stat) use ($catName) {
+                                                    return $stat['categories'][$catName] ?? 0;
+                                                });
+                                            @endphp
+                                            <td class="text-center text-danger">{{ $catTotal }}</td>
+                                        @endforeach
+                                        <td class="text-center text-danger fs-5">{{ collect($buyerDesignStats)->sum('total_accepted') }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                                @endif
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- 2. Category Wise View -->
+            <div class="tab-pane fade" id="category-summary" role="tabpanel">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-tags-fill me-2"></i>Category Breakdown (Buyers & Design Counts)</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Category Name</th>
+                                        <th class="text-center">Total Buyers</th>
+                                        <th class="text-center">Total Category Designs</th>
+                                        <th>Buyer Breakdown (Count)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($categoryBuyerStats as $catName => $cData)
+                                    <tr>
+                                        <td><div class="fw-bold text-dark">{{ $catName }}</div></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary fs-6">{{ count($cData['buyers']) }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info text-dark fs-6">{{ $cData['total_designs'] }}</span>
+                                        </td>
+                                        <td>
+                                            @foreach($cData['buyers'] as $bCode => $bData)
+                                                <span class="badge bg-light text-dark border me-1 mb-1 p-2" style="cursor: pointer;" onclick="showDesignsList(this, 'Buyer', '{{ $catName }}')" data-title="Accepted Designs - {{ $bData['name'] }} ({{ $catName }})" data-bpcode="{{ $bCode }}">
+                                                    {{ $bData['name'] }} ({{ $bCode }}): <strong class="text-danger">{{ $bData['count'] }}</strong>
+                                                </span>
+                                            @endforeach
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">No category breakdown found.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -739,7 +854,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="d-flex justify-content-end mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <select id="ordersPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="150">150</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                        <span class="small text-muted me-3">per page</span>
+                        
+                        <button class="btn btn-outline-secondary btn-sm" id="ordersPrevPage">Prev</button>
+                        <span class="mx-2 small fw-bold" id="ordersPageInfo">Page 1 of 1</span>
+                        <button class="btn btn-outline-secondary btn-sm" id="ordersNextPage">Next</button>
+                    </div>
                     <button class="btn btn-primary btn-sm" onclick="openOrderFieldsModal()">
                         <i class="bi bi-printer-fill"></i> Print Selected Orders
                     </button>
@@ -845,6 +974,8 @@
             </div>
         </div>
     </div>
+</div>
+
 <!-- Designs List Modal -->
 <div class="modal fade" id="designsListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -854,7 +985,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="d-flex justify-content-end mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <select id="designsPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="150">150</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                        <span class="small text-muted me-3">per page</span>
+                        
+                        <button class="btn btn-outline-secondary btn-sm" id="designsPrevPage">Prev</button>
+                        <span class="mx-2 small fw-bold" id="designsPageInfo">Page 1 of 1</span>
+                        <button class="btn btn-outline-secondary btn-sm" id="designsNextPage">Next</button>
+                    </div>
                     <button class="btn btn-primary btn-sm" onclick="printSelectedDesigns()">
                         <i class="bi bi-printer-fill"></i> Print Selected Designs
                     </button>
@@ -871,7 +1016,6 @@
                                 <th>Design Name</th>
                                 <th>Category</th>
                                 <th class="text-center">Weight From (g)</th>
-                                <th>Notes / Remarks</th>
                             </tr>
                         </thead>
                         <tbody id="designsListModalBody"></tbody>
@@ -883,11 +1027,30 @@
 </div>
 
 <script>
+    function hideAllOtherTables(activeContainerId) {
+        const tables = [
+            { container: 'detailsTableContainer', icon: 'toggleIcon' },
+            { container: 'clientsTableContainer', icon: 'toggleClientsIcon' },
+            { container: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
+            { container: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' }
+        ];
+
+        tables.forEach(t => {
+            if (t.container !== activeContainerId) {
+                const el = document.getElementById(t.container);
+                const ic = document.getElementById(t.icon);
+                if (el) el.style.display = 'none';
+                if (ic) ic.classList.replace('bi-chevron-up', 'bi-chevron-down');
+            }
+        });
+    }
+
     // --- Craftsman Collapse Toggle ---
     function toggleDetailsTable() {
+        hideAllOtherTables('detailsTableContainer');
         const container = document.getElementById('detailsTableContainer');
         const icon = document.getElementById('toggleIcon');
-        if (container.style.display === 'none') {
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
             icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
         } else {
@@ -898,9 +1061,10 @@
 
     // --- Clients Collapse Toggle ---
     function toggleClientsTable() {
+        hideAllOtherTables('clientsTableContainer');
         const container = document.getElementById('clientsTableContainer');
         const icon = document.getElementById('toggleClientsIcon');
-        if (container.style.display === 'none') {
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
             icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
         } else {
@@ -911,9 +1075,10 @@
 
     // --- Craftsman Designs Collapse Toggle ---
     function toggleCraftsmanDesignsTable() {
+        hideAllOtherTables('craftsmanDesignsTableContainer');
         const container = document.getElementById('craftsmanDesignsTableContainer');
         const icon = document.getElementById('toggleCraftsmanDesignsIcon');
-        if (container.style.display === 'none') {
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
             icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
         } else {
@@ -924,9 +1089,10 @@
 
     // --- Buyer Designs Collapse Toggle ---
     function toggleBuyerDesignsTable() {
+        hideAllOtherTables('buyerDesignsTableContainer');
         const container = document.getElementById('buyerDesignsTableContainer');
         const icon = document.getElementById('toggleBuyerDesignsIcon');
-        if (container.style.display === 'none') {
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
             icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
         } else {
@@ -935,21 +1101,194 @@
         }
     }
 
+    // --- Fetch & Render Accepted Designs ---
+    let currentDesigns = [];
+    let currentDesignsPage = 1;
+    let designsPerPage = 50;
+
+    function renderDesignsPage() {
+        const body = document.getElementById('designsListModalBody');
+        body.innerHTML = '';
+        
+        const totalPages = Math.ceil(currentDesigns.length / designsPerPage) || 1;
+        document.getElementById('designsPageInfo').innerText = `Page ${currentDesignsPage} of ${totalPages}`;
+        document.getElementById('designsPrevPage').disabled = (currentDesignsPage === 1);
+        document.getElementById('designsNextPage').disabled = (currentDesignsPage === totalPages);
+
+        if (currentDesigns.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No designs found.</td></tr>';
+            return;
+        }
+
+        const startIndex = (currentDesignsPage - 1) * designsPerPage;
+        const endIndex = startIndex + designsPerPage;
+        const pageItems = currentDesigns.slice(startIndex, endIndex);
+
+        pageItems.forEach(item => {
+            let row = `
+                <tr class="modal-design-row">
+                    <td class="text-center">
+                        <input class="form-check-input modal-design-checkbox" type="checkbox">
+                    </td>
+                    <td class="text-center">
+                        <img src="${item.image}" alt="Design" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    </td>
+                    <td class="fw-semibold text-dark">${item.design_code || '-'}</td>
+                    <td>${item.design_name || '-'}</td>
+                    <td><span class="badge bg-light text-dark border">${item.category || '-'}</span></td>
+                    <td class="text-center fw-medium">${item.weight ? parseFloat(item.weight).toFixed(2) : '0.00'}</td>
+                </tr>`;
+            body.insertAdjacentHTML('beforeend', row);
+        });
+        
+        const selectAllCheckbox = document.getElementById('modalDesignsSelectAll');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    }
+
+    document.getElementById('designsPerPage')?.addEventListener('change', function() {
+        designsPerPage = parseInt(this.value);
+        currentDesignsPage = 1;
+        renderDesignsPage();
+    });
+
+    document.getElementById('designsPrevPage')?.addEventListener('click', function() {
+        if (currentDesignsPage > 1) {
+            currentDesignsPage--;
+            renderDesignsPage();
+        }
+    });
+
+    document.getElementById('designsNextPage')?.addEventListener('click', function() {
+        const totalPages = Math.ceil(currentDesigns.length / designsPerPage) || 1;
+        if (currentDesignsPage < totalPages) {
+            currentDesignsPage++;
+            renderDesignsPage();
+        }
+    });
+
+    function showDesignsList(el, type, categoryFilter = 'All') {
+        const title = el.getAttribute('data-title');
+        const bpCode = el.getAttribute('data-bpcode');
+        
+        document.getElementById('designsListModalTitle').innerText = title;
+        const body = document.getElementById('designsListModalBody');
+        body.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+        
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('designsListModal')).show();
+
+        fetch(`/super-admin/details-all/accepted-designs/${bpCode}`)
+            .then(res => res.json())
+            .then(data => {
+                let filteredDesigns = data.designs || [];
+                if (categoryFilter !== 'All') {
+                    filteredDesigns = filteredDesigns.filter(d => (d.category || 'Uncategorized') === categoryFilter);
+                }
+
+                currentDesigns = filteredDesigns;
+                currentDesignsPage = 1;
+                renderDesignsPage();
+            })
+            .catch(err => {
+                body.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load designs.</td></tr>';
+            });
+    }
+
     // --- Checkbox Handlers ---
-    document.getElementById('selectAll').addEventListener('change', function() {
+    document.getElementById('selectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
-    document.getElementById('selectAllClients').addEventListener('change', function() {
+    document.getElementById('selectAllClients')?.addEventListener('change', function() {
         document.querySelectorAll('.client-row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
-    document.getElementById('modalSelectAll').addEventListener('change', function() {
+    document.getElementById('modalSelectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.modal-row-checkbox').forEach(cb => cb.checked = this.checked);
     });
 
     document.getElementById('modalDesignsSelectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.modal-design-checkbox').forEach(cb => cb.checked = this.checked);
+    });
+
+    let currentOrders = [];
+    let currentOrdersPage = 1;
+    let ordersPerPage = 50;
+
+    function renderOrdersPage() {
+        const body = document.getElementById('ordersListModalBody');
+        body.innerHTML = '';
+        
+        const totalPages = Math.ceil(currentOrders.length / ordersPerPage) || 1;
+        document.getElementById('ordersPageInfo').innerText = `Page ${currentOrdersPage} of ${totalPages}`;
+        document.getElementById('ordersPrevPage').disabled = (currentOrdersPage === 1);
+        document.getElementById('ordersNextPage').disabled = (currentOrdersPage === totalPages);
+
+        if (currentOrders.length === 0) {
+            body.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No orders found.</td></tr>';
+            return;
+        }
+
+        const startIndex = (currentOrdersPage - 1) * ordersPerPage;
+        const endIndex = startIndex + ordersPerPage;
+        const pageItems = currentOrders.slice(startIndex, endIndex);
+
+        const isOverdue = document.getElementById('ordersListModalTitle').innerText.toLowerCase().includes('overdue');
+
+        pageItems.forEach(order => {
+            let html = `
+                <tr class="modal-data-row">
+                    <td class="text-center">
+                        <input class="form-check-input modal-row-checkbox" type="checkbox">
+                    </td>
+                    <td class="fw-semibold text-dark">${order.number || '-'}</td>`;
+                    
+            if (currentOrderType !== 'po') {
+                html += `
+                    <td class="bp-col"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                    <td class="business-col">${order.business_name || '-'}</td>
+                    <td class="craftsman-col"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                    <td class="craftsman-col text-muted">${order.craftsman_name || '-'}</td>`;
+            } else {
+                html += `
+                    <td class="bp-col" style="display:none;"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                    <td class="business-col" style="display:none;">${order.business_name || '-'}</td>
+                    <td class="craftsman-col" style="display:none;"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                    <td class="craftsman-col text-muted" style="display:none;">${order.craftsman_name || '-'}</td>`;
+            }
+
+            html += `
+                    <td class="text-center">${order.qty ?? '-'}</td>
+                    <td class="text-center fw-medium">${order.weight !== undefined ? parseFloat(order.weight).toFixed(2) : '0.00'}</td>
+                    <td class="text-center">${order.due_date || '-'}</td>
+                    <td class="text-center overdue-col text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
+                </tr>`;
+            
+            body.insertAdjacentHTML('beforeend', html);
+        });
+        
+        const selectAllCheckbox = document.getElementById('modalSelectAll');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    }
+
+    document.getElementById('ordersPerPage')?.addEventListener('change', function() {
+        ordersPerPage = parseInt(this.value);
+        currentOrdersPage = 1;
+        renderOrdersPage();
+    });
+
+    document.getElementById('ordersPrevPage')?.addEventListener('click', function() {
+        if (currentOrdersPage > 1) {
+            currentOrdersPage--;
+            renderOrdersPage();
+        }
+    });
+
+    document.getElementById('ordersNextPage')?.addEventListener('click', function() {
+        const totalPages = Math.ceil(currentOrders.length / ordersPerPage) || 1;
+        if (currentOrdersPage < totalPages) {
+            currentOrdersPage++;
+            renderOrdersPage();
+        }
     });
 
     // --- Dynamic Order Popup Modal ---
@@ -961,8 +1300,6 @@
         const orders = JSON.parse(el.getAttribute('data-orders') || '[]');
         
         document.getElementById('ordersListModalTitle').innerText = title;
-        const body = document.getElementById('ordersListModalBody');
-        body.innerHTML = '';
         
         const bpCols = document.querySelectorAll('.bp-col');
         const businessCols = document.querySelectorAll('.business-col');
@@ -982,43 +1319,11 @@
         const overdueCols = document.querySelectorAll('.overdue-col');
         overdueCols.forEach(col => col.style.display = isOverdue ? '' : 'none');
 
-        if (orders.length === 0) {
-            body.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No orders found.</td></tr>';
-        } else {
-            orders.forEach(order => {
-                let html = `
-                    <tr class="modal-data-row">
-                        <td class="text-center">
-                            <input class="form-check-input modal-row-checkbox" type="checkbox">
-                        </td>
-                        <td class="fw-semibold text-dark">${order.number || '-'}</td>`;
-                        
-                if (type !== 'po') {
-                    html += `
-                        <td class="bp-col"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
-                        <td class="business-col">${order.business_name || '-'}</td>
-                        <td class="craftsman-col"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
-                        <td class="craftsman-col text-muted">${order.craftsman_name || '-'}</td>`;
-                } else {
-                    html += `
-                        <td class="bp-col" style="display:none;"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
-                        <td class="business-col" style="display:none;">${order.business_name || '-'}</td>
-                        <td class="craftsman-col" style="display:none;"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
-                        <td class="craftsman-col text-muted" style="display:none;">${order.craftsman_name || '-'}</td>`;
-                }
-
-                html += `
-                        <td class="text-center">${order.qty ?? '-'}</td>
-                        <td class="text-center fw-medium">${order.weight !== undefined ? parseFloat(order.weight).toFixed(2) : '0.00'}</td>
-                        <td class="text-center">${order.due_date || '-'}</td>
-                        <td class="text-center overdue-col text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
-                    </tr>`;
-                
-                body.insertAdjacentHTML('beforeend', html);
-            });
-        }
+        currentOrders = orders;
+        currentOrdersPage = 1;
+        renderOrdersPage();
         
-        new bootstrap.Modal(document.getElementById('ordersListModal')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('ordersListModal')).show();
     }
 
     // --- Helper function for cleaner print windows ---
@@ -1076,7 +1381,7 @@
                 return;
             }
         }
-        new bootstrap.Modal(document.getElementById('printFieldsModal')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('printFieldsModal')).show();
     }
 
     function executeCustomPrint() {
@@ -1124,17 +1429,15 @@
             tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                const text = cell ? cell.innerText.trim() : '-';
-                tbodyHtml += `<td class="${cell ? cell.className : ''}">${text}</td>`;
+                tbodyHtml += `<td class="text-center">${cell ? cell.innerText.trim() : '-'}</td>`;
             });
             tbodyHtml += '</tr>';
         });
 
-        bootstrap.Modal.getInstance(document.getElementById('printFieldsModal')).hide();
-        openReportPrintWindow('Craftsman Details Report', theadHtml, tbodyHtml);
+        openReportPrintWindow('Craftsman Summary Report', theadHtml, tbodyHtml);
     }
 
-    // --- Clients Table Print ---
+    // --- Client Table Print ---
     let clientPrintMode = 'all';
 
     function openClientPrintModal(mode) {
@@ -1146,11 +1449,11 @@
                 return;
             }
         }
-        new bootstrap.Modal(document.getElementById('printClientFieldsModal')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('printClientFieldsModal')).show();
     }
 
     function executeClientCustomPrint() {
-        const clientColumnMap = {
+        const columnMap = {
             1: 'Business Partner',
             2: 'BP Code',
             3: 'New (C | W)',
@@ -1176,13 +1479,13 @@
         }
 
         if (rowsToPrint.length === 0) {
-            alert('No clients available to print.');
+            alert('No client data available to print.');
             return;
         }
 
         let theadHtml = '<tr>';
         activeIndices.forEach(idx => {
-            theadHtml += `<th class="text-center">${clientColumnMap[idx]}</th>`;
+            theadHtml += `<th class="text-center">${columnMap[idx]}</th>`;
         });
         theadHtml += '</tr>';
 
@@ -1192,49 +1495,36 @@
             tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                const text = cell ? cell.innerText.trim() : '-';
-                tbodyHtml += `<td class="${cell ? cell.className : ''}">${text}</td>`;
+                tbodyHtml += `<td class="text-center">${cell ? cell.innerText.trim() : '-'}</td>`;
             });
             tbodyHtml += '</tr>';
         });
 
-        bootstrap.Modal.getInstance(document.getElementById('printClientFieldsModal')).hide();
-        openReportPrintWindow('Top Picks Clients Report (Work Orders)', theadHtml, tbodyHtml);
+        openReportPrintWindow('Client Breakdown (WA) Report', theadHtml, tbodyHtml);
     }
 
-    // --- Order Detail Pop-Up Print ---
+    // --- Orders Breakdown Modal Print ---
     function openOrderFieldsModal() {
-        const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
-        if (checkboxes.length === 0) {
+        const checked = document.querySelectorAll('.modal-row-checkbox:checked');
+        if (checked.length === 0) {
             alert('Please select at least one order to print.');
             return;
         }
 
-        const title = document.getElementById('ordersListModalTitle').innerText;
-        const isOverdue = title.toLowerCase().includes('overdue');
-        const isPO = currentOrderType === 'po';
+        const isPo = (currentOrderType === 'po');
+        const isOverdue = document.getElementById('ordersListModalTitle').innerText.toLowerCase().includes('overdue');
 
-        document.getElementById('fieldBpCodeContainer').style.display = isPO ? 'none' : 'block';
-        document.getElementById('fieldBusinessContainer').style.display = isPO ? 'none' : 'block';
-        document.getElementById('fieldCraftsmanCodeContainer').style.display = isPO ? 'none' : 'block';
-        document.getElementById('fieldCraftsmanNameContainer').style.display = isPO ? 'none' : 'block';
+        document.getElementById('fieldBpCodeContainer').style.display = isPo ? 'none' : 'block';
+        document.getElementById('fieldBusinessContainer').style.display = isPo ? 'none' : 'block';
+        document.getElementById('fieldCraftsmanCodeContainer').style.display = isPo ? 'none' : 'block';
+        document.getElementById('fieldCraftsmanNameContainer').style.display = isPo ? 'none' : 'block';
         document.getElementById('fieldOverdueContainer').style.display = isOverdue ? 'block' : 'none';
 
-        if (isPO) {
-            document.getElementById('ordColBpCode').checked = false;
-            document.getElementById('ordColBusiness').checked = false;
-            document.getElementById('ordColCraftsmanCode').checked = false;
-            document.getElementById('ordColCraftsmanName').checked = false;
-        }
-
-        new bootstrap.Modal(document.getElementById('orderPrintFieldsModal')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('orderPrintFieldsModal')).show();
     }
 
     function executeModalCustomPrint() {
-        const isPO = currentOrderType === 'po';
-        
-        // Exact 1-to-1 matching with td indices in #modalOrdersTable
-        const orderColumnMap = {
+        const columnMap = {
             1: 'Order Number',
             2: 'BP Code',
             3: 'Business Name',
@@ -1248,21 +1538,20 @@
 
         const activeIndices = [];
         document.querySelectorAll('.order-col-check:checked').forEach(cb => {
-            const val = parseInt(cb.value);
-            // Skip PO columns if PO mode is active
-            if (isPO && [2, 3, 4, 5].includes(val)) {
-                return;
-            }
-            activeIndices.push(val);
+            activeIndices.push(parseInt(cb.value));
         });
 
-        const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-        const title = document.getElementById('ordersListModalTitle').innerText;
+        const selectedCheckboxes = document.querySelectorAll('.modal-row-checkbox:checked');
+        const rowsToPrint = Array.from(selectedCheckboxes).map(cb => cb.closest('tr'));
+
+        if (rowsToPrint.length === 0) {
+            alert('No orders selected.');
+            return;
+        }
 
         let theadHtml = '<tr>';
         activeIndices.forEach(idx => {
-            theadHtml += `<th class="text-center">${orderColumnMap[idx]}</th>`;
+            theadHtml += `<th class="text-center">${columnMap[idx]}</th>`;
         });
         theadHtml += '</tr>';
 
@@ -1272,110 +1561,52 @@
             tbodyHtml += '<tr>';
             activeIndices.forEach(idx => {
                 const cell = cells[idx];
-                const text = cell ? cell.innerText.trim() : '-';
-                tbodyHtml += `<td class="${cell ? cell.className.replace('bp-col', '').replace('business-col', '').replace('craftsman-col', '') : ''}">${text}</td>`;
+                tbodyHtml += `<td class="text-center">${cell ? cell.innerText.trim() : '-'}</td>`;
             });
             tbodyHtml += '</tr>';
         });
 
-        bootstrap.Modal.getInstance(document.getElementById('orderPrintFieldsModal')).hide();
+        const title = document.getElementById('ordersListModalTitle').innerText;
         openReportPrintWindow(title, theadHtml, tbodyHtml);
     }
 
-    // --- Designs Modal Logic ---
-    function showDesignsList(el, type) {
-        const title = el.getAttribute('data-title');
-        const bpcode = el.getAttribute('data-bpcode');
-        
-        document.getElementById('designsListModalTitle').innerText = title;
-        const body = document.getElementById('designsListModalBody');
-        body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
-        
-        new bootstrap.Modal(document.getElementById('designsListModal')).show();
-
-        const fetchUrl = "{{ route('super-admin.details-all.accepted-designs', ':bpcode') }}".replace(':bpcode', bpcode);
-        fetch(fetchUrl)
-            .then(response => response.json())
-            .then(data => {
-                const designs = data.designs || [];
-                body.innerHTML = '';
-                
-                if (designs.length === 0) {
-                    body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No designs found.</td></tr>';
-                } else {
-                    designs.forEach(design => {
-                        let html = `
-                            <tr class="modal-design-row">
-                                <td class="text-center" style="vertical-align: middle;">
-                                    <input class="form-check-input modal-design-checkbox" type="checkbox">
-                                </td>
-                                <td class="text-center">
-                                    <img src="${design.image}" alt="Design" style="height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd;" class="design-img-preview">
-                                </td>
-                                <td style="vertical-align: middle;">${design.design_code}</td>
-                                <td style="vertical-align: middle;">${design.design_name}</td>
-                                <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category}</span></td>
-                                <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
-                                <td style="vertical-align: middle;">
-                                    <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
-                                </td>
-                            </tr>
-                        `;
-                        body.innerHTML += html;
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching designs:', error);
-                body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load designs. Please try again.</td></tr>';
-            });
-    }
-
+    // --- Designs List Modal Print ---
     function printSelectedDesigns() {
-        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
-        if (checkboxes.length === 0) {
+        const selectedCheckboxes = document.querySelectorAll('.modal-design-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
             alert('Please select at least one design to print.');
             return;
         }
 
+        const rowsToPrint = Array.from(selectedCheckboxes).map(cb => cb.closest('tr'));
         const title = document.getElementById('designsListModalTitle').innerText;
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
 
         let theadHtml = `
             <tr>
-                <th style="text-align: center; width: 150px;">Image</th>
-                <th>Design Code</th>
+                <th class="text-center">Image</th>
+                <th class="text-center">Design Code</th>
                 <th>Design Name</th>
-                <th>Category</th>
-                <th style="text-align: center;">Weight From (g)</th>
-                <th>Notes / Remarks</th>
-            </tr>
-        `;
+                <th class="text-center">Category</th>
+                <th class="text-center">Weight From (g)</th>
+            </tr>`;
 
         let tbodyHtml = '';
         rowsToPrint.forEach(row => {
-            const imgSrc = row.querySelector('.design-img-preview').src;
-            const code = row.cells[2].innerText;
-            const name = row.cells[3].innerText;
-            const category = row.cells[4].innerText;
-            const weight = row.cells[5].innerText;
-            const notes = row.querySelector('.design-notes').value;
+            const cells = row.querySelectorAll('td');
+            const img = cells[1].querySelector('img');
+            const imgSrc = img ? img.src : '';
 
             tbodyHtml += `
                 <tr>
-                    <td style="text-align: center; vertical-align: middle; padding: 10px;">
-                        <img src="${imgSrc}" style="max-height: 120px; max-width: 120px; object-fit: contain;">
-                    </td>
-                    <td style="vertical-align: middle; font-weight: bold;">${code}</td>
-                    <td style="vertical-align: middle;">${name}</td>
-                    <td style="vertical-align: middle;">${category}</td>
-                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
-                    <td style="vertical-align: middle;">${notes}</td>
-                </tr>
-            `;
+                    <td class="text-center"><img src="${imgSrc}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;"></td>
+                    <td class="text-center">${cells[2].innerText.trim()}</td>
+                    <td>${cells[3].innerText.trim()}</td>
+                    <td class="text-center">${cells[4].innerText.trim()}</td>
+                    <td class="text-center">${cells[5].innerText.trim()}</td>
+                </tr>`;
         });
 
-        openReportPrintWindow(title + ' - Print View', theadHtml, tbodyHtml);
+        openReportPrintWindow(title, theadHtml, tbodyHtml);
     }
 </script>
 @endsection

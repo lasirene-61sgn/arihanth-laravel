@@ -16,8 +16,11 @@ class DesignController extends Controller
 {
     public function index(Request $request)
     {
+        $buyer = Auth::guard('buyer')->user();
+
         // 1. Start Query with standard filters
         $query = Product::with(['category', 'subcategory'])
+            ->where('bp_code', $buyer->bp_code)
             ->whereNotNull('design_code')
             ->where('design_status', 'Accepted')
             ->whereNotNull('type')

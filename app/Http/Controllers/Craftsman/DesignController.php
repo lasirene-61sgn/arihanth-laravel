@@ -20,7 +20,10 @@ class DesignController extends Controller
 
     public function index(Request $request)
 {
+    $craftsman = Auth::guard('craftsman')->user();
+
     $query = Product::with(['category', 'subcategory'])
+        ->where('bp_code', $craftsman->craftman_code)
         ->whereNotNull('design_code')
         ->where('design_status', 'Accepted')
         ->whereNotNull('type'); // Filter out bulk uploaded work orders (which have null type)

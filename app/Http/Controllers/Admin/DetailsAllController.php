@@ -282,6 +282,7 @@ class DetailsAllController extends Controller
         $acceptedProducts = \App\Models\Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
 
         $craftsmanDesignStats = [];
+        $craftsmanAllCategories = [];
         foreach ($craftsmen as $c) {
             $code = $c->craftman_code;
             $name = $c->name ?? $c->business_name;
@@ -294,6 +295,9 @@ class DetailsAllController extends Controller
                     $catName = $p->category ? $p->category->name : 'Uncategorized';
                     if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
                     $catCounts[$catName]++;
+                    if (!in_array($catName, $craftsmanAllCategories)) {
+                        $craftsmanAllCategories[] = $catName;
+                    }
                     if (!$lastAccepted || $p->updated_at > $lastAccepted) {
                         $lastAccepted = $p->updated_at;
                     }
@@ -307,8 +311,10 @@ class DetailsAllController extends Controller
                 ];
             }
         }
+        sort($craftsmanAllCategories);
 
         $buyerDesignStats = [];
+        $buyerAllCategories = [];
         $allBuyers = \App\Models\Buyer::all();
         foreach ($allBuyers as $b) {
             $code = $b->bp_code;
@@ -322,6 +328,9 @@ class DetailsAllController extends Controller
                     $catName = $p->category ? $p->category->name : 'Uncategorized';
                     if (!isset($catCounts[$catName])) $catCounts[$catName] = 0;
                     $catCounts[$catName]++;
+                    if (!in_array($catName, $buyerAllCategories)) {
+                        $buyerAllCategories[] = $catName;
+                    }
                     if (!$lastAccepted || $p->updated_at > $lastAccepted) {
                         $lastAccepted = $p->updated_at;
                     }
@@ -335,8 +344,9 @@ class DetailsAllController extends Controller
                 ];
             }
         }
+        sort($buyerAllCategories);
 
-        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'buyerDesignStats'));
+        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'craftsmanAllCategories', 'buyerDesignStats', 'buyerAllCategories'));
     }
 
     public function getAcceptedDesigns($bp_code)
@@ -346,17 +356,42 @@ class DetailsAllController extends Controller
             ->where('bp_code', $bp_code)
             ->get();
 
+        $userType = null;
+        $userId = null;
+        
+        $buyer = \App\Models\Buyer::where('bp_code', $bp_code)->first();
+        if ($buyer) {
+            $userType = 'buyer';
+            $userId = $buyer->id;
+        } else {
+            $craftsman = \App\Models\Craftman::where('craftman_code', $bp_code)->first();
+            if ($craftsman) {
+                $userType = 'craftsman';
+                $userId = $craftsman->id;
+            }
+        }
+
+        $favorites = collect();
+        if ($userId && $userType) {
+            $favorites = \App\Models\Favorite::where('user_id', $userId)
+                ->where('user_type', $userType)
+                ->pluck('design_name', 'product_id');
+        }
+
         $designs = [];
         foreach ($products as $p) {
             $catName = $p->category ? $p->category->name : 'Uncategorized';
             $imageUrl = $p->images && $p->images->first() ? $p->images->first()->image_url : asset('images/ajlogo.png');
+
+            $favDesignName = $favorites->has($p->id) ? $favorites[$p->id] : null;
+            $designName = $favDesignName ?: ($p->product_name ?? 'N/A');
 
             $designs[] = [
                 'id' => $p->id,
                 'image' => $imageUrl,
                 'weight' => $p->weight_from,
                 'design_code' => $p->design_code ?? $p->product_code,
-                'design_name' => $p->product_name ?? 'N/A',
+                'design_name' => $designName,
                 'category' => $catName,
             ];
         }
