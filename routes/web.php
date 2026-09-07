@@ -118,27 +118,22 @@ Route::get('/account-frozen', function () {
 })->name('account-frozen');
 
 // --- BUYER PANEL ---
-// Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {
-//     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-//     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-//     Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-
-//     // ADD THIS LINE
-//     Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-//     Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-// });
+Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {
+    Route::get('/chat', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/search', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'searchUsers'])->name('chat.search');
+    Route::get('/chat/{conversation}', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/send', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'store'])->name('chat.send');
+    Route::get('/chat/start/{receiverId}/{type?}', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'startChat'])->name('chat.start');
+});
 
 // --- CRAFTSMAN PANEL ---
-// Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {
-//     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-//     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-//     Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-
-
-//     // ADD THIS LINE
-//     Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
-//     Route::get('/chat/search', [ChatController::class, 'searchUsers'])->name('chat.search');
-// });
+Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {
+    Route::get('/chat', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/search', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'searchUsers'])->name('chat.search');
+    Route::get('/chat/{conversation}', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/send', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'store'])->name('chat.send');
+    Route::get('/chat/start/{receiverId}/{type?}', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'startChat'])->name('chat.start');
+});
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -1174,11 +1169,11 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         });
 
         // Chat Routes for Craftsmen
-        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
-        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
-        Route::get('/chat/start/{receiver_id}/{type?}', [App\Http\Controllers\ChatController::class, 'startChat'])->name('chat.start');
-        Route::get('/chat/search', [App\Http\Controllers\ChatController::class, 'searchUsers'])->name('chat.search');
+        Route::get('/chat', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/search', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'searchUsers'])->name('chat.search');
+        Route::get('/chat/{conversation}', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'store'])->name('chat.send');
+        Route::get('/chat/start/{receiverId}/{type?}', [\App\Http\Controllers\Craftsman\CraftsmanChatController::class, 'startChat'])->name('chat.start');
     });
 });
 // Key User Routes
@@ -1338,11 +1333,12 @@ Route::prefix('key-user')->name('key-user.')->group(function () {
             ]);
         })->name('debug-catalogue');
 
-        // Chat Routes
-        Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
-        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-        Route::get('/chat/start/{receiver_id}/{type?}', [ChatController::class, 'startChat'])->name('chat.start');
+        // Chat Routes (Buyer)
+        Route::get('/chat', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/search', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'searchUsers'])->name('chat.search');
+        Route::get('/chat/{conversation}', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'show'])->name('chat.show');
+        Route::post('/chat/send', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'store'])->name('chat.send');
+        Route::get('/chat/start/{receiverId}/{type?}', [\App\Http\Controllers\Buyer\BuyerChatController::class, 'startChat'])->name('chat.start');
     });
 });
 

@@ -22,9 +22,20 @@ class MessageSent implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [
+        $conversation = \App\Models\Conversation::find($this->message->conversation_id);
+        $channels = [
             new PrivateChannel('conversation.' . $this->message->conversation_id),
         ];
+
+        if ($conversation) {
+            $receiverId = $conversation->sender_id === $this->message->sender_id ? $conversation->receiver_id : $conversation->sender_id;
+            $receiverType = $conversation->sender_type === $this->message->sender_type ? $conversation->receiver_type : $conversation->sender_type;
+
+            $shortType = strtolower(class_basename($receiverType));
+            $channels[] = new PrivateChannel('user.' . $shortType . '.' . $receiverId);
+        }
+
+        return $channels;
     }
 
     public function broadcastAs(): string

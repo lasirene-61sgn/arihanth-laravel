@@ -18,9 +18,10 @@ class DesignController extends Controller
     {
         $buyer = Auth::guard('buyer')->user();
 
-        // 1. Start Query with standard filters
+        // Designs section: ALL accepted designs
+        // No bp_code filter - shows all accepted designs from any buyer/craftsman
+        // Lock check is handled in show() when viewing a specific design
         $query = Product::with(['category', 'subcategory'])
-            ->where('bp_code', $buyer->bp_code)
             ->whereNotNull('design_code')
             ->where('design_status', 'Accepted')
             ->whereNotNull('type')

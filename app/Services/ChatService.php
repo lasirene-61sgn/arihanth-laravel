@@ -25,7 +25,16 @@ class ChatService
             $query->where('receiver_id', $user->id)->where('receiver_type', get_class($user));
         })->with(['sender', 'receiver', 'messages' => fn($q) => $q->latest()->limit(1)])
             ->orderBy('updated_at', 'desc')
-            ->get();
+            ->get()
+            ->each(function ($convo) use ($user) {
+                $convo->unread_count = \App\Models\Message::where('conversation_id', $convo->id)
+                    ->where(function($q) use ($user) {
+                        $q->where('sender_id', '!=', $user->id)
+                          ->orWhere('sender_type', '!=', get_class($user));
+                    })
+                    ->where('is_read', false)
+                    ->count();
+            });
     }
 
     /**
@@ -125,7 +134,11 @@ class ChatService
             }
 
             $conversation->touch();
-            return $message->load(['sender', 'attachments']);
+            $message = $message->load(['sender', 'attachments']);
+            $message->attachments->each(function($at) {
+                $at->url = asset('storage/' . $at->file_path);
+            });
+            return $message;
         });
     }
 
@@ -165,7 +178,30 @@ class ChatService
                     'code' => $c->craftman_code
                 ];
             }
+
+            // Include Admins for SuperAdmin, and SuperAdmins for Admin
+            $staffQuery = ProcessOwner::where(function ($q) use ($query) {
+                $q->where('full_name', 'like', "%$query%")
+                    ->orWhere('user_code', 'like', "%$query%");
+            });
+
+            if ($this->isSuperAdmin($user)) {
+                $staffQuery->where('role', 'admin');
+            } else {
+                $staffQuery->where('role', 'super_admin');
+            }
+
+            $staffMembers = $staffQuery->limit(10)->get();
+            foreach ($staffMembers as $a) {
+                $results[] = [
+                    'id' => $a->id,
+                    'name' => $a->full_name . ' (' . ucfirst($a->role) . ')',
+                    'type' => $a->role === 'super_admin' ? 'super-admin' : 'admin',
+                    'code' => $a->user_code
+                ];
+            }
         } else {
+            // Always include admins in search results
             $admins = ProcessOwner::where(function ($q) use ($query) {
                 $q->where('full_name', 'like', "%$query%")
                     ->orWhere('user_code', 'like', "%$query%");
@@ -178,6 +214,39 @@ class ChatService
                     'type' => $a->role === 'super_admin' ? 'super-admin' : 'admin',
                     'code' => $a->user_code
                 ];
+            }
+
+            // Craftsman can also search their own staff
+            if ($user instanceof Craftman) {
+                $staff = \App\Models\CraftsmanStaff::where('craftsman_id', $user->id)
+                    ->where(function($q) use ($query) {
+                        $q->where('name', 'like', "%$query%")
+                          ->orWhere('email', 'like', "%$query%");
+                    })->limit(10)->get();
+                foreach ($staff as $s) {
+                    $results[] = [
+                        'id'   => $s->id,
+                        'name' => $s->name . ' (Staff)',
+                        'type' => 'craftsman_staff',
+                        'code' => $s->email ?? ''
+                    ];
+                }
+            }
+
+            // Staff can search their parent craftsman
+            if ($user instanceof \App\Models\CraftsmanStaff) {
+                $craftsmen = Craftman::where(function($q) use ($query) {
+                    $q->where('business_name', 'like', "%$query%")
+                      ->orWhere('name', 'like', "%$query%");
+                })->limit(5)->get();
+                foreach ($craftsmen as $c) {
+                    $results[] = [
+                        'id'   => $c->id,
+                        'name' => ($c->business_name ?: $c->name) . ' (Craftsman)',
+                        'type' => 'craftsman',
+                        'code' => $c->craftman_code
+                    ];
+                }
             }
         }
 
@@ -246,8 +315,8 @@ class ChatService
     }
     public function getSuggestedContacts($user)
     {
-        $results = [];
         if (!($user instanceof ProcessOwner)) {
+            // Always show admins for Buyer, Craftsman, and CraftsmanStaff
             $admins = ProcessOwner::whereIn('role', ['admin', 'super_admin'])
                 ->where('status', 1)->get()->map(fn($a) => [
                     'id' => $a->id,
@@ -255,6 +324,30 @@ class ChatService
                     'type' => $a->role === 'super_admin' ? 'super-admin' : 'admin',
                     'code' => $a->user_code
                 ]);
+
+            // Craftsman also sees their own staff
+            if ($user instanceof Craftman) {
+                $staff = \App\Models\CraftsmanStaff::where('craftsman_id', $user->id)
+                    ->get()->map(fn($s) => [
+                        'id'   => $s->id,
+                        'name' => $s->name . ' (Staff)',
+                        'type' => 'craftsman_staff',
+                        'code' => $s->email ?? ''
+                    ]);
+                return array_merge($admins->toArray(), $staff->toArray());
+            }
+
+            // Staff also sees their parent craftsman
+            if ($user instanceof \App\Models\CraftsmanStaff) {
+                $craftsmen = Craftman::where('id', $user->craftsman_id)->get()->map(fn($c) => [
+                    'id'   => $c->id,
+                    'name' => ($c->business_name ?: $c->name) . ' (Craftsman)',
+                    'type' => 'craftsman',
+                    'code' => $c->craftman_code
+                ]);
+                return array_merge($admins->toArray(), $craftsmen->toArray());
+            }
+
             return $admins->toArray();
         } else {
             $buyers = Buyer::latest()->get()->map(fn($b) => [
@@ -271,18 +364,31 @@ class ChatService
                 'craftman_code' => $c->craftman_code,
                 'code' => $c->craftman_code
             ]);
-            return array_merge($buyers->toArray(), $craftsmen->toArray());
+            
+            $staffQuery = ProcessOwner::where('status', 1);
+            if ($this->isSuperAdmin($user)) {
+                $staffQuery->where('role', 'admin');
+            } else {
+                $staffQuery->where('role', 'super_admin');
+            }
+            
+            $staffMembers = $staffQuery->get()->map(fn($a) => [
+                'id' => $a->id,
+                'name' => $a->full_name . ' (' . ucfirst($a->role) . ')',
+                'type' => $a->role === 'super_admin' ? 'super-admin' : 'admin',
+                'code' => $a->user_code
+            ]);
+
+            return array_merge($buyers->toArray(), $craftsmen->toArray(), $staffMembers->toArray());
         }
     }
 
-    /**
-     * Start or get a conversation.
-     */
     public function startConversation($receiverId, $receiverTypeString, $user)
     {
         $typeMap = [
             'buyer' => Buyer::class,
             'craftsman' => Craftman::class,
+            'craftsman_staff' => \App\Models\CraftsmanStaff::class,
             'admin' => ProcessOwner::class,
             'super-admin' => ProcessOwner::class,
         ];
@@ -290,12 +396,17 @@ class ChatService
         $receiverType = $typeMap[$receiverTypeString] ?? ProcessOwner::class;
         $senderType = get_class($user);
 
-        // Rule: Buyer and Craftsman cannot chat with another Buyer or Craftsman
-        $isSenderClient = ($senderType === Buyer::class || $senderType === Craftman::class);
-        $isReceiverClient = ($receiverType === Buyer::class || $receiverType === Craftman::class);
+        // Rule: Buyer and Craftsman cannot chat with another Buyer or Craftsman (except Craftsman to Craftsman Staff)
+        $isSenderClient = in_array($senderType, [Buyer::class, Craftman::class, \App\Models\CraftsmanStaff::class]);
+        $isReceiverClient = in_array($receiverType, [Buyer::class, Craftman::class, \App\Models\CraftsmanStaff::class]);
 
         if ($isSenderClient && $isReceiverClient) {
-            throw new \Exception('Buyers and Craftsmen cannot chat with each other. They can only chat with Admins.', 403);
+            $isCraftsmanAndStaff = ($senderType === Craftman::class && $receiverType === \App\Models\CraftsmanStaff::class) || 
+                                   ($senderType === \App\Models\CraftsmanStaff::class && $receiverType === Craftman::class);
+            
+            if (!$isCraftsmanAndStaff) {
+                throw new \Exception('Users cannot chat with other clients directly. They can only chat with Admins or their own staff.', 403);
+            }
         }
 
         $conversation = Conversation::where(function ($q) use ($user, $receiverId, $receiverType) {

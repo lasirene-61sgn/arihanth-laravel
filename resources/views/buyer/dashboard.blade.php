@@ -55,6 +55,52 @@
         </div>
     </div>
 
+    {{-- Design Categories Section --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    My Accepted Designs by Category
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Click any category card to view images, design code, design name, category, and weights.</p>
+            </div>
+            <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full self-start sm:self-auto">
+                Total Accepted: {{ number_format($designsCount) }}
+            </span>
+        </div>
+
+        @if($designCategories->isEmpty())
+            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                <i class="bi bi-palette text-2xl block mb-1"></i>
+                No accepted designs found under your buyer account.
+            </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                @foreach($designCategories as $category)
+                    <div onclick="openDesignCategoryModal('{{ addslashes($category['category']) }}')" 
+                         class="group relative bg-amber-50/40 hover:bg-amber-100/60 p-4 rounded-xl border border-amber-200/80 hover:border-amber-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-amber-800 truncate" title="{{ $category['category'] }}">
+                                {{ $category['category'] }}
+                            </span>
+                            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                                <i class="bi bi-gem"></i>
+                            </span>
+                        </div>
+                        <div class="text-2xl font-black text-amber-600 group-hover:scale-105 transition-transform origin-left">
+                            {{ $category['count'] }}
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                            <span>Max Wt:</span>
+                            <span class="font-bold text-slate-700">{{ number_format($category['weight_to'], 2) }} g</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     {{-- Work Order Progress Analytics Section --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <div class="mb-6">
@@ -158,7 +204,7 @@
             <p class="text-slate-500 text-sm mb-5">Manage your Key Users</p>
             <a href="{{ route('buyer.key-user-management.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl text-sm font-bold transition-all" style="border: 1px solid #7c3aed; color:#7c3aed;" onmouseover="this.style.background='#7c3aed';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#7c3aed';">
-               View Key User
+                View Key User
             </a>
         </div>
 
@@ -170,7 +216,7 @@
             <p class="text-slate-500 text-sm mb-5">Manage your Users</p>
             <a href="{{ route('buyer.user-management.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl text-sm font-bold transition-all" style="border: 1px solid #7c3aed; color:#7c3aed;" onmouseover="this.style.background='#7c3aed';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#7c3aed';">
-               View User
+                View User
             </a>
         </div>
         
@@ -182,7 +228,7 @@
             <p class="text-slate-500 text-sm mb-5">Manage your Products</p>
             <a href="{{ route('buyer.product.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl text-sm font-bold transition-all" style="border: 1px solid #7c3aed; color:#7c3aed;" onmouseover="this.style.background='#7c3aed';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#7c3aed';">
-               View Products
+                View Products
             </a>
         </div>
 
@@ -192,22 +238,9 @@
             </div>
             <h3 class="text-lg font-bold text-slate-800">{{ number_format($workOrdersCount) }} Work Orders</h3>
             <p class="text-slate-500 text-sm mb-5">Manage your Orders</p>
-            
-            <!-- <div class="flex items-center justify-center gap-2 mt-2 mb-4">
-                <a href="{{ route('buyer.work-order.index', ['tab' => 'in-process-orders']) }}" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors">
-                    {{ $woInProcessCount }} PROC
-                </a>
-                <a href="{{ route('buyer.work-order.index', ['tab' => 'completed-orders']) }}" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 transition-colors">
-                    {{ $woCompletedCount }} DONE
-                </a>
-                <a href="{{ route('buyer.work-order.index', ['tab' => 'overdue-orders']) }}" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors">
-                    {{ $woOverdueCount }} LATE
-                </a>
-            </div> -->
-
             <a href="{{ route('buyer.work-order.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl text-sm font-bold transition-all" style="border: 1px solid #6d28d9; color:#6d28d9;" onmouseover="this.style.background='#6d28d9';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#6d28d9';">
-               View Orders
+                View Orders
             </a>
         </div>
 
@@ -221,7 +254,7 @@
             </div>
             <a href="{{ route('buyer.design.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl border border-amber-500 text-amber-600 text-sm font-bold hover:bg-amber-500 hover:text-white transition-all">
-               View Designs
+                View Designs
             </a>
         </div>
 
@@ -233,13 +266,59 @@
             <p class="text-slate-500 text-sm mb-5">Browse your item collections</p>
             <a href="{{ route('buyer.catalogue.index') }}" 
                class="inline-block w-full py-2 px-4 rounded-xl border border-cyan-600 text-cyan-600 text-sm font-bold hover:bg-cyan-600 hover:text-white transition-all">
-               View Catalogues
+                View Catalogues
             </a>
         </div>
     </div>
 </div>
 
-{{-- Status Detail Modal --}}
+{{-- Category Designs Modal --}}
+<div class="modal fade" id="categoryDesignsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header border-b border-slate-100 bg-amber-50/50 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h5 class="modal-title font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800" id="modalDesignCategoryBadge">
+                            Category
+                        </span>
+                        <span id="modalDesignCategoryTitle">Designs</span>
+                    </h5>
+                    <p class="text-xs text-slate-500 mt-0.5">Showing accepted designs for this category</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-6">
+                <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5 text-center w-16">Image</th>
+                                <th class="p-3.5">Design Code</th>
+                                <th class="p-3.5">Design Name</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5 text-right">Weight From (g)</th>
+                                <th class="p-3.5 text-right">Weight To (g)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryDesignsBody" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium" id="categoryDesignsCountLabel">0 designs listed</span>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Status Detail Modal (Work Orders) --}}
 <div class="modal fade" id="statusWorkOrdersModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
@@ -257,7 +336,6 @@
             </div>
 
             <div class="modal-body p-6 space-y-4">
-                {{-- Column Choosers & Print Actions --}}
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                     <div class="flex flex-wrap items-center gap-3">
                         <span class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1">
@@ -269,12 +347,9 @@
                         <label class="inline-flex items-center gap-1 text-xs text-slate-600 cursor-pointer">
                             <input type="checkbox" class="col-toggle rounded text-indigo-600 focus:ring-indigo-500" data-col="due_date" checked> Due Date
                         </label>
-                        
-                        {{-- Overdue Days Checkbox (Appears strictly on Overdue Tab) --}}
                         <label class="inline-flex items-center gap-1 text-xs text-slate-600 cursor-pointer" id="toggleColOverdueDaysWrapper">
                             <input type="checkbox" class="col-toggle rounded text-indigo-600 focus:ring-indigo-500" data-col="overdue_days" checked> Overdue Days
                         </label>
-
                         <label class="inline-flex items-center gap-1 text-xs text-slate-600 cursor-pointer">
                             <input type="checkbox" class="col-toggle rounded text-indigo-600 focus:ring-indigo-500" data-col="qty" checked> Qty
                         </label>
@@ -297,7 +372,6 @@
                     </div>
                 </div>
 
-                {{-- Table view --}}
                 <div class="overflow-x-auto border border-slate-200 rounded-2xl">
                     <table class="w-full text-left border-collapse text-xs" id="statusWorkOrdersTable">
                         <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
@@ -331,6 +405,55 @@
 </div>
 
 <script>
+    // Buyer Designs Category Modal
+    const allBuyerDesigns = @json($categoryDesignsModal ?? []);
+
+    function openDesignCategoryModal(categoryName) {
+        document.getElementById('modalDesignCategoryTitle').textContent = categoryName;
+        document.getElementById('modalDesignCategoryBadge').textContent = categoryName;
+
+        const filtered = allBuyerDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        const tbody = document.getElementById('categoryDesignsBody');
+        
+        document.getElementById('categoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
+
+        if (!filtered.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-400">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
+                        No designs found for this category.
+                    </td>
+                </tr>
+            `;
+        } else {
+            let html = '';
+            filtered.forEach(item => {
+                const imgHtml = item.image_url 
+                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+                html += `
+                    <tr class="hover:bg-amber-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600">
+                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                        </td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('categoryDesignsModal'));
+        modal.show();
+    }
+
+    // Work Orders Script
     const allBuyerWorkOrders = @json($modalWorkOrders ?? []);
     let filteredWorkOrders = [];
     let currentCategoryKey = '';

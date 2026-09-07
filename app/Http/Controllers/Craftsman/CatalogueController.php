@@ -20,9 +20,10 @@ class CatalogueController extends Controller
 {
     $craftsman = $this->currentCraftsman();
     
-    // Query: Must be mine (bp_code matches) AND Accepted AND have a Design Code
+    // Catalogue: ONLY this craftsman's OWN accepted designs
     $query = Product::with(['category', 'subcategory', 'images'])
         ->where('bp_code', $craftsman->craftman_code)
+        ->whereHas('craftsman')
         ->where('design_status', 'Accepted')
         ->whereNotNull('design_code')
         ->whereNotNull('type')
@@ -86,6 +87,7 @@ class CatalogueController extends Controller
 
         $design = Product::with(['category', 'subcategory', 'images'])
             ->where('bp_code', $craftsman->craftman_code)
+            ->whereHas('craftsman')
             ->where('design_status', 'Accepted')
             ->findOrFail($id);
 
@@ -99,8 +101,14 @@ class CatalogueController extends Controller
 
     public function printSelected(Request $request)
     {
+        $craftsman = $this->currentCraftsman();
         $ids = $request->input('selected_products', []);
-        $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
+        $products = Product::whereIn('id', $ids)
+            ->where('bp_code', $craftsman->craftman_code)
+            ->whereHas('craftsman')
+            ->where('design_status', 'Accepted')
+            ->with(['category', 'subcategory', 'images'])
+            ->get();
         return view('admin.product.print-selected', compact('products'));
     }
 }

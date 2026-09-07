@@ -18,17 +18,13 @@ class CatalogueController extends Controller
 
         $query = Product::with(['category', 'subcategory', 'images'])
             ->where('bp_code', $buyer->bp_code)
+            ->whereHas('buyer')
             ->where('design_status', 'Accepted')
             ->whereNotNull('design_code')
             ->whereNotNull('type')
             ->where('type', '!=', '')
             ->notFromFrozenAccounts();
 
-        // Only show designs that are currently unlocked
-        $query->where(function ($q) {
-            $q->whereNull('design_view_unlocked_until')
-                ->orWhere('design_view_unlocked_until', '>=', now());
-        });
 
         // --- SEARCH & FILTERS ---
         if ($request->filled('search')) {
@@ -77,6 +73,7 @@ class CatalogueController extends Controller
 
         $product = Product::with(['category', 'subcategory', 'images'])
             ->where('bp_code', $buyer->bp_code)
+            ->whereHas('buyer')
             ->where('design_status', 'Accepted')
             ->whereNotNull('design_code')
             ->findOrFail($id);
@@ -91,6 +88,7 @@ class CatalogueController extends Controller
 
         $products = Product::whereIn('id', $ids)
             ->where('bp_code', $buyer->bp_code)
+            ->whereHas('buyer')
             ->where('design_status', 'Accepted')
             ->with(['category', 'subcategory', 'images'])
             ->get();

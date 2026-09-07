@@ -63,3 +63,17 @@ Broadcast::channel('group.{chatGroupId}', function ($user, $chatGroupId) {
         ->where('user_type', get_class($user))
         ->exists();
 }, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);
+
+Broadcast::channel('user.{type}.{id}', function ($user, $type, $id) {
+    if (!$user) return false;
+    $typeMap = [
+        'buyer' => \App\Models\Buyer::class,
+        'craftsman' => \App\Models\Craftman::class,
+        'craftsman_staff' => \App\Models\CraftsmanStaff::class,
+        'admin' => \App\Models\ProcessOwner::class,
+        'super-admin' => \App\Models\ProcessOwner::class,
+        'processowner' => \App\Models\ProcessOwner::class,
+    ];
+    $expectedClass = $typeMap[strtolower($type)] ?? null;
+    return (int)$user->id === (int)$id && get_class($user) === $expectedClass;
+}, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);

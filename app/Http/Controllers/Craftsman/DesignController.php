@@ -22,11 +22,14 @@ class DesignController extends Controller
 {
     $craftsman = Auth::guard('craftsman')->user();
 
+    // Designs section: ALL accepted designs
+    // No bp_code filter - shows all accepted designs from any buyer/craftsman
+    // Lock check is handled in show() when viewing a specific design
     $query = Product::with(['category', 'subcategory'])
-        ->where('bp_code', $craftsman->craftman_code)
         ->whereNotNull('design_code')
         ->where('design_status', 'Accepted')
-        ->whereNotNull('type'); // Filter out bulk uploaded work orders (which have null type)
+        ->whereNotNull('type')
+        ->notFromFrozenAccounts();
 
     // --- SEARCH & FILTERS ---
     if ($request->filled('search')) {

@@ -96,9 +96,101 @@
             </div>
         </div>
     </div>
+
+    {{-- Craftsman Accepted Designs by Category Section --}}
+    <div class="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h3 class="text-lg font-bold text-emerald-950 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    My Accepted Designs by Category
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Click any category card to view its design code, name, category, and weight details.</p>
+            </div>
+            <span class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full self-start sm:self-auto">
+                Total Accepted Designs: {{ number_format($totalDesigns) }}
+            </span>
+        </div>
+
+        @if($designCategories->isEmpty())
+            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                <i class="bi bi-palette text-2xl block mb-1"></i>
+                No accepted designs found under your craftsman account.
+            </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                @foreach($designCategories as $category)
+                    <div onclick="openCraftsmanDesignModal('{{ addslashes($category['category']) }}')" 
+                         class="group relative bg-emerald-50/40 hover:bg-emerald-100/60 p-4 rounded-xl border border-emerald-200 hover:border-emerald-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-emerald-950 group-hover:text-emerald-800 truncate" title="{{ $category['category'] }}">
+                                {{ $category['category'] }}
+                            </span>
+                            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                                <i class="bi bi-gem"></i>
+                            </span>
+                        </div>
+                        <div class="text-2xl font-black text-emerald-700 group-hover:scale-105 transition-transform origin-left">
+                            {{ $category['count'] }}
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                            <span>Max Wt:</span>
+                            <span class="font-bold text-slate-700">{{ number_format($category['weight_to'], 2) }} g</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
 </div>
 
-{{-- MODAL 1: Orders Status Breakdown (Allocated, In Process, Overdue, Completed) --}}
+{{-- Craftsman Designs Category Detail Modal --}}
+<div class="modal fade" id="craftsmanCategoryDesignsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header border-b border-emerald-100 bg-emerald-50 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h5 class="modal-title font-bold text-emerald-950 text-lg flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wide bg-emerald-200 text-emerald-900" id="modalCraftsmanCategoryBadge">
+                            Category
+                        </span>
+                        <span id="modalCraftsmanCategoryTitle">Designs</span>
+                    </h5>
+                    <p class="text-xs text-slate-500 mt-0.5">Showing accepted designs for this category</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-6">
+                <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5 text-center w-16">Image</th>
+                                <th class="p-3.5">Design Code</th>
+                                <th class="p-3.5">Design Name</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5 text-right">Weight From (g)</th>
+                                <th class="p-3.5 text-right">Weight To (g)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="craftsmanCategoryDesignsBody" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium" id="craftsmanCategoryDesignsCountLabel">0 designs listed</span>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL 1: Orders Status Breakdown --}}
 <div class="modal fade" id="ordersStatusModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
@@ -116,7 +208,6 @@
             </div>
             <div class="modal-body p-8 bg-slate-50">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Allocated Card -->
                     <div onclick="openOrdersDetailModal('allocated')" class="bg-white p-5 rounded-2xl border-2 border-slate-200 hover:border-slate-500 cursor-pointer transition hover:shadow-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-slate-500 uppercase">Allocated</span>
@@ -129,7 +220,6 @@
                         </div>
                     </div>
 
-                    <!-- In Process Card -->
                     <div onclick="openOrdersDetailModal('in_process')" class="bg-white p-5 rounded-2xl border-2 border-blue-200 hover:border-blue-500 cursor-pointer transition hover:shadow-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-blue-600 uppercase">In Process</span>
@@ -142,7 +232,6 @@
                         </div>
                     </div>
 
-                    <!-- Overdue Card -->
                     <div onclick="openOrdersDetailModal('overdue')" class="bg-white p-5 rounded-2xl border-2 border-red-200 hover:border-red-500 cursor-pointer transition hover:shadow-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-red-600 uppercase">Overdue (Delayed)</span>
@@ -155,7 +244,6 @@
                         </div>
                     </div>
 
-                    <!-- Completed Card -->
                     <div onclick="openOrdersDetailModal('completed')" class="bg-white p-5 rounded-2xl border-2 border-green-200 hover:border-green-500 cursor-pointer transition hover:shadow-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-green-700 uppercase">Completed</span>
@@ -173,11 +261,10 @@
     </div>
 </div>
 
-{{-- MODAL 2: Status Detailed Table (Work Orders & Purchase Orders) with Live Search & Print --}}
+{{-- MODAL 2: Status Detailed Table --}}
 <div class="modal fade" id="ordersDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden" id="modalPrintContent">
-            {{-- Modal Top Bar --}}
             <div class="modal-header border-0 bg-emerald-900 text-white px-8 py-5 flex justify-between items-center">
                 <div>
                     <h5 class="modal-title font-black text-xl mb-0 flex items-center">
@@ -194,10 +281,8 @@
                 </div>
             </div>
 
-            {{-- Filter & Tab Nav inside Modal --}}
             <div class="p-6 bg-slate-50 border-b border-slate-200 no-print">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <!-- WO / PO Tabs -->
                     <div class="flex space-x-2 bg-emerald-100 p-1 rounded-xl w-fit">
                         <button type="button" id="modalTabWoBtn" onclick="switchModalTab('wo')" class="px-5 py-2 rounded-lg text-xs font-bold transition bg-emerald-900 text-white shadow">
                             <i class="bi bi-clipboard-check mr-1"></i> Work Orders (<span id="modalWoCount">0</span>)
@@ -207,7 +292,6 @@
                         </button>
                     </div>
 
-                    <!-- Live Keystroke Search -->
                     <div class="relative flex-grow md:max-w-md">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-emerald-600">
                             <i class="bi bi-search"></i>
@@ -226,7 +310,6 @@
                 </div>
             </div>
 
-            {{-- Print Header (Visible during print only) --}}
             <div class="hidden print:block p-6 border-b border-gray-300">
                 <div class="flex justify-between items-center">
                     <div>
@@ -240,7 +323,6 @@
                 </div>
             </div>
 
-            {{-- Modal Content: Work Orders Table --}}
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white" id="modalWoTableWrapper">
                 <table class="w-full text-left border-collapse" id="modalWoTable">
                     <thead class="bg-emerald-50 text-emerald-900 uppercase text-xs font-bold sticky top-0 border-b border-emerald-100">
@@ -311,7 +393,6 @@
                 </table>
             </div>
 
-            {{-- Modal Content: Purchase Orders Table --}}
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white hidden" id="modalPoTableWrapper">
                 <table class="w-full text-left border-collapse" id="modalPoTable">
                     <thead class="bg-blue-50 text-blue-900 uppercase text-xs font-bold sticky top-0 border-b border-blue-100">
@@ -385,7 +466,7 @@
     </div>
 </div>
 
-{{-- MODAL 3: Print Column Selection --}}
+{{-- MODAL 3: Print Custom Selection --}}
 <div class="modal fade" id="printCustomModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3xl border-0 shadow-2xl p-6">
@@ -455,7 +536,7 @@
                                 <th class="px-6 py-4 text-center">Total Weight</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-slate-200">
                             @foreach($craftsmanStats as $code => $stat)
                             <tr>
                                 <td class="px-6 py-4 font-black text-emerald-900">Work Orders (WA)</td>
@@ -479,6 +560,55 @@
 </div>
 
 <script>
+// Craftsman Designs Category Modal
+const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
+
+function openCraftsmanDesignModal(categoryName) {
+    document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
+    document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
+
+    const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+    const tbody = document.getElementById('craftsmanCategoryDesignsBody');
+    
+    document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
+
+    if (!filtered.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400">
+                    <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
+                    No designs found for this category.
+                </td>
+            </tr>
+        `;
+    } else {
+        let html = '';
+        filtered.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+            html += `
+                <tr class="hover:bg-emerald-50/30 transition-colors">
+                    <td class="p-2.5 text-center">${imgHtml}</td>
+                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                    <td class="p-3.5 text-slate-600">
+                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                    </td>
+                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
+    modal.show();
+}
+
+// Order Status Modals & Tabs
 let currentModalTab = 'wo';
 let currentModalStatus = 'allocated';
 
@@ -490,22 +620,18 @@ function openOrdersStatusModal() {
 function openOrdersDetailModal(status) {
     currentModalStatus = status;
 
-    // Hide status modal if open
     const statusModalEl = document.getElementById('ordersStatusModal');
     const statusModal = bootstrap.Modal.getInstance(statusModalEl);
     if (statusModal) statusModal.hide();
 
-    // Update modal title and badge
     const label = status.replace('_', ' ').toUpperCase();
     document.getElementById('modalActiveStatusTitle').textContent = `${label} Orders`;
     document.getElementById('modalActiveStatusBadge').textContent = label;
     document.getElementById('printReportTitle').textContent = `${label} Production Report`;
 
-    // Clear search
     const searchInput = document.getElementById('modalLiveSearch');
     if (searchInput) searchInput.value = '';
 
-    // Show Detail Modal
     const detailModal = new bootstrap.Modal(document.getElementById('ordersDetailModal'));
     detailModal.show();
 
@@ -553,7 +679,6 @@ function applyModalFilter() {
             const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
             const isOverdue = row.getAttribute('data-is-overdue') === '1';
 
-            // Status match
             let statusMatches = false;
             if (currentModalStatus === 'all') {
                 statusMatches = true;
@@ -563,7 +688,6 @@ function applyModalFilter() {
                 statusMatches = (rowStatus === currentModalStatus);
             }
 
-            // Keyword match
             const cells = row.querySelectorAll('.modal-search-item');
             let searchMatches = (term === '');
 

@@ -61,7 +61,7 @@ class AdminChatController extends Controller
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'body'            => 'nullable|string',
-            'attachments.*'   => 'nullable|file|max:10240',
+            'attachments.*'   => 'nullable|file|max:25600',
         ]);
 
         $message = $this->chatService->storeMessage($request->all(), $user);
@@ -73,7 +73,13 @@ class AdminChatController extends Controller
     public function startChat($receiverId, $type = null)
     {
         $user = $this->getAuthUser();
-        $this->chatService->startConversation($receiverId, $type, $user);
+        $conversation = $this->chatService->startConversation($receiverId, $type, $user);
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'conversation_id' => $conversation->id
+            ]);
+        }
 
         return redirect()->route('admin.chat.index');
     }
