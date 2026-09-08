@@ -94,6 +94,25 @@
                                     </div>
                                 </div>
                                 @endif
+
+                                @if(isset($favoritedCraftsmen) && count($favoritedCraftsmen) > 0)
+                                <div class="alert alert-success mb-4 border-success">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-heart-fill text-danger me-2" style="font-size: 1.2rem;"></i>
+                                        <strong>Craftsmen who favorited this design:</strong>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2">
+                                        @foreach($favoritedCraftsmen as $c)
+                                            <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border">
+                                                <div>
+                                                    <strong>{{ $c->business_name ?? $c->name }}</strong> ({{ $c->craftman_code }})
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary select-suggestion-btn" data-code="{{ $c->craftman_code }}">Select</button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endif
                                 <div class="mb-3">
                                     <label for="allocated_craftsman_bp_code" class="form-label">Select Craftsman *</label>
                                     <select class="form-select select2 @error('allocated_craftsman_bp_code') is-invalid @enderror" 
@@ -140,7 +159,10 @@
                         </div>
                         <div class="card-body text-center">
                             @if($workOrder->product_image)
-                                <img src="{{ asset('storage/' . $workOrder->product_image) }}" 
+                                @php
+                                    $imagePath = str_starts_with($workOrder->product_image, 'images/') ? asset($workOrder->product_image) : asset('storage/' . $workOrder->product_image);
+                                @endphp
+                                <img src="{{ $imagePath }}" 
                                      alt="Product Image" class="img-fluid rounded" style="max-height: 200px;">
                             @else
                                 <div class="bg-light p-5 rounded">

@@ -226,7 +226,24 @@ class WorkOrderController extends Controller
     {
         $craftsmen = Craftman::all();
         $suggestedCraftsmen = app(\App\Services\CraftsmanSuggestionService::class)->getSuggestionsForWorkOrders(collect([$workOrder]));
-        return view('super-admin.work-order.allocate', compact('workOrder', 'craftsmen', 'suggestedCraftsmen'));
+        
+        $favoritedCraftsmen = collect();
+        if ($workOrder->product_code) {
+            $product = \App\Models\Product::where('product_code', $workOrder->product_code)
+                ->orWhere('design_code', $workOrder->product_code)
+                ->first();
+                
+            if ($product) {
+                $favoritedCraftsmen = \App\Models\Favorite::where('product_id', $product->id)
+                    ->where('user_type', 'craftsman')
+                    ->with('user')
+                    ->get()
+                    ->pluck('user')
+                    ->filter();
+            }
+        }
+        
+        return view('super-admin.work-order.allocate', compact('workOrder', 'craftsmen', 'suggestedCraftsmen', 'favoritedCraftsmen'));
     }
 
     public function allocate(Request $request, WorkOrder $workOrder)
@@ -873,7 +890,7 @@ class WorkOrderController extends Controller
     {
         // Handle search and filtering
         $search = $request->get('search');
-        $sortBy = $request->get('sort_by', 'id');
+        $sortBy = $request->get('sort_by', 'updated_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $bpCodeFilter = $request->get('bp_code_filter');
         $categoryFilter = $request->get('category_filter');
@@ -884,9 +901,9 @@ class WorkOrderController extends Controller
         $returnFilter = $request->get('return_filter');
 
         // Validate sort parameters
-        $allowedSortColumns = ['id', 'work_order_number', 'customer_name', 'product_name', 'quantity', 'due_date', 'status', 'bp_code', 'product_category', 'reference_no', 'type', 'size', 'length', 'weight_from', 'weight_to', 'hallmark', 'rodium', 'hook', 'stone', 'enamel', 'craftsman_due_date', 'created_at'];
+        $allowedSortColumns = ['updated_at', 'id', 'work_order_number', 'customer_name', 'product_name', 'quantity', 'due_date', 'status', 'bp_code', 'product_category', 'reference_no', 'type', 'size', 'length', 'weight_from', 'weight_to', 'hallmark', 'rodium', 'hook', 'stone', 'enamel', 'craftsman_due_date', 'created_at'];
         if (!in_array($sortBy, $allowedSortColumns)) {
-            $sortBy = 'id';
+            $sortBy = 'updated_at';
         }
 
         if (!in_array(strtolower($sortOrder), ['asc', 'desc'])) {
@@ -1244,7 +1261,7 @@ class WorkOrderController extends Controller
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', self::DEFAULT_PER_PAGE);
         $search = $request->get('search');
-        $sortBy = $request->get('sort_by', 'id');
+        $sortBy = $request->get('sort_by', 'updated_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $bpCodeFilter = $request->get('bp_code_filter');
         $categoryFilter = $request->get('category_filter');
@@ -1255,9 +1272,9 @@ class WorkOrderController extends Controller
         $returnFilter = $request->get('return_filter');
 
         // Validate sort parameters
-        $allowedSortColumns = ['id', 'work_order_number', 'customer_name', 'product_name', 'quantity', 'due_date', 'status', 'bp_code', 'product_category', 'reference_no', 'type', 'size', 'length', 'weight_from', 'weight_to', 'hallmark', 'rodium', 'hook', 'stone', 'enamel', 'craftsman_due_date', 'created_at'];
+        $allowedSortColumns = ['updated_at', 'id', 'work_order_number', 'customer_name', 'product_name', 'quantity', 'due_date', 'status', 'bp_code', 'product_category', 'reference_no', 'type', 'size', 'length', 'weight_from', 'weight_to', 'hallmark', 'rodium', 'hook', 'stone', 'enamel', 'craftsman_due_date', 'created_at'];
         if (!in_array($sortBy, $allowedSortColumns)) {
-            $sortBy = 'id';
+            $sortBy = 'updated_at';
         }
 
         if (!in_array(strtolower($sortOrder), ['asc', 'desc'])) {

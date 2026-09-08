@@ -25,28 +25,45 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id'  => 'required|exists:products,id',
+            'design_name' => 'nullable|string|max:255',
         ]);
 
         $craftsman = $this->currentCraftsman();
+        $designName = filled($request->design_name) ? trim($request->design_name) : null;
 
         // Check if already favorited
-        $exists = Favorite::where('user_id', $craftsman->id)
+        $favorite = Favorite::where('user_id', $craftsman->id)
             ->where('user_type', 'craftsman')
             ->where('product_id', $request->product_id)
-            ->exists();
+            ->first();
 
-        if ($exists) {
-            return response()->json(['success' => false, 'message' => 'Design is already in your favorites.']);
+        if ($favorite) {
+            // Update existing custom design name if passed
+            $favorite->update([
+                'design_name' => $designName
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Favorite design name updated successfully!',
+                'data'    => $favorite
+            ]);
         }
 
-        Favorite::create([
-            'user_id' => $craftsman->id,
-            'user_type' => 'craftsman',
-            'product_id' => $request->product_id,
+        // Create new favorite with custom design name
+        $favorite = Favorite::create([
+            'user_id'     => $craftsman->id,
+            'user_type'   => 'craftsman',
+            'product_id'  => $request->product_id,
+            'design_name' => $designName,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Design added to favorites successfully!']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Design added to favorites successfully!',
+            'data'    => $favorite
+        ]);
     }
 
     public function destroy($id)
@@ -58,6 +75,13 @@ class FavoriteController extends Controller
             ->firstOrFail();
 
         $favorite->delete();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Design removed from favorites.'
+            ]);
+        }
 
         return back()->with('success', 'Design removed from favorites.');
     }

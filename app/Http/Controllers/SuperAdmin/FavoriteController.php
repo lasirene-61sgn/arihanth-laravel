@@ -18,11 +18,10 @@ class FavoriteController extends Controller
                 'favorites.user_type', 
                 DB::raw('count(*) as total_favorites'), 
                 DB::raw('max(favorites.created_at) as last_added_at'),
-                DB::raw('GROUP_CONCAT(products.design_code SEPARATOR ", ") as design_codes'),
-                DB::raw('GROUP_CONCAT(IF(favorites.design_name IS NOT NULL AND favorites.design_name != "", CONCAT(favorites.design_name, " (", products.design_code, ")"), products.design_code) SEPARATOR ", ") as design_names')
+                DB::raw('GROUP_CONCAT(DISTINCT products.design_code SEPARATOR ", ") as design_codes'),
+                DB::raw('GROUP_CONCAT(DISTINCT IF(favorites.design_name IS NOT NULL AND favorites.design_name != "", CONCAT(favorites.design_name, " (", products.design_code, ")"), products.design_code) SEPARATOR ", ") as design_names')
             )
             ->join('products', 'favorites.product_id', '=', 'products.id')
-            // Left join both tables to access codes for searching
             ->leftJoin('buyers', function($join) {
                 $join->on('favorites.user_id', '=', 'buyers.id')
                      ->where('favorites.user_type', '=', 'buyer');
@@ -33,10 +32,11 @@ class FavoriteController extends Controller
             })
             ->with(['user']);
 
-        // Search logic
+        // Search logic (includes design_name search)
         if ($search) {
             $query->where(function($q) use ($search) {
-                $q
+                $q->where('favorites.design_name', 'LIKE', "%{$search}%")
+                  ->orWhere('buyers.name', 'LIKE', "%{$search}%")
                   ->orWhere('buyers.bp_code', 'LIKE', "%{$search}%")
                   ->orWhere('craftmen.name', 'LIKE', "%{$search}%")
                   ->orWhere('craftmen.craftman_code', 'LIKE', "%{$search}%")
@@ -47,7 +47,7 @@ class FavoriteController extends Controller
         $favorites = $query->groupBy('favorites.user_id', 'favorites.user_type')
             ->orderBy('last_added_at', 'desc')
             ->paginate(15)
-            ->withQueryString(); // Keeps search parameter in pagination links
+            ->withQueryString();
 
         return view('super-admin.favorites.index', compact('favorites', 'search'));
     }
@@ -63,44 +63,74 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'buyer_ids' => 'array',
-            'craftsman_ids' => 'array',
-            'product_ids' => 'required|array',
-            'design_names' => 'array',
+            'buyer_ids'              => 'nullable|array',
+            'craftsman_ids'          => 'nullable|array',
+            'product_ids'            => 'required|array',
+            'design_names'           => 'nullable|array', // Global fallback name per product
+            'buyer_design_names'     => 'nullable|array', // [buyer_id][product_id] => custom name
+            'craftsman_design_names' => 'nullable|array', // [craftsman_id][product_id] => custom name
         ]);
 
-        $productIds = $request->input('product_ids', []);
-        $designNames = $request->input('design_names', []);
-        $buyerIds = $request->input('buyer_ids', []);
-        $craftsmanIds = $request->input('craftsman_ids', []);
+        $productIds           = $request->input('product_ids', []);
+        $globalDesignNames    = $request->input('design_names', []);
+        $buyerIds             = $request->input('buyer_ids', []);
+        $craftsmanIds         = $request->input('craftsman_ids', []);
+        $buyerDesignNames     = $request->input('buyer_design_names', []);
+        $craftsmanDesignNames = $request->input('craftsman_design_names', []);
 
         if (empty($buyerIds) && empty($craftsmanIds)) {
             return back()->with('error', 'Please select at least one buyer or craftsman.');
         }
 
-        // Add to Buyers
+        // 1. Process Buyers
         foreach ($buyerIds as $buyerId) {
             foreach ($productIds as $productId) {
-                $designName = $designNames[$productId] ?? null;
+                // Priority: User-specific name -> Global fallback -> null
+                $designName = $buyerDesignNames[$buyerId][$productId] 
+                    ?? $globalDesignNames[$productId] 
+                    ?? null;
+
+                // Clean empty strings
+                $designName = !empty(trim((string)$designName)) ? trim($designName) : null;
+
                 Favorite::updateOrCreate(
-                    ['user_id' => $buyerId, 'user_type' => 'buyer', 'product_id' => $productId],
-                    ['design_name' => $designName]
+                    [
+                        'user_id'    => $buyerId, 
+                        'user_type'  => 'buyer', 
+                        'product_id' => $productId
+                    ],
+                    [
+                        'design_name' => $designName
+                    ]
                 );
             }
         }
 
-        // Add to Craftsmen
+        // 2. Process Craftsmen
         foreach ($craftsmanIds as $craftsmanId) {
             foreach ($productIds as $productId) {
-                $designName = $designNames[$productId] ?? null;
+                // Priority: User-specific name -> Global fallback -> null
+                $designName = $craftsmanDesignNames[$craftsmanId][$productId] 
+                    ?? $globalDesignNames[$productId] 
+                    ?? null;
+
+                // Clean empty strings
+                $designName = !empty(trim((string)$designName)) ? trim($designName) : null;
+
                 Favorite::updateOrCreate(
-                    ['user_id' => $craftsmanId, 'user_type' => 'craftsman', 'product_id' => $productId],
-                    ['design_name' => $designName]
+                    [
+                        'user_id'    => $craftsmanId, 
+                        'user_type'  => 'craftsman', 
+                        'product_id' => $productId
+                    ],
+                    [
+                        'design_name' => $designName
+                    ]
                 );
             }
         }
 
-        return redirect()->route('super-admin.favorites.index')->with('success', 'Favorites successfully assigned.');
+        return redirect()->route('super-admin.favorites.index')->with('success', 'Favorites successfully assigned with custom design names.');
     }
 
     public function show($user_id, $user_type)
@@ -132,29 +162,37 @@ class FavoriteController extends Controller
     public function update(Request $request, $user_id, $user_type)
     {
         $request->validate([
-            'product_ids' => 'array',
-            'design_names' => 'array',
+            'product_ids'  => 'nullable|array',
+            'design_names' => 'nullable|array',
         ]);
 
-        $productIds = $request->input('product_ids', []);
+        $productIds  = $request->input('product_ids', []);
         $designNames = $request->input('design_names', []);
 
-        if(empty($productIds)) {
+        if (empty($productIds)) {
             Favorite::where('user_id', $user_id)
                 ->where('user_type', $user_type)
                 ->delete();
         } else {
-            // Delete favorites that are not in the selected list
             Favorite::where('user_id', $user_id)
                 ->where('user_type', $user_type)
                 ->whereNotIn('product_id', $productIds)
                 ->delete();
 
             foreach ($productIds as $productId) {
-                $designName = $designNames[$productId] ?? null;
+                $designName = !empty(trim((string)($designNames[$productId] ?? ''))) 
+                    ? trim($designNames[$productId]) 
+                    : null;
+
                 Favorite::updateOrCreate(
-                    ['user_id' => $user_id, 'user_type' => $user_type, 'product_id' => $productId],
-                    ['design_name' => $designName]
+                    [
+                        'user_id'    => $user_id, 
+                        'user_type'  => $user_type, 
+                        'product_id' => $productId
+                    ],
+                    [
+                        'design_name' => $designName
+                    ]
                 );
             }
         }

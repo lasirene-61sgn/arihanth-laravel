@@ -477,6 +477,7 @@
 
                                                                         $designModel = $productId ? \App\Models\Design::where('product_id', $productId)->first() : null;
                                                                         $designCode = $designModel ? $designModel->design_code : ($item['design_code'] ?? 'N/A');
+                                                                        $designName = $designModel ? $designModel->design_name : 'N/A';
 
                                                                         $imageSrc = null;
                                                                         if (!empty($item['image'])) {
@@ -493,7 +494,7 @@
                                                                         <td class="px-4 py-3">
                                                                             <span class="font-bold text-slate-800">{{ $prodName }}</span>
                                                                             <span class="text-xs text-indigo-600 ml-1">(Sub: {{ $subName }})</span>
-                                                                            <br><span class="text-xs text-slate-500">Design: {{ $designCode }}</span>
+                                                                            <br><span class="text-xs text-slate-500">Design: {{ $designCode }} ({{ $designName }})</span>
                                                                         </td>
                                                                         <td class="px-4 py-3 text-xs">
                                                                             @if(isset($item['grams']) && is_array($item['grams']))

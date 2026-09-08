@@ -449,6 +449,7 @@
 
                                                                                     $designModel = $productId ? \App\Models\Design::where('product_id', $productId)->first() : null;
                                                                                     $designCode = $designModel ? $designModel->design_code : ($item['design_code'] ?? 'N/A');
+                                                                        $designName = $designModel ? $designModel->design_name : 'N/A';
 
                                                                                     $imageSrc = null;
                                                                                     if (!empty($item['image'])) {

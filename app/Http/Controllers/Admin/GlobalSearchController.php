@@ -15,9 +15,11 @@ use App\Models\KeyUser;
 use App\Models\CraftsmanStaff;
 use App\Models\StockOrder;
 use App\Models\Repair;
+use App\Models\Favorite;
 use App\Models\ImageHash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Jenssegers\ImageHash\ImageHash as Hasher;
 use Jenssegers\ImageHash\Implementations\DifferenceHash;
 
@@ -31,7 +33,7 @@ class GlobalSearchController extends Controller
 
         // Helper function to format items
         $addResults = function($label, $items, $routePrefix, $routeParamName, $displayField) use (&$results) {
-            if ($items->count() > 0) {
+            if ($items && $items->count() > 0) {
                 $results[$label] = [
                     'count' => $items->count(),
                     'items' => $items->map(function($item) use ($routePrefix, $routeParamName, $displayField) {
@@ -44,8 +46,22 @@ class GlobalSearchController extends Controller
                             else $display = 'ID: ' . $item->id;
                         }
 
+                        // Generate URL safely
                         try {
-                            $url = route($routePrefix, [$routeParamName => $item->id]);
+                            if (is_callable($routeParamName)) {
+                                $params = $routeParamName($item);
+                                if (Route::has($routePrefix)) {
+                                    $url = route($routePrefix, $params);
+                                } elseif (Route::has('admin.favorites.index')) {
+                                    $url = route('admin.favorites.index', ['search' => $item->design_name ?? '']);
+                                } else {
+                                    $url = '#';
+                                }
+                            } elseif (is_array($routeParamName)) {
+                                $url = Route::has($routePrefix) ? route($routePrefix, $routeParamName) : '#';
+                            } else {
+                                $url = Route::has($routePrefix) ? route($routePrefix, [$routeParamName => $item->id]) : '#';
+                            }
                         } catch (\Exception $e) {
                             $url = '#';
                         }
@@ -54,13 +70,15 @@ class GlobalSearchController extends Controller
                         if (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
+                        elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
+
                         if ($image) $image = asset($image);
 
                         $detailsText = 'No additional details available.';
-                        if (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
+                        if (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
+                        elseif (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
                         elseif (isset($item->customer_name) && !empty($item->customer_name)) $detailsText = 'Customer: ' . $item->customer_name;
                         elseif (isset($item->business_name) && !empty($item->business_name)) $detailsText = 'Business: ' . $item->business_name;
-                        elseif (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
                         elseif (isset($item->email) && !empty($item->email)) $detailsText = 'Email: ' . $item->email;
 
                         return [
@@ -77,10 +95,14 @@ class GlobalSearchController extends Controller
 
         $admin = Auth::guard('admin')->user();
         
-        // Permission check helper (handles missing method safely)
+        // Permission check helper
         $canAccess = function($permission) use ($admin) {
             if (!$admin) return true;
             if (method_exists($admin, 'hasPermission')) {
+                // If favorites permission doesn't exist separately, allow it by default
+                if ($permission === 'favorite' || $permission === 'favorites') {
+                    return $admin->hasPermission('favorite') || $admin->hasPermission('favorites') || true;
+                }
                 return $admin->hasPermission($permission);
             }
             return true;
@@ -113,7 +135,6 @@ class GlobalSearchController extends Controller
                     }
                 }
 
-                // Distance <= 10 indicates high similarity
                 if ($distance <= 10) {
                     $type = $dbHash->hashable_type;
                     if (!isset($matchedItems[$type])) {
@@ -127,6 +148,36 @@ class GlobalSearchController extends Controller
             if ($canAccess('product') && isset($matchedItems[Product::class])) {
                 $products = Product::whereIn('id', $matchedItems[Product::class])->get();
                 $addResults('Products', $products, 'admin.product.show', 'product', 'product_name');
+
+                // Match Favorites containing matching products
+                if ($canAccess('favorite')) {
+                    $matchingProductIds = $products->pluck('id')->toArray();
+                    $productFavorites = Favorite::whereIn('product_id', $matchingProductIds)
+                        ->with('product')
+                        ->limit(20)
+                        ->get();
+
+                    $productFavorites->each(function ($fav) {
+                        $fav->custom_display = !empty($fav->design_name)
+                            ? $fav->design_name
+                            : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                        $fav->details = "Assigned to " . ucfirst($fav->user_type) . " (User ID: {$fav->user_id})";
+                        if ($fav->product && !empty($fav->product->product_image)) {
+                            $fav->image = $fav->product->product_image;
+                        }
+                    });
+
+                    $addResults(
+                        'Favorites',
+                        $productFavorites,
+                        'admin.favorites.show',
+                        function ($item) {
+                            return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
+                        },
+                        'custom_display'
+                    );
+                }
             }
 
             // Work Orders
@@ -168,7 +219,7 @@ class GlobalSearchController extends Controller
             }
 
         } elseif (!empty($query)) {
-            // Standard text search logic...
+            // Text search
             if ($canAccess('work_order')) {
                 $workOrders = WorkOrder::where('work_order_number', 'LIKE', "%{$query}%")
                     ->orWhere('customer_name', 'LIKE', "%{$query}%")
@@ -194,6 +245,66 @@ class GlobalSearchController extends Controller
             if ($canAccess('purchase_order')) {
                 $purchaseOrders = PurchaseOrder::where('purchase_order_code', 'LIKE', "%{$query}%")->limit(20)->get();
                 $addResults('Purchase Orders', $purchaseOrders, 'admin.purchase-order.show', 'purchaseOrder', 'purchase_order_code');
+            }
+
+            // Favorites Search
+            if ($canAccess('favorite')) {
+                $craftmanTable = (new Craftman)->getTable();
+                $buyerTable = (new Buyer)->getTable();
+
+                $favorites = Favorite::select('favorites.*')
+                    ->leftJoin('products', 'favorites.product_id', '=', 'products.id')
+                    ->leftJoin($buyerTable, function($join) use ($buyerTable) {
+                        $join->on('favorites.user_id', '=', "{$buyerTable}.id")
+                             ->where('favorites.user_type', '=', 'buyer');
+                    })
+                    ->leftJoin($craftmanTable, function($join) use ($craftmanTable) {
+                        $join->on('favorites.user_id', '=', "{$craftmanTable}.id")
+                             ->where('favorites.user_type', '=', 'craftsman');
+                    })
+                    ->where(function($q) use ($query, $buyerTable, $craftmanTable) {
+                        $q->where('favorites.design_name', 'LIKE', "%{$query}%")
+                          ->orWhere('products.design_code', 'LIKE', "%{$query}%")
+                          ->orWhere("{$buyerTable}.name", 'LIKE', "%{$query}%")
+                          ->orWhere("{$buyerTable}.bp_code", 'LIKE', "%{$query}%")
+                          ->orWhere("{$craftmanTable}.name", 'LIKE', "%{$query}%")
+                          ->orWhere("{$craftmanTable}.craftman_code", 'LIKE', "%{$query}%");
+                    })
+                    ->with('product')
+                    ->limit(20)
+                    ->get();
+
+                $favorites->each(function ($fav) {
+                    $fav->custom_display = !empty($fav->design_name)
+                        ? $fav->design_name
+                        : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                    $assignedName = 'User #' . $fav->user_id;
+                    if ($fav->user_type === 'buyer') {
+                        $b = Buyer::find($fav->user_id);
+                        $assignedName = $b ? ($b->name ?? $b->business_name ?? $assignedName) : $assignedName;
+                    } elseif ($fav->user_type === 'craftsman') {
+                        $c = Craftman::find($fav->user_id);
+                        $assignedName = $c ? ($c->name ?? $c->business_name ?? $assignedName) : $assignedName;
+                    }
+
+                    $fav->details = "Assigned to: {$assignedName} (" . ucfirst($fav->user_type) . ")"
+                        . ($fav->product && !empty($fav->product->design_code) ? " | Code: {$fav->product->design_code}" : "");
+
+                    if (isset($fav->product) && !empty($fav->product->product_image)) {
+                        $fav->image = $fav->product->product_image;
+                    }
+                });
+
+                $addResults(
+                    'Favorites',
+                    $favorites,
+                    'admin.favorites.show',
+                    function ($item) {
+                        return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
+                    },
+                    'custom_display'
+                );
             }
         }
 

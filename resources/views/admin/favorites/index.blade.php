@@ -41,7 +41,7 @@
                 <h1 class="text-2xl font-bold text-gray-800">Favorites Management</h1>
                 <p class="text-sm text-gray-500">Monitor and manage favorited designs across all users</p>
             </div>
-            <a href="{{ route('favorites.create') }}" class="btn btn-primary" style="background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
+            <a href="{{ route('admin.favorites.create') }}" class="btn btn-primary" style="background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
                 <i class="bi bi-plus-lg"></i> Add Favorite
             </a>
         </div>
@@ -125,10 +125,10 @@
                             <div class="text-[10px] text-gray-400">{{ \Carbon\Carbon::parse($favGroup->last_added_at)->format('H:i') }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <a href="{{ route('favorites.edit', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn" title="Edit Details" style="background-color: #fef3c7; color: #d97706; margin-right: 4px;">
+                            <a href="{{ route('admin.favorites.edit', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn" title="Edit Details" style="background-color: #fef3c7; color: #d97706; margin-right: 4px;">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <a href="{{ route('favorites.show', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn text-indigo-600 hover:bg-indigo-600 hover:text-white border-indigo-100 shadow-sm" title="View Details">
+                            <a href="{{ route('admin.favorites.show', ['user_id' => $favGroup->user_id, 'user_type' => $favGroup->user_type]) }}" class="view-btn text-indigo-600 hover:bg-indigo-600 hover:text-white border-indigo-100 shadow-sm" title="View Details">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
                         </td>

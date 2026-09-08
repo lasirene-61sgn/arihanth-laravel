@@ -166,13 +166,13 @@ class PurchaseOrderController extends Controller
     {
         $categories = ProductCategory::orderBy('name')->get();
         $products = Product::with(['subcategory', 'category', 'images'])->get();
-        $designs = Design::select('design_code')->get()
+        $designs = Design::select('design_code', 'design_name')->get()
             ->concat(
                 Product::where('design_status', 'Accepted')
                     ->whereNotNull('design_code')
-                    ->select('design_code')
+                    ->select('design_code', 'product_name as design_name')
                     ->get()
-                    ->map(fn($p) => (object)['design_code' => $p->design_code])
+                    ->map(fn($p) => (object)['design_code' => $p->design_code, 'design_name' => $p->design_name])
             )
             ->unique('design_code')
             ->values();
@@ -391,13 +391,13 @@ class PurchaseOrderController extends Controller
     {
         $categories = ProductCategory::orderBy('name')->get();
         $products = Product::with(['subcategory', 'category', 'images'])->get();
-        $designs = Design::select('design_code')->get()
+        $designs = Design::select('design_code', 'design_name')->get()
             ->concat(
                 Product::where('design_status', 'Accepted')
                     ->whereNotNull('design_code')
-                    ->select('design_code')
+                    ->select('design_code', 'product_name as design_name')
                     ->get()
-                    ->map(fn($p) => (object)['design_code' => $p->design_code])
+                    ->map(fn($p) => (object)['design_code' => $p->design_code, 'design_name' => $p->design_name])
             )
             ->unique('design_code')
             ->values();

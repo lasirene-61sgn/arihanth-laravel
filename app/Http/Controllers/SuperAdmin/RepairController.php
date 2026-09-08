@@ -122,7 +122,7 @@ class RepairController extends Controller
             'rejected'   => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
         ];
 
-        $repairs = $query->latest()->paginate(10)->withQueryString();
+        $repairs = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
         
         $buyers = Buyer::all();
         $craftsmen = Craftman::all();

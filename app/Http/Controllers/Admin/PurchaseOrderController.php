@@ -252,12 +252,12 @@ class PurchaseOrderController extends Controller
                 break;
             case 'latest':
             default:
-                $createdOrdersQuery->latest();
-                $allocatedOrdersQuery->latest();
-                $inProcessOrdersQuery->latest();
-                $forApprovalOrdersQuery->latest();
-                $completedOrdersQuery->latest();
-                $rejectedOrdersQuery->latest();
+                $createdOrdersQuery->orderBy('updated_at', 'desc');
+                $allocatedOrdersQuery->orderBy('updated_at', 'desc');
+                $inProcessOrdersQuery->orderBy('updated_at', 'desc');
+                $forApprovalOrdersQuery->orderBy('updated_at', 'desc');
+                $completedOrdersQuery->orderBy('updated_at', 'desc');
+                $rejectedOrdersQuery->orderBy('updated_at', 'desc');
                 break;
         }
         
@@ -288,13 +288,13 @@ class PurchaseOrderController extends Controller
     {
         $categories = ProductCategory::orderBy('name')->get();
         $products = Product::with(['subcategory', 'category', 'images'])->get();
-        $designs = Design::select('design_code')->get()
+        $designs = Design::select('design_code', 'design_name')->get()
             ->concat(
                 Product::where('design_status', 'Accepted')
                     ->whereNotNull('design_code')
-                    ->select('design_code')
+                    ->select('design_code', 'product_name as design_name')
                     ->get()
-                    ->map(fn($p) => (object)['design_code' => $p->design_code])
+                    ->map(fn($p) => (object)['design_code' => $p->design_code, 'design_name' => $p->design_name])
             )
             ->unique('design_code')
             ->values();
@@ -511,13 +511,13 @@ class PurchaseOrderController extends Controller
     {
         $categories = ProductCategory::orderBy('name')->get();
         $products = Product::with(['subcategory', 'category', 'images'])->get();
-        $designs = Design::select('design_code')->get()
+        $designs = Design::select('design_code', 'design_name')->get()
             ->concat(
                 Product::where('design_status', 'Accepted')
                     ->whereNotNull('design_code')
-                    ->select('design_code')
+                    ->select('design_code', 'product_name as design_name')
                     ->get()
-                    ->map(fn($p) => (object)['design_code' => $p->design_code])
+                    ->map(fn($p) => (object)['design_code' => $p->design_code, 'design_name' => $p->design_name])
             )
             ->unique('design_code')
             ->values();
@@ -1197,7 +1197,7 @@ class PurchaseOrderController extends Controller
                 break;
             case 'latest':
             default:
-                $query->latest();
+                $query->orderBy('updated_at', 'desc');
                 break;
         }
         

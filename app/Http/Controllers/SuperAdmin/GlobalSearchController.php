@@ -17,6 +17,7 @@ use App\Models\CraftsmanStaff;
 use App\Models\StockOrder;
 use App\Models\Repair;
 use App\Models\ProcessOwner;
+use App\Models\Favorite;
 use App\Models\ImageHash;
 use Jenssegers\ImageHash\ImageHash as Hasher;
 use Jenssegers\ImageHash\Implementations\DifferenceHash;
@@ -31,12 +32,13 @@ class GlobalSearchController extends Controller
 
         // Helper function to add results
         $addResults = function($label, $items, $routePrefix, $routeParamName, $displayField) use (&$results) {
-            if ($items->count() > 0) {
+            if ($items && $items->count() > 0) {
                 $results[$label] = [
                     'count' => $items->count(),
                     'items' => $items->map(function($item) use ($routePrefix, $routeParamName, $displayField) {
                         $display = $item->{$displayField} ?? '';
-                        // Fallback if the display field is empty or missing
+
+                        // Fallback if display field is empty
                         if (empty($display)) {
                             if (isset($item->name)) $display = $item->name;
                             elseif (isset($item->title)) $display = $item->title;
@@ -44,27 +46,35 @@ class GlobalSearchController extends Controller
                             elseif (isset($item->first_name)) $display = $item->first_name;
                             else $display = 'ID: ' . $item->id;
                         }
-                        
-                        // Prevent error if route doesn't exist
+
+                        // Generate URL safely (handles single parameter, array, or callable closure)
                         try {
-                            $url = route($routePrefix, [$routeParamName => $item->id]);
+                            if (is_callable($routeParamName)) {
+                                $url = route($routePrefix, $routeParamName($item));
+                            } elseif (is_array($routeParamName)) {
+                                $url = route($routePrefix, $routeParamName);
+                            } else {
+                                $url = route($routePrefix, [$routeParamName => $item->id]);
+                            }
                         } catch (\Exception $e) {
                             $url = '#';
                         }
 
-                        // Determine image if available
+                        // Determine image
                         $image = null;
                         if (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
+                        elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
+
                         if ($image) $image = asset($image);
 
-                        // Determine generic details
+                        // Determine details
                         $detailsText = 'No additional details available.';
-                        if (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
+                        if (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
+                        elseif (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
                         elseif (isset($item->customer_name) && !empty($item->customer_name)) $detailsText = 'Customer: ' . $item->customer_name;
                         elseif (isset($item->business_name) && !empty($item->business_name)) $detailsText = 'Business: ' . $item->business_name;
-                        elseif (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
                         elseif (isset($item->email) && !empty($item->email)) $detailsText = 'Email: ' . $item->email;
                         elseif (isset($item->category) && !empty($item->category)) $detailsText = 'Category: ' . $item->category;
 
@@ -84,12 +94,10 @@ class GlobalSearchController extends Controller
             $file = $request->file('image_search');
             $hasher = new Hasher(new DifferenceHash());
             $uploadedHashHex = $hasher->hash($file->getRealPath())->toHex();
-            
-            // Get all hashes from DB and find matches (distance <= 10 usually means very similar)
+
             $allHashes = ImageHash::all();
             $matchedItems = [];
-            
-            // Helper to convert hex to 64-bit binary string
+
             $hexToBin = function($hex) {
                 $bin = '';
                 for ($i = 0; $i < strlen($hex); $i++) {
@@ -99,18 +107,18 @@ class GlobalSearchController extends Controller
             };
 
             $uploadedHashBin = $hexToBin($uploadedHashHex);
-            
+
             foreach ($allHashes as $dbHash) {
                 $dbHashBin = $hexToBin($dbHash->hash);
-                
+
                 $distance = 0;
                 for ($i = 0; $i < 64; $i++) {
                     if (isset($uploadedHashBin[$i]) && isset($dbHashBin[$i]) && $uploadedHashBin[$i] !== $dbHashBin[$i]) {
                         $distance++;
                     }
                 }
-                
-                if ($distance <= 10) { // threshold for similarity
+
+                if ($distance <= 10) {
                     $type = $dbHash->hashable_type;
                     if (!isset($matchedItems[$type])) {
                         $matchedItems[$type] = [];
@@ -118,8 +126,7 @@ class GlobalSearchController extends Controller
                     $matchedItems[$type][] = $dbHash->hashable_id;
                 }
             }
-            
-            // Now populate the results based on matched items
+
             if (isset($matchedItems[WorkOrder::class])) {
                 $workOrders = WorkOrder::whereIn('id', $matchedItems[WorkOrder::class])->get();
                 $addResults('Work Orders', $workOrders, 'super-admin.work-order.show', 'workOrder', 'work_order_number');
@@ -131,6 +138,34 @@ class GlobalSearchController extends Controller
             if (isset($matchedItems[Product::class])) {
                 $products = Product::whereIn('id', $matchedItems[Product::class])->get();
                 $addResults('Products', $products, 'super-admin.product.show', 'product', 'product_name');
+
+                // Match Favorites containing these products
+                $matchingProductIds = $products->pluck('id')->toArray();
+                $productFavorites = Favorite::whereIn('product_id', $matchingProductIds)
+                    ->with('product')
+                    ->limit(20)
+                    ->get();
+
+                $productFavorites->each(function ($fav) {
+                    $fav->custom_display = !empty($fav->design_name)
+                        ? $fav->design_name
+                        : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                    $fav->details = "Assigned to " . ucfirst($fav->user_type) . " (User ID: {$fav->user_id})";
+                    if ($fav->product && !empty($fav->product->product_image)) {
+                        $fav->image = $fav->product->product_image;
+                    }
+                });
+
+                $addResults(
+                    'Favorites',
+                    $productFavorites,
+                    'super-admin.favorites.show',
+                    function ($item) {
+                        return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
+                    },
+                    'custom_display'
+                );
             }
             if (isset($matchedItems[Design::class])) {
                 $designs = Design::whereIn('id', $matchedItems[Design::class])->get();
@@ -140,9 +175,7 @@ class GlobalSearchController extends Controller
                 try {
                     $catalogues = Catalogue::whereIn('id', $matchedItems[Catalogue::class])->get();
                     $addResults('Catalogues', $catalogues, 'super-admin.catalogue.show', 'catalogue', 'catalogue_name');
-                } catch (\Exception $e) {
-                    // Ignore if catalogues table does not exist yet
-                }
+                } catch (\Exception $e) {}
             }
             if (isset($matchedItems[Craftman::class])) {
                 $craftsmen = Craftman::whereIn('id', $matchedItems[Craftman::class])->get();
@@ -155,7 +188,7 @@ class GlobalSearchController extends Controller
 
         } elseif (!empty($query)) {
             // Text Search Mode
-            
+
             // Work Orders
             $workOrders = WorkOrder::where('work_order_number', 'LIKE', "%{$query}%")
                 ->orWhere('customer_name', 'LIKE', "%{$query}%")
@@ -262,6 +295,67 @@ class GlobalSearchController extends Controller
                 ->orWhere('notes', 'LIKE', "%{$query}%")
                 ->limit(20)->get();
             $addResults('Repairs', $repairs, 'super-admin.repairs.show', 'repair', 'order_no');
+
+            // Favorites (Checks design_name, product design code, and buyer/craftsman names)
+            $craftmanTable = (new Craftman)->getTable(); // dynamically gets 'craftmen' or 'craftsmen'
+            $buyerTable = (new Buyer)->getTable();
+
+            $favorites = Favorite::select('favorites.*')
+                ->leftJoin('products', 'favorites.product_id', '=', 'products.id')
+                ->leftJoin($buyerTable, function($join) use ($buyerTable) {
+                    $join->on('favorites.user_id', '=', "{$buyerTable}.id")
+                         ->where('favorites.user_type', '=', 'buyer');
+                })
+                ->leftJoin($craftmanTable, function($join) use ($craftmanTable) {
+                    $join->on('favorites.user_id', '=', "{$craftmanTable}.id")
+                         ->where('favorites.user_type', '=', 'craftsman');
+                })
+                ->where(function($q) use ($query, $buyerTable, $craftmanTable) {
+                    $q->where('favorites.design_name', 'LIKE', "%{$query}%")
+                      ->orWhere('products.design_code', 'LIKE', "%{$query}%")
+                      ->orWhere("{$buyerTable}.name", 'LIKE', "%{$query}%")
+                      ->orWhere("{$buyerTable}.bp_code", 'LIKE', "%{$query}%")
+                      ->orWhere("{$craftmanTable}.name", 'LIKE', "%{$query}%")
+                      ->orWhere("{$craftmanTable}.craftman_code", 'LIKE', "%{$query}%");
+                })
+                ->with('product')
+                ->limit(20)
+                ->get();
+
+            $favorites->each(function ($fav) {
+                // 1. Set display title
+                $fav->custom_display = !empty($fav->design_name)
+                    ? $fav->design_name
+                    : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                // 2. Fetch assigned user
+                $assignedName = 'User #' . $fav->user_id;
+                if ($fav->user_type === 'buyer') {
+                    $b = Buyer::find($fav->user_id);
+                    $assignedName = $b ? ($b->name ?? $b->business_name ?? $assignedName) : $assignedName;
+                } elseif ($fav->user_type === 'craftsman') {
+                    $c = Craftman::find($fav->user_id);
+                    $assignedName = $c ? ($c->name ?? $c->business_name ?? $assignedName) : $assignedName;
+                }
+
+                $fav->details = "Assigned to: {$assignedName} (" . ucfirst($fav->user_type) . ")"
+                    . ($fav->product && !empty($fav->product->design_code) ? " | Code: {$fav->product->design_code}" : "");
+
+                // 3. Fallback image
+                if (isset($fav->product) && !empty($fav->product->product_image)) {
+                    $fav->image = $fav->product->product_image;
+                }
+            });
+
+            $addResults(
+                'Favorites',
+                $favorites,
+                'super-admin.favorites.show',
+                function ($item) {
+                    return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
+                },
+                'custom_display'
+            );
         }
 
         if ($request->ajax()) {

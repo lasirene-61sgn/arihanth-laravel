@@ -9,9 +9,11 @@ use App\Models\Product;
 use App\Models\Design;
 use App\Models\KeyUser;
 use App\Models\StockOrder;
+use App\Models\Favorite;
 use App\Models\ImageHash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Jenssegers\ImageHash\ImageHash as Hasher;
 use Jenssegers\ImageHash\Implementations\DifferenceHash;
 
@@ -25,7 +27,7 @@ class GlobalSearchController extends Controller
 
         // Helper function to format items
         $addResults = function($label, $items, $routePrefix, $routeParamName, $displayField) use (&$results) {
-            if ($items->count() > 0) {
+            if ($items && $items->count() > 0) {
                 $results[$label] = [
                     'count' => $items->count(),
                     'items' => $items->map(function($item) use ($routePrefix, $routeParamName, $displayField) {
@@ -39,7 +41,13 @@ class GlobalSearchController extends Controller
                         }
 
                         try {
-                            $url = route($routePrefix, [$routeParamName => $item->id]);
+                            if (is_callable($routeParamName)) {
+                                $url = route($routePrefix, $routeParamName($item));
+                            } elseif (is_array($routeParamName)) {
+                                $url = route($routePrefix, $routeParamName);
+                            } else {
+                                $url = route($routePrefix, [$routeParamName => $item->id]);
+                            }
                         } catch (\Exception $e) {
                             $url = '#';
                         }
@@ -48,10 +56,16 @@ class GlobalSearchController extends Controller
                         if (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
+                        elseif (isset($item->product) && isset($item->product->product_image)) {
+                            $imgs = explode(',', $item->product->product_image);
+                            $image = trim($imgs[0]);
+                        }
+
                         if ($image) $image = asset($image);
 
                         $detailsText = 'No additional details available.';
-                        if (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
+                        if (isset($item->favorite_details) && !empty($item->favorite_details)) $detailsText = $item->favorite_details;
+                        elseif (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
                         elseif (isset($item->customer_name) && !empty($item->customer_name)) $detailsText = 'Customer: ' . $item->customer_name;
                         elseif (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
                         elseif (isset($item->email) && !empty($item->email)) $detailsText = 'Email: ' . $item->email;
@@ -73,6 +87,9 @@ class GlobalSearchController extends Controller
 
         $canAccess = function($permission) use ($buyer) {
             if (!$buyer) return true;
+            if ($permission === 'favorite' || $permission === 'favorites') {
+                return true; // Buyers can always access their favorites
+            }
             if (method_exists($buyer, 'hasPermission')) {
                 return $buyer->hasPermission($permission);
             }
@@ -149,6 +166,41 @@ class GlobalSearchController extends Controller
                 $addResults('Designs', $designs, 'buyer.design.show', 'design', 'design_code');
             }
 
+            // Favorites (Only this Buyer's favorites matching image hashes of Product or Design)
+            if ($canAccess('favorite')) {
+                $matchedProductIds = $matchedItems[Product::class] ?? [];
+                
+                $favMatches = Favorite::where('user_id', $buyer->id)
+                    ->where('user_type', 'buyer')
+                    ->whereIn('product_id', $matchedProductIds)
+                    ->with(['product'])
+                    ->limit(20)
+                    ->get();
+
+                $favMatches->each(function ($fav) {
+                    $fav->custom_display = !empty($fav->design_name)
+                        ? $fav->design_name . ' (' . ($fav->product->design_code ?? 'Design #' . $fav->product_id) . ')'
+                        : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                    $fav->favorite_details = "In Your Favorites | Design Code: " . ($fav->product->design_code ?? 'N/A');
+
+                    if ($fav->product && !empty($fav->product->product_image)) {
+                        $imgs = explode(',', $fav->product->product_image);
+                        $fav->image = trim($imgs[0]);
+                    }
+                });
+
+                $addResults(
+                    'My Favorites',
+                    $favMatches,
+                    'buyer.design.show',
+                    function ($fav) {
+                        return ['design' => $fav->product_id];
+                    },
+                    'custom_display'
+                );
+            }
+
         } elseif (!empty($query)) {
             // Work Orders
             if ($canAccess('work_order')) {
@@ -218,6 +270,45 @@ class GlobalSearchController extends Controller
                             ->orWhere('notes', 'LIKE', "%{$query}%");
                     })->limit(20)->get();
                 $addResults('Live Stock Orders', $stockOrders, 'buyer.stock-order.show', 'stock_order', 'order_number');
+            }
+
+            // My Favorites (Scoped strictly to this logged-in Buyer)
+            if ($canAccess('favorite')) {
+                $favorites = Favorite::select('favorites.*')
+                    ->join('products', 'favorites.product_id', '=', 'products.id')
+                    ->where('favorites.user_id', $buyer->id)
+                    ->where('favorites.user_type', 'buyer')
+                    ->where(function($q) use ($query) {
+                        $q->where('favorites.design_name', 'LIKE', "%{$query}%")
+                          ->orWhere('products.design_code', 'LIKE', "%{$query}%")
+                          ->orWhere('products.product_name', 'LIKE', "%{$query}%");
+                    })
+                    ->with(['product'])
+                    ->limit(20)
+                    ->get();
+
+                $favorites->each(function ($fav) {
+                    $fav->custom_display = !empty($fav->design_name)
+                        ? $fav->design_name . ' (' . ($fav->product->design_code ?? 'Design #' . $fav->product_id) . ')'
+                        : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+
+                    $fav->favorite_details = "In Your Favorites" . ($fav->product ? " | Code: " . $fav->product->design_code : "");
+
+                    if ($fav->product && !empty($fav->product->product_image)) {
+                        $imgs = explode(',', $fav->product->product_image);
+                        $fav->image = trim($imgs[0]);
+                    }
+                });
+
+                $addResults(
+                    'My Favorites',
+                    $favorites,
+                    'buyer.design.show',
+                    function ($fav) {
+                        return ['design' => $fav->product_id];
+                    },
+                    'custom_display'
+                );
             }
         }
 

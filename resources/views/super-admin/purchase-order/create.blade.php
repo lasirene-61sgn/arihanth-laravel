@@ -101,7 +101,7 @@
                                                     <select class="form-select design-code-select select2" name="items[0][design_code]">
                                                         <option value="">Select Design Code</option>
                                                         @foreach($designs as $design)
-                                                            <option value="{{ $design->design_code }}">{{ $design->design_code }}</option>
+                                                            <option value="{{ $design->design_code }}">{{ $design->design_code }} {{ $design->design_name ? ' - ' . $design->design_name : '' }}</option>
                                                         @endforeach
                                                     </select>
                                                 </td>

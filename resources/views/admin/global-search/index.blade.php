@@ -6,7 +6,7 @@
 <div class="max-w-5xl mx-auto py-8">
     <div class="mb-8 text-center">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Global Search</h2>
-        <p class="text-gray-600 dark:text-gray-400">Search across all modules: Work Orders, Products, Craftsmen, Buyers, and more.</p>
+        <p class="text-gray-600 dark:text-gray-400">Search across all modules: Work Orders, Products, Craftsmen, Buyers, Favorites, and more.</p>
     </div>
 
     <!-- Search Form -->
@@ -22,7 +22,7 @@
                     id="searchInput"
                     value="{{ request('search') }}" 
                     class="peer h-full w-full outline-none text-lg text-gray-700 dark:text-gray-200 pr-6 bg-transparent placeholder-gray-400" 
-                    placeholder="Type 'WA', order number, name, or anything..." 
+                    placeholder="Search design names, work orders, products, buyers, craftsmen..." 
                     autocomplete="off"
                     autofocus 
                 />
@@ -80,7 +80,12 @@
                     @foreach($results as $category => $data)
                         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-gray-100 dark:border-slate-800 overflow-hidden animate-fade-in-up">
                             <div class="bg-gray-50 dark:bg-slate-800/50 px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                                <h4 class="font-bold text-gray-800 dark:text-gray-100">{{ $category }}</h4>
+                                <h4 class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                    @if($category === 'Favorites')
+                                        <i class="bi bi-star-fill text-amber-500 text-sm"></i>
+                                    @endif
+                                    {{ $category }}
+                                </h4>
                                 <span class="bg-magenta text-white text-xs font-bold px-2 py-1 rounded-full">{{ $data['count'] }}</span>
                             </div>
                             <ul class="divide-y divide-gray-50 dark:divide-slate-800/50 max-h-72 overflow-y-auto custom-scrollbar">
@@ -102,6 +107,7 @@
                                         <button type="button" 
                                             class="search-result-btn w-full text-left flex items-start justify-between p-4 hover:bg-magenta/5 dark:hover:bg-slate-800 transition-colors group"
                                             data-url="{{ $item['url'] }}"
+                                            data-category="{{ $category }}"
                                             data-display="{{ $item['display'] }}"
                                             data-details="{{ $item['details'] ?? 'No additional details available.' }}"
                                             data-image="{{ $item['image'] ?? '' }}">
@@ -110,7 +116,11 @@
                                                     <img src="{{ $item['image'] }}" alt="Preview" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-slate-700 shrink-0" />
                                                 @else
                                                     <div class="w-12 h-12 rounded-xl bg-magenta/10 flex items-center justify-center text-magenta shrink-0">
-                                                        <i class="bi bi-link-45deg text-lg"></i>
+                                                        @if($category === 'Favorites')
+                                                            <i class="bi bi-star-fill text-amber-500 text-lg"></i>
+                                                        @else
+                                                            <i class="bi bi-link-45deg text-lg"></i>
+                                                        @endif
                                                     </div>
                                                 @endif
                                                 <div class="min-w-0">
@@ -134,8 +144,11 @@
     <div id="detailsModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform scale-95 transition-transform duration-300" id="detailsModalContent">
             <div class="p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 id="modalTitle" class="text-xl font-bold text-gray-900 dark:text-white pr-8"></h3>
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span id="modalCategoryBadge" class="hidden text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-magenta/10 text-magenta dark:bg-magenta/20 mb-1.5 inline-block"></span>
+                        <h3 id="modalTitle" class="text-xl font-bold text-gray-900 dark:text-white pr-8"></h3>
+                    </div>
                     <button type="button" onclick="closeDetailsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                         <i class="bi bi-x-lg text-xl"></i>
                     </button>
@@ -155,7 +168,7 @@
                         Cancel
                     </button>
                     <a id="modalLink" href="#" class="px-4 py-2 text-sm font-medium text-white bg-magenta hover:bg-magenta/90 rounded-xl transition-colors shadow-md flex items-center">
-                        View Full Page <i class="bi bi-arrow-right ml-2"></i>
+                        <span id="modalBtnText">View Full Page</span> <i class="bi bi-arrow-right ml-2"></i>
                     </a>
                 </div>
             </div>
@@ -247,10 +260,19 @@
             categories.forEach((category, index) => {
                 const data = results[category];
                 const animationDelay = index * 0.1;
+                const isFavorites = category === 'Favorites';
+
+                const categoryIcon = isFavorites 
+                    ? `<i class="bi bi-star-fill text-amber-500 text-sm"></i>` 
+                    : '';
+
                 html += `
                     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-gray-100 dark:border-slate-800 overflow-hidden animate-fade-in-up" style="animation-delay: ${animationDelay}s; opacity: 0; animation-fill-mode: forwards;">
                         <div class="bg-gray-50 dark:bg-slate-800/50 px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
-                            <h4 class="font-bold text-gray-800 dark:text-gray-100">${category}</h4>
+                            <h4 class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                ${categoryIcon}
+                                ${category}
+                            </h4>
                             <span class="bg-magenta text-white text-xs font-bold px-2 py-1 rounded-full">${data.count}</span>
                         </div>
                         <ul class="divide-y divide-gray-50 dark:divide-slate-800/50 max-h-72 overflow-y-auto custom-scrollbar">
@@ -265,7 +287,7 @@
                     let displayHtml = escapeHtml(item.display || '');
                     let detailsHtml = escapeHtml(item.details || 'No additional details available.');
                     
-                    if (query) {
+                    if (query && query !== 'Image Search') {
                         const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         const regex = new RegExp('(' + escapedQuery + ')', 'gi');
                         const highlightTag = '<span class="bg-yellow-200 dark:bg-yellow-900/50 text-gray-900 dark:text-yellow-100 rounded px-1">$1</span>';
@@ -273,14 +295,19 @@
                         detailsHtml = detailsHtml.replace(regex, highlightTag);
                     }
 
+                    const placeholderIcon = isFavorites 
+                        ? `<div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0"><i class="bi bi-star-fill text-lg"></i></div>`
+                        : `<div class="w-12 h-12 rounded-xl bg-magenta/10 flex items-center justify-center text-magenta shrink-0"><i class="bi bi-link-45deg text-lg"></i></div>`;
+
                     const imgHtml = item.image 
                         ? `<img src="${item.image}" alt="Preview" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-slate-700 shrink-0" />`
-                        : `<div class="w-12 h-12 rounded-xl bg-magenta/10 flex items-center justify-center text-magenta shrink-0"><i class="bi bi-link-45deg text-lg"></i></div>`;
+                        : placeholderIcon;
 
                     html += `
                         <li>
                             <button type="button" class="search-result-btn w-full text-left flex items-start justify-between p-4 hover:bg-magenta/5 dark:hover:bg-slate-800 transition-colors group"
                                 data-url="${item.url}"
+                                data-category="${category}"
                                 data-display="${displaySafe}"
                                 data-details="${detailsSafe}"
                                 data-image="${item.image || ''}">
@@ -394,13 +421,29 @@
             const title = btn.dataset.display;
             const details = btn.dataset.details;
             const image = btn.dataset.image;
+            const category = btn.dataset.category || '';
             
             const modal = document.getElementById('detailsModal');
             const modalContent = document.getElementById('detailsModalContent');
+            const categoryBadge = document.getElementById('modalCategoryBadge');
+            const modalBtnText = document.getElementById('modalBtnText');
             
             document.getElementById('modalTitle').textContent = title;
             document.getElementById('modalDetails').textContent = details;
             document.getElementById('modalLink').href = url;
+
+            if (category) {
+                categoryBadge.textContent = category;
+                categoryBadge.classList.remove('hidden');
+            } else {
+                categoryBadge.classList.add('hidden');
+            }
+
+            if (category === 'Favorites') {
+                modalBtnText.textContent = 'View User Favorites';
+            } else {
+                modalBtnText.textContent = 'View Full Page';
+            }
             
             const imageContainer = document.getElementById('modalImageContainer');
             const modalImage = document.getElementById('modalImage');
@@ -416,7 +459,6 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
-            // Small delay for CSS transitions
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 modalContent.classList.remove('scale-95');

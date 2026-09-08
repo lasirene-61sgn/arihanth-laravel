@@ -83,27 +83,40 @@
         </div>
     </div>
 
+    @php
+    $loggedCraftsman = Auth::guard('craftsman')->user();
+    // Handles Craftsman direct login or CraftsmanStaff portal login
+    $craftsmanId = $loggedCraftsman->craftman_id ?? $loggedCraftsman->craftsman_id ?? $loggedCraftsman->id ?? null;
+
+    $craftsmanFavoritesMap = $craftsmanId ? \App\Models\Favorite::where('user_id', $craftsmanId)
+    ->where('user_type', 'craftsman')
+    ->pluck('design_name', 'product_id')
+    ->toArray() : [];
+    @endphp
+
     <div>
         @if($designs->count() > 0)
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($designs as $design)
             @php
             $isLocked = $design->isDesignLocked(Auth::guard('craftsman')->user());
+            $isFavorited = array_key_exists($design->id, $craftsmanFavoritesMap);
+            $currentDesignName = $isFavorited ? ($craftsmanFavoritesMap[$design->id] ?? '') : '';
 
             $imagesCount = $design->images->count();
             $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
 
             if (!$firstImage && $design->product_image) {
-                $imgs = explode(',', $design->product_image);
-                $firstImage = trim($imgs[0]);
+            $imgs = explode(',', $design->product_image);
+            $firstImage = trim($imgs[0]);
             }
 
             $imgSrc = null;
             if ($firstImage) {
-                if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-                elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-                elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-                else { $imgSrc = asset('storage/products/' . $firstImage); }
+            if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+            elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+            elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+            else { $imgSrc = asset('storage/products/' . $firstImage); }
             }
             @endphp
 
@@ -137,11 +150,14 @@
 
                 <div class="p-4 flex flex-col flex-grow bg-white border-t border-emerald-50">
                     <div class="flex justify-between items-start mb-2">
-                        <div class="max-w-[70%] mx-auto flex justify-center">
-                            <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate"
+                        <div class="max-w-[85%] mx-auto flex flex-col items-center justify-center gap-1">
+                            <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate w-full"
                                 title="{{ $design->design_code }}">
                                 {{ $design->design_code }}
                             </h6>
+                            <span id="fav-badge-{{ $design->id }}" class="{{ $isFavorited && !empty($currentDesignName) ? '' : 'hidden' }} text-xs font-semibold text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-md truncate max-w-full">
+                                {{ $currentDesignName }}
+                            </span>
                         </div>
                     </div>
 
@@ -163,9 +179,12 @@
                         </button>
                         @endif
 
-                        <button onclick="addToFavorite({{ $design->id }})" 
-                            class="p-2 bg-pink-50 text-pink-600 border border-pink-100 rounded-xl hover:bg-pink-100 transition-colors shadow-sm" title="Add to Favorites">
-                            <i class="bi bi-heart"></i>
+                        <button type="button"
+                            id="fav-btn-{{ $design->id }}"
+                            onclick="openFavoriteModal({{ $design->id }}, '{{ addslashes($design->design_code) }}', '{{ addslashes($currentDesignName) }}', {{ $isFavorited ? 'true' : 'false' }})"
+                            class="p-2 {{ $isFavorited ? 'bg-pink-600 text-white border-pink-700' : 'bg-pink-50 text-pink-600 border-pink-100 hover:bg-pink-100' }} border rounded-xl transition-colors shadow-sm"
+                            title="{{ $isFavorited ? 'Edit Favorite Design Name' : 'Add to Favorites' }}">
+                            <i class="bi {{ $isFavorited ? 'bi-heart-fill' : 'bi-heart' }}"></i>
                         </button>
                     </div>
                 </div>
@@ -186,84 +205,177 @@
     </div>
 </div>
 
+<!-- Add/Edit Favorite Modal -->
+<div id="favoriteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center font-bold">
+                    <i class="bi bi-heart-fill"></i>
+                </div>
+                <h3 id="favModalTitle" class="font-bold text-slate-800 text-base">Add to Favorites</h3>
+            </div>
+            <button type="button" onclick="closeFavoriteModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form id="favoriteForm" onsubmit="submitFavoriteForm(event)">
+            <div class="p-5 space-y-4">
+                <div>
+                    <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Design Code</span>
+                    <p id="favModalDesignCode" class="text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 inline-block"></p>
+                </div>
+                <div>
+                    <label for="fav_custom_design_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Custom Design Name <span class="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input type="text" id="fav_custom_design_name" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 focus:bg-white outline-none transition-all" placeholder="E.g., Special Casting, Master Mold...">
+                    <p class="text-[11px] text-slate-500 mt-1">Assign your own reference name to easily search and identify this design.</p>
+                </div>
+            </div>
+            <div class="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeFavoriteModal()" class="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-all">Cancel</button>
+                <button type="submit" id="favSubmitBtn" class="px-5 py-2 text-sm font-bold text-white bg-pink-600 hover:bg-pink-700 rounded-xl transition-all shadow-sm">Save to Favorites</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-function filterCraftsmanDesignSubcategories() {
-    const categorySelect = document.getElementById('craftsman_design_category_filter');
-    const subcategorySelect = document.getElementById('craftsman_design_subcategory_filter');
-    const defaultOption = document.getElementById('craftsman_design_subcat_default_option');
-    if (!categorySelect || !subcategorySelect) return;
+    let currentTargetProductId = null;
 
-    const categoryId = categorySelect.value;
-    const options = subcategorySelect.querySelectorAll('option[data-category]');
+    function openFavoriteModal(productId, designCode, currentName, isFavorited) {
+        currentTargetProductId = productId;
+        document.getElementById('favModalDesignCode').textContent = designCode;
+        document.getElementById('fav_custom_design_name').value = currentName || '';
 
-    if (!categoryId) {
-        // Disable subcategory dropdown when category is empty
-        subcategorySelect.disabled = true;
-        if (defaultOption) {
-            defaultOption.textContent = 'Select Category First';
-        }
-        subcategorySelect.value = '';
-        options.forEach(opt => {
-            opt.hidden = true;
-            opt.disabled = true;
-        });
-        return;
-    }
+        const title = document.getElementById('favModalTitle');
+        const submitBtn = document.getElementById('favSubmitBtn');
 
-    // Enable and filter options matching selected category
-    subcategorySelect.disabled = false;
-    if (defaultOption) {
-        defaultOption.textContent = 'All Subcategories';
-    }
-
-    let selectedOptionHidden = false;
-    options.forEach(option => {
-        if (option.getAttribute('data-category') === categoryId) {
-            option.hidden = false;
-            option.disabled = false;
+        if (isFavorited) {
+            title.textContent = 'Update Favorite Design Name';
+            submitBtn.textContent = 'Update Name';
         } else {
-            option.hidden = true;
-            option.disabled = true;
-            if (option.selected) {
-                selectedOptionHidden = true;
+            title.textContent = 'Add to Favorites';
+            submitBtn.textContent = 'Save to Favorites';
+        }
+
+        const modal = document.getElementById('favoriteModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            document.getElementById('fav_custom_design_name').focus();
+        }, 50);
+    }
+
+    function closeFavoriteModal() {
+        const modal = document.getElementById('favoriteModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentTargetProductId = null;
+    }
+
+    function submitFavoriteForm(event) {
+        event.preventDefault();
+        if (!currentTargetProductId) return;
+
+        const designName = document.getElementById('fav_custom_design_name').value.trim();
+        const submitBtn = document.getElementById('favSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        fetch("{{ route('craftsman.favorites.store') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    product_id: currentTargetProductId,
+                    design_name: designName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                closeFavoriteModal();
+
+                if (data.success) {
+                    const btn = document.getElementById(`fav-btn-${currentTargetProductId}`);
+                    if (btn) {
+                        btn.className = "p-2 bg-pink-600 text-white border-pink-700 border rounded-xl transition-colors shadow-sm";
+                        btn.innerHTML = `<i class="bi bi-heart-fill"></i>`;
+                        btn.title = "Edit Favorite Design Name";
+                    }
+
+                    const badge = document.getElementById(`fav-badge-${currentTargetProductId}`);
+                    if (badge) {
+                        if (designName) {
+                            badge.textContent = designName;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                }
+                alert(data.message || 'Updated successfully!');
+            })
+            .catch(error => {
+                submitBtn.disabled = false;
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+    }
+
+    function filterCraftsmanDesignSubcategories() {
+        const categorySelect = document.getElementById('craftsman_design_category_filter');
+        const subcategorySelect = document.getElementById('craftsman_design_subcategory_filter');
+        const defaultOption = document.getElementById('craftsman_design_subcat_default_option');
+        if (!categorySelect || !subcategorySelect) return;
+
+        const categoryId = categorySelect.value;
+        const options = subcategorySelect.querySelectorAll('option[data-category]');
+
+        if (!categoryId) {
+            subcategorySelect.disabled = true;
+            if (defaultOption) {
+                defaultOption.textContent = 'Select Category First';
             }
+            subcategorySelect.value = '';
+            options.forEach(opt => {
+                opt.hidden = true;
+                opt.disabled = true;
+            });
+            return;
         }
-    });
 
-    if (selectedOptionHidden) {
-        subcategorySelect.value = '';
+        subcategorySelect.disabled = false;
+        if (defaultOption) {
+            defaultOption.textContent = 'All Subcategories';
+        }
+
+        let selectedOptionHidden = false;
+        options.forEach(option => {
+            if (option.getAttribute('data-category') === categoryId) {
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = true;
+                option.disabled = true;
+                if (option.selected) {
+                    selectedOptionHidden = true;
+                }
+            }
+        });
+
+        if (selectedOptionHidden) {
+            subcategorySelect.value = '';
+        }
     }
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    filterCraftsmanDesignSubcategories();
-});
-
-function addToFavorite(productId) {
-    fetch("{{ route('craftsman.favorites.store') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-        },
-        body: JSON.stringify({ product_id: productId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+    document.addEventListener('DOMContentLoaded', function() {
+        filterCraftsmanDesignSubcategories();
     });
-}
-
-function addToCart(productId) {
-    alert("Added to cart (Dummy)!");
-}
 </script>
 @endsection

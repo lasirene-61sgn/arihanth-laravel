@@ -157,7 +157,7 @@
                                                             <option value="">Select Design Code</option>
                                                             @foreach($designs as $design)
                                                                 <option value="{{ $design->design_code }}" {{ ($item['product'] && $item['product']->design_code == $design->design_code) ? 'selected' : (isset($item['design_code']) && $item['design_code'] == $design->design_code ? 'selected' : '') }}>
-                                                                    {{ $design->design_code }}
+                                                                    {{ $design->design_code }} {{ $design->design_name ? ' - ' . $design->design_name : '' }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
