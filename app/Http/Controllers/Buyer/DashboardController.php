@@ -196,6 +196,45 @@ class DashboardController extends Controller
             ];
         });
 
+
+        // Calculate Buyer's Own Favorites by Category
+        $myFavorites = Favorite::where('user_type', 'buyer')
+            ->where('user_id', $buyer->id)
+            ->with('product.category')
+            ->get();
+        
+        $favoritesCategories = [];
+        $favoritesDesignsModal = collect();
+        foreach ($myFavorites as $fav) {
+            if (!$fav->product) continue;
+            $catName = $fav->product->category ? $fav->product->category->name : 'General';
+            if (empty($catName)) $catName = 'General';
+            
+            if (!isset($favoritesCategories[$catName])) {
+                $favoritesCategories[$catName] = ['category' => $catName, 'count' => 0];
+            }
+            $favoritesCategories[$catName]['count']++;
+            
+            $imageUrl = null;
+            if (!empty($fav->product->product_image)) {
+                $imageUrl = Storage::url($fav->product->product_image);
+            } elseif (!empty($fav->product->image_path)) {
+                $imageUrl = Storage::url($fav->product->image_path);
+            }
+            
+            $favoritesDesignsModal->push([
+                'id' => $fav->product->id,
+                'category' => $catName,
+                'design_code' => $fav->product->design_code ?? $fav->product->product_code ?? 'N/A',
+                'design_name' => $fav->design_name ?? $fav->product->product_name ?? 'N/A',
+                'weight_from' => number_format((float)($fav->product->weight_from ?? 0), 3),
+                'weight_to' => number_format((float)($fav->product->weight_to ?? 0), 3),
+                'image_url' => $imageUrl,
+            ]);
+        }
+        $favoritesCategories = collect(array_values($favoritesCategories));
+        $favoritesCount = $myFavorites->count();
+
         return view('buyer.dashboard', compact(
             'buyer', 
             'canManageKeyUsers',
@@ -217,7 +256,10 @@ class DashboardController extends Controller
             'woCompletedWeight',
             'usersCount',
             'keyUsersCount',
-            'modalWorkOrders'
+            'modalWorkOrders',
+            'favoritesCategories',
+            'favoritesDesignsModal',
+            'favoritesCount'
         ));
     }
 

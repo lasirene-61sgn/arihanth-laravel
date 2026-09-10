@@ -281,6 +281,15 @@ class DetailsAllController extends Controller
 
         $acceptedProducts = \App\Models\Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
 
+        $overallDesignStats = [];
+        foreach ($acceptedProducts as $p) {
+            $catName = $p->category ? $p->category->name : 'Uncategorized';
+            if (!isset($overallDesignStats[$catName])) {
+                $overallDesignStats[$catName] = 0;
+            }
+            $overallDesignStats[$catName]++;
+        }
+
         $craftsmanDesignStats = [];
         $craftsmanAllCategories = [];
         foreach ($craftsmen as $c) {
@@ -346,15 +355,59 @@ class DetailsAllController extends Controller
         }
         sort($buyerAllCategories);
 
-        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'craftsmanAllCategories', 'buyerDesignStats', 'buyerAllCategories'));
+        
+        // Calculate Favorites Stats
+        $favorites = \App\Models\Favorite::with(['product.category', 'user'])->get();
+        $buyerFavoritesStats = [];
+        $craftsmanFavoritesStats = [];
+        
+        foreach ($favorites as $fav) {
+            if (!$fav->product || !$fav->product->category) continue;
+            $catName = $fav->product->category->name;
+            
+            if ($fav->user_type === 'buyer' && $fav->user) {
+                $key = $fav->user->bp_code;
+                if (!isset($buyerFavoritesStats[$key])) {
+                    $buyerFavoritesStats[$key] = [
+                        'name' => $fav->user->name ?? $fav->user->business_name ?? 'Unknown',
+                        'code' => $fav->user->bp_code,
+                        'user_id' => $fav->user_id,
+                        'categories' => []
+                    ];
+                }
+                if (!isset($buyerFavoritesStats[$key]['categories'][$catName])) {
+                    $buyerFavoritesStats[$key]['categories'][$catName] = 0;
+                }
+                $buyerFavoritesStats[$key]['categories'][$catName]++;
+            } elseif ($fav->user_type === 'craftsman' && $fav->user) {
+                $key = $fav->user->craftman_code;
+                if (!isset($craftsmanFavoritesStats[$key])) {
+                    $craftsmanFavoritesStats[$key] = [
+                        'name' => $fav->user->name ?? $fav->user->business_name ?? 'Unknown',
+                        'code' => $fav->user->craftman_code,
+                        'user_id' => $fav->user_id,
+                        'categories' => []
+                    ];
+                }
+                if (!isset($craftsmanFavoritesStats[$key]['categories'][$catName])) {
+                    $craftsmanFavoritesStats[$key]['categories'][$catName] = 0;
+                }
+                $craftsmanFavoritesStats[$key]['categories'][$catName]++;
+            }
+        }
+
+        return view('admin.details-all.index', compact('craftsmenData', 'status', 'sortBy', 'sortOrder', 'topPicksClientsFull', 'craftsmanDesignStats', 'craftsmanAllCategories', 'buyerDesignStats', 'buyerAllCategories', 'overallDesignStats', 'buyerFavoritesStats', 'craftsmanFavoritesStats'));
     }
 
     public function getAcceptedDesigns($bp_code)
     {
-        $products = \App\Models\Product::with(['category', 'images'])
-            ->whereIn('design_status', ['Accepted', 'accepted'])
-            ->where('bp_code', $bp_code)
-            ->get();
+        $query = \App\Models\Product::with(['category', 'images'])
+            ->whereIn('design_status', ['Accepted', 'accepted']);
+
+        if ($bp_code !== 'Overall') {
+            $query->where('bp_code', $bp_code);
+        }
+        $products = $query->get();
 
         $userType = null;
         $userId = null;
@@ -398,4 +451,39 @@ class DetailsAllController extends Controller
 
         return response()->json(['designs' => $designs]);
     }
+
+    public function getFavorites($user_type, $user_id, Request $request)
+    {
+        $categoryFilter = $request->query('category');
+        
+        $query = \App\Models\Favorite::with('product.category')
+            ->where('user_type', $user_type)
+            ->where('user_id', $user_id);
+            
+        $favorites = $query->get();
+        
+        $products = [];
+        foreach ($favorites as $fav) {
+            if (!$fav->product) continue;
+            
+            $catName = $fav->product->category ? $fav->product->category->name : 'Uncategorized';
+            
+            if ($categoryFilter && $categoryFilter !== 'All' && $catName !== $categoryFilter) {
+                continue;
+            }
+            
+            $products[] = [
+                'design_code' => $fav->product->design_code ?? $fav->product->product_code ?? '-',
+                'design_name' => $fav->design_name ?? $fav->product->product_name ?? '-',
+                'category' => $catName,
+                'qty' => $fav->product->quantity ?? '-',
+                'weight_from' => $fav->product->weight_from ?? '-',
+                'image_path' => $fav->product->product_image ?? null,
+                'remarks' => $fav->product->description ?? '-',
+            ];
+        }
+        
+        return response()->json($products);
+    }
+
 }

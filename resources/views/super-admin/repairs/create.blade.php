@@ -1,10 +1,10 @@
+{{-- resources/views/super-admin/repairs/create.blade.php --}}
 @extends('super-admin.layouts.app')
 
 @section('title', 'Create Repair')
 
 @section('styles')
 <style>
-    /* Custom Searchable Dropdown Styles */
     .custom-dropdown-container {
         position: relative;
         width: 100%;
@@ -74,7 +74,7 @@
         background-color: #e9ecef;
         font-weight: bold;
     }
-    .custom-dropdown-item.hidden {
+    .custom-dropdown-item.d-none {
         display: none;
     }
 </style>
@@ -112,17 +112,16 @@
                                             <li class="custom-dropdown-item" data-value="">--Select BP Code--</li>
                                             @foreach($buyers as $buyer)
                                                 <li class="custom-dropdown-item" data-value="{{ $buyer->id }}">
-                                                    {{ $buyer->bp_code }} - {{ $buyer->business_name }}
+                                                    {{ $buyer->bp_code }} - {{ $buyer->business_name ?? $buyer->customer_name }}
                                                 </li>
                                             @endforeach
                                         </ul>
                                     </div>
-                                    {{-- Hidden select for form submission --}}
                                     <select name="buyer_id" id="buyer_id" style="display: none;" required>
                                         <option value="">Select BP Code</option>
                                         @foreach($buyers as $buyer)
                                             <option value="{{ $buyer->id }}" {{ old('buyer_id') == $buyer->id ? 'selected' : '' }}>
-                                                {{ $buyer->bp_code }} - {{ $buyer->business_name }}
+                                                {{ $buyer->bp_code }} - {{ $buyer->business_name ?? $buyer->customer_name }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -155,7 +154,6 @@
                                     <option value="Repair" {{ old('repair') == 'Repair' ? 'selected' : '' }}>Repair</option>
                                     <option value="Samples" {{ old('repair') == 'Samples' ? 'selected' : '' }}>Samples</option>
                                 </select>
-
                                 @error('repair')
                                 <span class="text-danger small">{{ $message }}</span>
                                 @enderror
@@ -213,12 +211,14 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="item_received_through" class="form-label">Item Received Through</label>
-                                <input class="form-control" list="receivedThroughDatalist" id="item_received_through" name="item_received_through" value="{{ old('item_received_through') }}" placeholder="Type or select...">
-                                <datalist id="receivedThroughDatalist">
-                                    @foreach($receivedThroughOptions as $option)
-                                        <option value="{{ $option }}">
+                                <select class="form-select" id="item_received_through" name="item_received_through" onchange="checkCustomInput('item_received_through', 'item_received_through_custom')">
+                                    <option value="">-- Select Source --</option>
+                                    @foreach($receivedThroughOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('item_received_through') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                     @endforeach
-                                </datalist>
+                                    <option value="__custom__">+ Add New...</option>
+                                </select>
+                                <input type="text" name="item_received_through_custom" id="item_received_through_custom" placeholder="Enter new source..." class="form-control mt-2 d-none" value="{{ old('item_received_through_custom') }}">
                                 @error('item_received_through')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
@@ -242,29 +242,15 @@
                             </div>
 
                             <div class="col-md-6 mb-3" id="delivered_by_container" style="display: none;">
-                                <label for="item_delivered_by" class="form-label" id="delivered_by_label">Item Delivered By</label>
-                                
-                                <!-- Select for Self -->
-                                <select class="form-select" id="item_delivered_by_select" style="display: none;">
-                                    <option value="" selected disabled>Select Buyer BP Code</option>
-                                    @foreach($buyers as $buyer)
-                                        <option value="{{ $buyer->bp_code }}" {{ old('item_delivered_by') == $buyer->bp_code ? 'selected' : '' }}>
-                                            {{ $buyer->bp_code }} - {{ $buyer->business_name }}
-                                        </option>
+                                <label for="item_delivered_by" class="form-label" id="delivered_by_label">Item Delivered By Name</label>
+                                <select name="item_delivered_by" id="item_delivered_by_select" class="form-select" onchange="checkCustomInput('item_delivered_by_select', 'item_delivered_by_custom')">
+                                    <option value="">-- Select Person --</option>
+                                    @foreach($deliveredByOptions as $opt)
+                                        <option value="{{ $opt }}" {{ old('item_delivered_by') == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                     @endforeach
+                                    <option value="__custom__">+ Add New...</option>
                                 </select>
-
-                                <!-- Input for AJPL -->
-                                <input class="form-control" list="deliveredByDatalist" id="item_delivered_by_input" value="{{ old('item_delivered_by') }}" placeholder="Type or select..." style="display: none;">
-                                <datalist id="deliveredByDatalist">
-                                    @foreach($deliveredByOptions as $option)
-                                        <option value="{{ $option }}">
-                                    @endforeach
-                                </datalist>
-
-                                <!-- Hidden input that actually gets submitted -->
-                                <input type="hidden" name="item_delivered_by" id="item_delivered_by" value="{{ old('item_delivered_by') }}">
-
+                                <input type="text" name="item_delivered_by_custom" id="item_delivered_by_custom" placeholder="Enter new deliverer..." class="form-control mt-2 d-none" value="{{ old('item_delivered_by_custom') }}">
                                 @error('item_delivered_by')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
@@ -287,8 +273,7 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // GENERIC SEARCHABLE DROPDOWN
-        function initSearchableDropdown(containerId, displayId, menuId, searchInputId, listId, hiddenSelectId, placeholder, onSelect = null) {
+        function initSearchableDropdown(containerId, displayId, menuId, searchInputId, listId, hiddenSelectId, placeholder) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
@@ -321,9 +306,9 @@
                 getListItems().forEach(item => {
                     const text = item.textContent.toLowerCase();
                     if (text.includes(query)) {
-                        item.classList.remove('hidden');
+                        item.classList.remove('d-none');
                     } else {
-                        item.classList.add('hidden');
+                        item.classList.add('d-none');
                     }
                 });
             }
@@ -337,17 +322,11 @@
                 
                 display.textContent = val ? text : placeholder;
                 hiddenSelect.value = val;
-                
                 hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 
                 getListItems().forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
-                
                 menu.style.display = 'none';
-
-                if (onSelect) {
-                    onSelect(val, item);
-                }
             });
 
             document.addEventListener('click', function(e) {
@@ -356,7 +335,6 @@
                 }
             });
 
-            // Set initial state
             if (hiddenSelect.value) {
                 const selectedItem = Array.from(getListItems()).find(i => i.dataset.value === hiddenSelect.value);
                 if (selectedItem) {
@@ -366,76 +344,42 @@
             }
         }
 
-        // Initialize BP Code Dropdown
         initSearchableDropdown('buyer_id_container', 'buyer_id_display', 'buyer_id_menu', 'buyer_id_search', 'buyer_id_list', 'buyer_id', '--Select BP Code--');
 
-        // Delivered By Type Toggle Logic
         const typeRadios = document.querySelectorAll('input[name="item_delivered_by_type"]');
         const deliveredContainer = document.getElementById('delivered_by_container');
-        const selectSelf = document.getElementById('item_delivered_by_select');
-        const inputAjpl = document.getElementById('item_delivered_by_input');
-        const hiddenInput = document.getElementById('item_delivered_by');
 
         function updateDeliveredByView() {
             let selectedType = null;
             typeRadios.forEach(radio => {
                 if (radio.checked) selectedType = radio.value;
             });
-
             if (selectedType) {
                 deliveredContainer.style.display = 'block';
-                if (selectedType === 'Self') {
-                    selectSelf.style.display = 'block';
-                    inputAjpl.style.display = 'none';
-                    // Sync value to hidden if currently AJPL
-                    if(document.activeElement !== selectSelf && selectSelf.value) {
-                       hiddenInput.value = selectSelf.value;
-                    }
-                } else {
-                    selectSelf.style.display = 'none';
-                    inputAjpl.style.display = 'block';
-                    if(document.activeElement !== inputAjpl && inputAjpl.value) {
-                       hiddenInput.value = inputAjpl.value;
-                    }
-                }
             } else {
                 deliveredContainer.style.display = 'none';
             }
         }
 
         typeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                // Clear the hidden input when switching types to avoid submitting old data
-                hiddenInput.value = '';
-                selectSelf.value = '';
-                inputAjpl.value = '';
-                updateDeliveredByView();
-            });
+            radio.addEventListener('change', updateDeliveredByView);
         });
 
-        selectSelf.addEventListener('change', function() {
-            hiddenInput.value = this.value;
-        });
-
-        inputAjpl.addEventListener('input', function() {
-            hiddenInput.value = this.value;
-        });
-
-        // Initial setup on page load
         updateDeliveredByView();
-        
-        // If old value exists, set it correctly
-        if (hiddenInput.value) {
-            let selectedType = null;
-            typeRadios.forEach(radio => {
-                if (radio.checked) selectedType = radio.value;
-            });
-            if (selectedType === 'Self') {
-                selectSelf.value = hiddenInput.value;
-            } else if (selectedType === 'AJPL') {
-                inputAjpl.value = hiddenInput.value;
-            }
-        }
     });
+
+    function checkCustomInput(selectId, inputId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        if (select.value === '__custom__') {
+            input.classList.remove('d-none');
+            input.required = true;
+            input.focus();
+        } else {
+            input.classList.add('d-none');
+            input.required = false;
+            input.value = '';
+        }
+    }
 </script>
 @endsection

@@ -170,16 +170,40 @@
                                             </form>
                                         @elseif($repair->craftsman_status == 'Accepted')
                                             {{-- Complete --}}
-                                            <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-action btn-success" title="Mark Complete">
-                                                    <i class="bi bi-check-circle"></i> Complete
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-action btn-success" title="Mark Complete" data-bs-toggle="modal" data-bs-target="#completeModal{{ $repair->id }}">
+                                                <i class="bi bi-check-circle"></i> Complete
+                                            </button>
                                         @endif
                                     </div>
                                 </td>
                             </tr>
+
+                            {{-- Complete Modal --}}
+                            @if($repair->craftsman_status == 'Accepted')
+                            <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Complete Repair #{{ $repair->order_no ?? $repair->id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Final Weight (grams)</label>
+                                                    <input type="number" step="0.01" name="weight" class="form-control" placeholder="Enter weight after repair" value="{{ $repair->weight }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-success">Complete Repair</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                         @empty
                             <tr>
                                 <td colspan="14" class="text-center py-5">

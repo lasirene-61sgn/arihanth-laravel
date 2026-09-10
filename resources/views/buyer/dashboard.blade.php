@@ -101,6 +101,48 @@
         @endif
     </div>
 
+    {{-- My Favorites Section --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    My Favorites by Category
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Click any category card to view your favorited designs.</p>
+            </div>
+            <span class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full self-start sm:self-auto">
+                Total Favorites: {{ number_format($favoritesCount) }}
+            </span>
+        </div>
+
+        @if($favoritesCategories->isEmpty())
+            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                <i class="bi bi-heart text-2xl block mb-1"></i>
+                No favorites found. Add designs to your favorites to see them here.
+            </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                @foreach($favoritesCategories as $category)
+                    <div onclick="openFavoritesCategoryModal('{{ addslashes($category['category']) }}')" 
+                         class="group relative bg-rose-50/40 hover:bg-rose-100/60 p-4 rounded-xl border border-rose-200/80 hover:border-rose-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-800 truncate" title="{{ $category['category'] }}">
+                                {{ $category['category'] }}
+                            </span>
+                            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs">
+                                <i class="bi bi-heart-fill"></i>
+                            </span>
+                        </div>
+                        <div class="text-2xl font-black text-rose-600 group-hover:scale-105 transition-transform origin-left">
+                            {{ $category['count'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     {{-- Work Order Progress Analytics Section --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <div class="mb-6">
@@ -318,6 +360,52 @@
     </div>
 </div>
 
+{{-- Favorites Category Modal --}}
+<div class="modal fade" id="favoritesCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h5 class="modal-title font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wide bg-rose-100 text-rose-700">
+                            <i class="bi bi-heart-fill me-1"></i> Favorites
+                        </span>
+                        <span id="favoritesCategoryTitle">All Categories</span>
+                    </h5>
+                    <p class="text-xs text-slate-500 mt-0.5">Your favorited designs</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-6 space-y-4">
+                <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5 text-center w-16">Image</th>
+                                <th class="p-3.5">Design Code</th>
+                                <th class="p-3.5">Design Name</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5 text-right">Weight From (g)</th>
+                                <th class="p-3.5 text-right">Weight To (g)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="favoritesCategoryBody" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium" id="favoritesCategoryCountLabel">0 favorites listed</span>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Status Detail Modal (Work Orders) --}}
 <div class="modal fade" id="statusWorkOrdersModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -453,6 +541,53 @@
         modal.show();
     }
 
+    // Buyer Favorites Category Modal
+    const allBuyerFavorites = @json($modalFavorites ?? ($favoritesDesignsModal ?? []));
+
+    function openFavoritesCategoryModal(categoryName) {
+        document.getElementById('favoritesCategoryTitle').textContent = categoryName;
+
+        const filtered = allBuyerFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        const tbody = document.getElementById('favoritesCategoryBody');
+        
+        document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
+
+        if (!filtered.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-400">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
+                        No favorites found for this category.
+                    </td>
+                </tr>
+            `;
+        } else {
+            let html = '';
+            filtered.forEach(item => {
+                const imgHtml = item.image_url 
+                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+                html += `
+                    <tr class="hover:bg-rose-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600">
+                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                        </td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
+        modal.show();
+    }
+
     // Work Orders Script
     const allBuyerWorkOrders = @json($modalWorkOrders ?? []);
     let filteredWorkOrders = [];
@@ -510,7 +645,7 @@
                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-red-100 text-red-700 animate-pulse">
                          ${item.days_overdue} Days
                      </span>
-                   </td>` 
+                   ` 
                 : ``;
 
             html += `

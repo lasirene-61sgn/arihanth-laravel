@@ -71,22 +71,32 @@ class RepairController extends Controller
         return redirect()->route('craftsman.repairs.index')->with('success', 'Repair rejected.');
     }
 
-    public function complete($id)
+    public function complete(Request $request, $id)
     {
         if ($staff = $this->currentStaff()) {
             if (!$staff->hasPermission('repair_accept')) abort(403, 'Unauthorized action.');
         }
+
+        $request->validate([
+            'weight' => 'required|numeric|min:0'
+        ]);
+
         $craftsmanCode = $this->currentCraftsman()->craftman_code;
         $repair = Repair::where('allocated_craftsman_code', $craftsmanCode)->findOrFail($id);
+        
         $updateData = [
             'craftsman_status' => 'Completed',
             'status' => 'Craftsman_Completed',
             'craftsman_completed_at' => now(),
+            'weight' => $request->weight,
         ];
+        
         if ($staff = $this->currentStaff()) {
             $updateData['staff_completed_at'] = now();
         }
+        
         $repair->update($updateData);
+        
         return redirect()->route('craftsman.repairs.index')->with('success', 'Repair marked as completed by craftsman.');
     }
 }

@@ -142,6 +142,94 @@
             </div>
         @endif
     </div>
+
+    {{-- My Favorites Section --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    My Favorites by Category
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Click any category card to view your favorited designs.</p>
+            </div>
+            <span class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full self-start sm:self-auto">
+                Total Favorites: {{ number_format($favoritesCount) }}
+            </span>
+        </div>
+
+        @if($favoritesCategories->isEmpty())
+            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                <i class="bi bi-heart text-2xl block mb-1"></i>
+                No favorites found. Add designs to your favorites to see them here.
+            </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                @foreach($favoritesCategories as $category)
+                    <div onclick="openFavoritesCategoryModal('{{ addslashes($category['category']) }}')" 
+                         class="group relative bg-rose-50/40 hover:bg-rose-100/60 p-4 rounded-xl border border-rose-200/80 hover:border-rose-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-800 truncate" title="{{ $category['category'] }}">
+                                {{ $category['category'] }}
+                            </span>
+                            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs">
+                                <i class="bi bi-heart-fill"></i>
+                            </span>
+                        </div>
+                        <div class="text-2xl font-black text-rose-600 group-hover:scale-105 transition-transform origin-left">
+                            {{ $category['count'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+
+{{-- Favorites Category Modal --}}
+<div class="modal fade" id="favoritesCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h5 class="modal-title font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold uppercase tracking-wide bg-rose-100 text-rose-700">
+                            <i class="bi bi-heart-fill me-1"></i> Favorites
+                        </span>
+                        <span id="favoritesCategoryTitle">All Categories</span>
+                    </h5>
+                    <p class="text-xs text-slate-500 mt-0.5">Your favorited designs</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-6 space-y-4">
+                <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5 text-center w-16">Image</th>
+                                <th class="p-3.5">Design Code</th>
+                                <th class="p-3.5">Design Name</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5 text-right">Weight From (g)</th>
+                                <th class="p-3.5 text-right">Weight To (g)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="favoritesCategoryBody" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium" id="favoritesCategoryCountLabel">0 favorites listed</span>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Craftsman Designs Category Detail Modal --}}
@@ -560,225 +648,272 @@
 </div>
 
 <script>
-// Craftsman Designs Category Modal
-const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
+    // Craftsman Designs Category Modal
+    const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
 
-function openCraftsmanDesignModal(categoryName) {
-    document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
-    document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
+    function openCraftsmanDesignModal(categoryName) {
+        document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
+        document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
 
-    const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
-    const tbody = document.getElementById('craftsmanCategoryDesignsBody');
-    
-    document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
+        const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        const tbody = document.getElementById('craftsmanCategoryDesignsBody');
+        
+        document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
 
-    if (!filtered.length) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="p-8 text-center text-slate-400">
-                    <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
-                    No designs found for this category.
-                </td>
-            </tr>
-        `;
-    } else {
-        let html = '';
-        filtered.forEach(item => {
-            const imgHtml = item.image_url 
-                ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
-                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-            html += `
-                <tr class="hover:bg-emerald-50/30 transition-colors">
-                    <td class="p-2.5 text-center">${imgHtml}</td>
-                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                    <td class="p-3.5 text-slate-600">
-                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+        if (!filtered.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-400">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
+                        No designs found for this category.
                     </td>
-                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
                 </tr>
             `;
-        });
-        tbody.innerHTML = html;
-    }
+        } else {
+            let html = '';
+            filtered.forEach(item => {
+                const imgHtml = item.image_url 
+                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
 
-    const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
-    modal.show();
-}
-
-// Order Status Modals & Tabs
-let currentModalTab = 'wo';
-let currentModalStatus = 'allocated';
-
-function openOrdersStatusModal() {
-    const modal = new bootstrap.Modal(document.getElementById('ordersStatusModal'));
-    modal.show();
-}
-
-function openOrdersDetailModal(status) {
-    currentModalStatus = status;
-
-    const statusModalEl = document.getElementById('ordersStatusModal');
-    const statusModal = bootstrap.Modal.getInstance(statusModalEl);
-    if (statusModal) statusModal.hide();
-
-    const label = status.replace('_', ' ').toUpperCase();
-    document.getElementById('modalActiveStatusTitle').textContent = `${label} Orders`;
-    document.getElementById('modalActiveStatusBadge').textContent = label;
-    document.getElementById('printReportTitle').textContent = `${label} Production Report`;
-
-    const searchInput = document.getElementById('modalLiveSearch');
-    if (searchInput) searchInput.value = '';
-
-    const detailModal = new bootstrap.Modal(document.getElementById('ordersDetailModal'));
-    detailModal.show();
-
-    applyModalFilter();
-}
-
-function switchModalTab(type) {
-    currentModalTab = type;
-    const woWrapper = document.getElementById('modalWoTableWrapper');
-    const poWrapper = document.getElementById('modalPoTableWrapper');
-    const tabWoBtn = document.getElementById('modalTabWoBtn');
-    const tabPoBtn = document.getElementById('modalTabPoBtn');
-
-    if (type === 'wo') {
-        woWrapper.classList.remove('hidden');
-        poWrapper.classList.add('hidden');
-        tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-emerald-900 text-white shadow";
-        tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
-    } else {
-        woWrapper.classList.add('hidden');
-        poWrapper.classList.remove('hidden');
-        tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-blue-900 text-white shadow";
-        tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
-    }
-
-    applyModalFilter();
-}
-
-function applyModalFilter() {
-    const searchInput = document.getElementById('modalLiveSearch');
-    const clearBtn = document.getElementById('clearModalSearchBtn');
-    const rawTerm = searchInput ? searchInput.value.trim() : '';
-    const term = rawTerm.toLowerCase();
-
-    if (clearBtn) {
-        clearBtn.classList.toggle('hidden', rawTerm === '');
-    }
-
-    const regex = rawTerm !== '' ? new RegExp(`(${rawTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi') : null;
-
-    function filterTable(rows, noMatchElem, counterElemId) {
-        let count = 0;
-
-        rows.forEach(row => {
-            const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
-            const isOverdue = row.getAttribute('data-is-overdue') === '1';
-
-            let statusMatches = false;
-            if (currentModalStatus === 'all') {
-                statusMatches = true;
-            } else if (currentModalStatus === 'overdue') {
-                statusMatches = isOverdue;
-            } else {
-                statusMatches = (rowStatus === currentModalStatus);
-            }
-
-            const cells = row.querySelectorAll('.modal-search-item');
-            let searchMatches = (term === '');
-
-            cells.forEach(cell => {
-                const originalText = cell.getAttribute('data-text') || '';
-                if (term !== '' && originalText.toLowerCase().includes(term)) {
-                    searchMatches = true;
-                    cell.innerHTML = originalText.replace(regex, '<span class="highlight-term">$1</span>');
-                } else {
-                    cell.innerHTML = originalText;
-                }
+                html += `
+                    <tr class="hover:bg-emerald-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600">
+                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                        </td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>
+                `;
             });
-
-            if (statusMatches && searchMatches) {
-                row.style.display = '';
-                count++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        if (noMatchElem) {
-            noMatchElem.classList.toggle('hidden', count > 0 || rows.length === 0);
+            tbody.innerHTML = html;
         }
 
-        const counter = document.getElementById(counterElemId);
-        if (counter) counter.textContent = count;
+        const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
+        modal.show();
     }
 
-    const woRows = document.querySelectorAll('#modalWoTable tbody tr.modal-wo-row');
-    const poRows = document.querySelectorAll('#modalPoTable tbody tr.modal-po-row');
-    const woNoMatch = document.getElementById('modalWoNoMatch');
-    const poNoMatch = document.getElementById('modalPoNoMatch');
+    // Craftsman Favorites Category Modal
+    const allCraftsmanFavorites = @json($modalFavorites ?? ($favoritesDesignsModal ?? []));
 
-    filterTable(woRows, woNoMatch, 'modalWoCount');
-    filterTable(poRows, poNoMatch, 'modalPoCount');
-}
+    function openFavoritesCategoryModal(categoryName) {
+        document.getElementById('favoritesCategoryTitle').textContent = categoryName;
 
-document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('modalLiveSearch');
-    const clearBtn = document.getElementById('clearModalSearchBtn');
+        const filtered = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        const tbody = document.getElementById('favoritesCategoryBody');
+        
+        document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
 
-    if (searchInput) {
-        searchInput.addEventListener('input', applyModalFilter);
+        if (!filtered.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-slate-400">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
+                        No favorites found for this category.
+                    </td>
+                </tr>
+            `;
+        } else {
+            let html = '';
+            filtered.forEach(item => {
+                const imgHtml = item.image_url 
+                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+                html += `
+                    <tr class="hover:bg-rose-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600">
+                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                        </td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
+        modal.show();
     }
 
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function () {
-            searchInput.value = '';
-            applyModalFilter();
-            searchInput.focus();
-        });
+    // Order Status Modals & Tabs
+    let currentModalTab = 'wo';
+    let currentModalStatus = 'allocated';
+
+    function openOrdersStatusModal() {
+        const modal = new bootstrap.Modal(document.getElementById('ordersStatusModal'));
+        modal.show();
     }
-});
 
-function openPrintModal() {
-    const modal = new bootstrap.Modal(document.getElementById('printCustomModal'));
-    modal.show();
-}
+    function openOrdersDetailModal(status) {
+        currentModalStatus = status;
 
-function executePrint() {
-    const checkboxes = document.querySelectorAll('#columnCheckboxes input[type="checkbox"]');
-    
-    checkboxes.forEach(cb => {
-        const classNames = cb.value.split(',');
-        classNames.forEach(cls => {
-            const elements = document.querySelectorAll(`.${cls.trim()}`);
-            elements.forEach(el => {
-                if (cb.checked) {
-                    el.classList.remove('hidden');
+        const statusModalEl = document.getElementById('ordersStatusModal');
+        const statusModal = bootstrap.Modal.getInstance(statusModalEl);
+        if (statusModal) statusModal.hide();
+
+        const label = status.replace('_', ' ').toUpperCase();
+        document.getElementById('modalActiveStatusTitle').textContent = `${label} Orders`;
+        document.getElementById('modalActiveStatusBadge').textContent = label;
+        document.getElementById('printReportTitle').textContent = `${label} Production Report`;
+
+        const searchInput = document.getElementById('modalLiveSearch');
+        if (searchInput) searchInput.value = '';
+
+        const detailModal = new bootstrap.Modal(document.getElementById('ordersDetailModal'));
+        detailModal.show();
+
+        applyModalFilter();
+    }
+
+    function switchModalTab(type) {
+        currentModalTab = type;
+        const woWrapper = document.getElementById('modalWoTableWrapper');
+        const poWrapper = document.getElementById('modalPoTableWrapper');
+        const tabWoBtn = document.getElementById('modalTabWoBtn');
+        const tabPoBtn = document.getElementById('modalTabPoBtn');
+
+        if (type === 'wo') {
+            woWrapper.classList.remove('hidden');
+            poWrapper.classList.add('hidden');
+            tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-emerald-900 text-white shadow";
+            tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
+        } else {
+            woWrapper.classList.add('hidden');
+            poWrapper.classList.remove('hidden');
+            tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-blue-900 text-white shadow";
+            tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
+        }
+
+        applyModalFilter();
+    }
+
+    function applyModalFilter() {
+        const searchInput = document.getElementById('modalLiveSearch');
+        const clearBtn = document.getElementById('clearModalSearchBtn');
+        const rawTerm = searchInput ? searchInput.value.trim() : '';
+        const term = rawTerm.toLowerCase();
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', rawTerm === '');
+        }
+
+        const regex = rawTerm !== '' ? new RegExp(`(${rawTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi') : null;
+
+        function filterTable(rows, noMatchElem, counterElemId) {
+            let count = 0;
+
+            rows.forEach(row => {
+                const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+                const isOverdue = row.getAttribute('data-is-overdue') === '1';
+
+                let statusMatches = false;
+                if (currentModalStatus === 'all') {
+                    statusMatches = true;
+                } else if (currentModalStatus === 'overdue') {
+                    statusMatches = isOverdue;
                 } else {
-                    el.classList.add('hidden');
+                    statusMatches = (rowStatus === currentModalStatus);
+                }
+
+                const cells = row.querySelectorAll('.modal-search-item');
+                let searchMatches = (term === '');
+
+                cells.forEach(cell => {
+                    const originalText = cell.getAttribute('data-text') || '';
+                    if (term !== '' && originalText.toLowerCase().includes(term)) {
+                        searchMatches = true;
+                        cell.innerHTML = originalText.replace(regex, '<span class="highlight-term">$1</span>');
+                    } else {
+                        cell.innerHTML = originalText;
+                    }
+                });
+
+                if (statusMatches && searchMatches) {
+                    row.style.display = '';
+                    count++;
+                } else {
+                    row.style.display = 'none';
                 }
             });
-        });
+
+            if (noMatchElem) {
+                noMatchElem.classList.toggle('hidden', count > 0 || rows.length === 0);
+            }
+
+            const counter = document.getElementById(counterElemId);
+            if (counter) counter.textContent = count;
+        }
+
+        const woRows = document.querySelectorAll('#modalWoTable tbody tr.modal-wo-row');
+        const poRows = document.querySelectorAll('#modalPoTable tbody tr.modal-po-row');
+        const woNoMatch = document.getElementById('modalWoNoMatch');
+        const poNoMatch = document.getElementById('modalPoNoMatch');
+
+        filterTable(woRows, woNoMatch, 'modalWoCount');
+        filterTable(poRows, poNoMatch, 'modalPoCount');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('modalLiveSearch');
+        const clearBtn = document.getElementById('clearModalSearchBtn');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyModalFilter);
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                searchInput.value = '';
+                applyModalFilter();
+                searchInput.focus();
+            });
+        }
     });
 
-    const modalEl = document.getElementById('printCustomModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+    function openPrintModal() {
+        const modal = new bootstrap.Modal(document.getElementById('printCustomModal'));
+        modal.show();
+    }
 
-    setTimeout(() => {
-        window.print();
+    function executePrint() {
+        const checkboxes = document.querySelectorAll('#columnCheckboxes input[type="checkbox"]');
+        
         checkboxes.forEach(cb => {
             const classNames = cb.value.split(',');
             classNames.forEach(cls => {
                 const elements = document.querySelectorAll(`.${cls.trim()}`);
-                elements.forEach(el => el.classList.remove('hidden'));
+                elements.forEach(el => {
+                    if (cb.checked) {
+                        el.classList.remove('hidden');
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                });
             });
         });
-    }, 500);
-}
+
+        const modalEl = document.getElementById('printCustomModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        setTimeout(() => {
+            window.print();
+            checkboxes.forEach(cb => {
+                const classNames = cb.value.split(',');
+                classNames.forEach(cls => {
+                    const elements = document.querySelectorAll(`.${cls.trim()}`);
+                    elements.forEach(el => el.classList.remove('hidden'));
+                });
+            });
+        }, 500);
+    }
 </script>
 @endsection

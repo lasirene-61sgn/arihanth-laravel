@@ -201,6 +201,11 @@ class RepairController extends Controller
     public function edit($id)
     {
         $repair = Repair::findOrFail($id);
+
+        if ($repair->created_at->lt(now()->subDays(60))) {
+            return redirect()->route('admin.repairs.index')->with('error', 'Repair orders older than 60 days cannot be edited.');
+        }
+
         $buyers = Buyer::all();
         $craftsmen = Craftman::all();
         $receivedByOptions = Repair::whereNotNull('item_received_by')->distinct()->pluck('item_received_by');
@@ -212,6 +217,10 @@ class RepairController extends Controller
     public function update(Request $request, $id)
     {
         $repair = Repair::findOrFail($id);
+
+        if ($repair->created_at->lt(now()->subDays(60))) {
+            return redirect()->route('admin.repairs.index')->with('error', 'Repair orders older than 60 days cannot be updated.');
+        }
 
         $validator = Validator::make($request->all(), [
             'buyer_id' => 'required|exists:buyers,id',
@@ -297,15 +306,29 @@ class RepairController extends Controller
         return redirect()->route('admin.repairs.index')->with('success', 'Repair allocated to craftsman successfully.');
     }
 
-    public function complete($id)
+    public function complete(Request $request, $id)
     {
         $repair = Repair::findOrFail($id);
+
+        $receivedThrough = $request->item_received_through === '__custom__' 
+            ? $request->item_received_through_custom 
+            : $request->item_received_through;
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
         $repair->update([
             'status' => 'Buyer_Accepted',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'buyer_accepted_at' => now(),
+            'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+            'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
+            'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
+            'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
         ]);
+
         return redirect()->route('admin.repairs.index')->with('success', 'Repair marked as fully completed.');
     }
 
@@ -316,16 +339,30 @@ class RepairController extends Controller
             return redirect()->back()->with('error', 'No repair orders selected.');
         }
 
-        $count = Repair::whereIn('id', $repairIds)
-            ->whereIn('status', ['Pending', 'Accepted', 'In_Process', 'Craftsman_Completed'])
-            ->update([
+        $receivedThrough = $request->item_received_through === '__custom__' 
+            ? $request->item_received_through_custom 
+            : $request->item_received_through;
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
+        $repairs = Repair::whereIn('id', $repairIds)->get();
+
+        foreach ($repairs as $repair) {
+            $repair->update([
                 'status' => 'Buyer_Accepted',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'buyer_accepted_at' => now(),
+                'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+                'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
+                'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
+                'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
             ]);
+        }
 
-        return redirect()->back()->with('success', $count . ' repair orders marked as completed.');
+        return redirect()->back()->with('success', count($repairs) . ' repair orders marked as completed.');
     }
 
     public function show($id)

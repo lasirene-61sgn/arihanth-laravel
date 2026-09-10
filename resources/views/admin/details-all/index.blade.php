@@ -29,7 +29,7 @@
     <!-- KPI CARDS -->
     <div class="row g-3 mb-4">
         <!-- Top Picks Craftsmen Card -->
-        <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleDetailsTable()" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -45,7 +45,7 @@
         </div>
 
         <!-- Top Picks Clients Card -->
-        <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleClientsTable()" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -61,7 +61,7 @@
         </div>
 
         <!-- Craftsman Designs Card -->
-        <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleCraftsmanDesignsTable()" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -77,7 +77,7 @@
         </div>
 
         <!-- Buyer Designs Card -->
-        <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleBuyerDesignsTable()" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -88,6 +88,54 @@
                     </div>
                     <h3 class="fw-bold mb-1">{{ count($buyerDesignStats) }}</h3>
                     <p class="small text-muted mb-0 fw-semibold">BUYER DESIGNS (CLICK TO VIEW)</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overall Designs Card -->
+        <div class="col-xl-2 col-lg-4 col-md-6">
+            <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleOverallDesignsTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-info-subtle text-info rounded-3 p-2">
+                            <i class="bi bi-boxes fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleOverallDesignsIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ collect($overallDesignStats)->sum() }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">OVERALL DESIGNS (CLICK)</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Craftsman Favorites Card -->
+        <div class="col-xl-2 col-lg-4 col-md-6">
+            <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleCraftsmanFavoritesTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-success-subtle text-success rounded-3 p-2">
+                            <i class="bi bi-heart-fill fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleCraftsmanFavoritesIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ count($craftsmanFavoritesStats) }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">CRAFTSMAN FAVORITES (CLICK)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buyer Favorites Card -->
+        <div class="col-xl-2 col-lg-4 col-md-6">
+            <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleBuyerFavoritesTable()" style="cursor: pointer;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="bg-danger-subtle text-danger rounded-3 p-2">
+                            <i class="bi bi-heart-fill fs-5"></i>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted" id="toggleBuyerFavoritesIcon"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ count($buyerFavoritesStats) }}</h3>
+                    <p class="small text-muted mb-0 fw-semibold">BUYER FAVORITES (CLICK)</p>
                 </div>
             </div>
         </div>
@@ -503,6 +551,193 @@
     </div>
 </div>
 
+
+
+<!-- ==========================================
+         COLLAPSIBLE OVERALL DESIGNS CONTAINER
+    =========================================== -->
+    <div id="overallDesignsTableContainer" style="display: none;">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold text-info"><i class="bi bi-boxes me-2"></i>Overall Accepted Designs (Platform-Wide)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-center">Total Accepted Designs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($overallDesignStats as $catName => $count)
+                            <tr>
+                                <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
+                                <td class="text-center">
+                                    <span class="text-decoration-underline text-info fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Overall', '{{ $catName }}')" data-title="Overall Designs - {{ $catName }}" data-bpcode="Overall">
+                                        {{ $count }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="2" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            @endforelse
+                        </tbody>
+                        @if(count($overallDesignStats) > 0)
+                        <tfoot class="bg-light fw-bold border-top border-2">
+                            <tr>
+                                <td class="text-end">Platform Total:</td>
+                                <td class="text-center text-primary fs-5">
+                                    <span class="text-decoration-underline" style="cursor: pointer;" onclick="showDesignsList(this, 'Overall', 'All')" data-title="Overall Designs - All Categories" data-bpcode="Overall">
+                                        {{ collect($overallDesignStats)->sum() }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==========================================
+         COLLAPSIBLE CRAFTSMAN FAVORITES CONTAINER
+    =========================================== -->
+    <div id="craftsmanFavoritesTableContainer" style="display: none;">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold text-success"><i class="bi bi-heart-fill me-2"></i>Craftsman Favorites</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Craftsman Name</th>
+                                <th>Craftsman Code</th>
+                                <th>Category</th>
+                                <th class="text-center">Total Favorites</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($craftsmanFavoritesStats as $stat)
+                                @foreach($stat['categories'] as $catName => $count)
+                                <tr>
+                                    <td><div class="fw-bold text-dark">{{ $stat['name'] }}</div></td>
+                                    <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
+                                    <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
+                                    <td class="text-center">
+                                        <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('craftsman', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Craftsman: {{ addslashes($stat['name']) }} | Code: {{ $stat['code'] }}')" data-title="Craftsman Favorites - {{ $catName }}">
+                                            {{ $count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            @empty
+                            <tr><td colspan="4" class="text-center py-4 text-muted">No Craftsman favorites found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         COLLAPSIBLE BUYER FAVORITES CONTAINER
+    =========================================== -->
+    <div id="buyerFavoritesTableContainer" style="display: none;">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-heart-fill me-2"></i>Buyer Favorites</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Buyer Name</th>
+                                <th>BP Code</th>
+                                <th>Category</th>
+                                <th class="text-center">Total Favorites</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($buyerFavoritesStats as $stat)
+                                @foreach($stat['categories'] as $catName => $count)
+                                <tr>
+                                    <td><div class="fw-bold text-dark">{{ $stat['name'] }}</div></td>
+                                    <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
+                                    <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
+                                    <td class="text-center">
+                                        <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('buyer', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Buyer: {{ addslashes($stat['name']) }} | BP Code: {{ $stat['code'] }}')" data-title="Buyer Favorites - {{ $catName }}">
+                                            {{ $count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            @empty
+                            <tr><td colspan="4" class="text-center py-4 text-muted">No Buyer favorites found.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- FAVORITES MODAL -->
+<div class="modal fade" id="favoritesListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="favoritesListModalTitle">Favorited Designs</h5>
+                    <span class="text-muted small" id="favoritesModalSubtitle">Design details</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <select id="favoritesPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                            <option value="300">300</option>
+                        </select>
+                        <span class="small text-muted me-3">per page</span>
+                        
+                        <button class="btn btn-outline-secondary btn-sm" id="favoritesPrevPage">Prev</button>
+                        <span class="mx-2 small fw-bold" id="favoritesPageInfo">Page 1 of 1</span>
+                        <button class="btn btn-outline-secondary btn-sm" id="favoritesNextPage">Next</button>
+                    </div>
+                </div>
+                <div class="table-responsive border rounded">
+                    <table class="table table-hover align-middle mb-0" id="modalFavoritesTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center">Image</th>
+                                <th>Design Code</th>
+                                <th>Design Name</th>
+                                <th>Category</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-center">Weight From (g)</th>
+                                <th>Notes / Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="favoritesListModalBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ORDERS MODAL -->
 <div class="modal fade" id="ordersListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -523,9 +758,8 @@
                             <select id="ordersPerPage" class="form-select form-select-sm" style="width: auto;">
                                 <option value="50">50</option>
                                 <option value="100">100</option>
-                                <option value="150">150</option>
                                 <option value="200">200</option>
-                                <option value="500">500</option>
+                                <option value="300">300</option>
                             </select>
                             <span class="small text-muted">per page</span>
                             
@@ -621,9 +855,8 @@
                         <select id="designsPerPage" class="form-select form-select-sm me-2" style="width: auto;">
                             <option value="50">50</option>
                             <option value="100">100</option>
-                            <option value="150">150</option>
                             <option value="200">200</option>
-                            <option value="500">500</option>
+                            <option value="300">300</option>
                         </select>
                         <span class="small text-muted me-3">per page</span>
                         
@@ -646,6 +879,7 @@
                                 <th>Design Code</th>
                                 <th>Design Name</th>
                                 <th>Category</th>
+                                <th class="text-center">Quantity</th>
                                 <th class="text-center">Weight From (g)</th>
                                 <th>Notes / Remarks</th>
                             </tr>
@@ -673,7 +907,10 @@
             { id: 'detailsTableContainer', icon: 'toggleIcon' },
             { id: 'clientsTableContainer', icon: 'toggleClientsIcon' },
             { id: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
-            { id: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' }
+            { id: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' },
+            { id: 'overallDesignsTableContainer', icon: 'toggleOverallDesignsIcon' },
+            { id: 'craftsmanFavoritesTableContainer', icon: 'toggleCraftsmanFavoritesIcon' },
+            { id: 'buyerFavoritesTableContainer', icon: 'toggleBuyerFavoritesIcon' }
         ];
 
         sections.forEach(sec => {
@@ -701,6 +938,112 @@
     function toggleDetailsTable() { toggleSection('detailsTableContainer', 'toggleIcon'); }
     function toggleClientsTable() { toggleSection('clientsTableContainer', 'toggleClientsIcon'); }
     function toggleCraftsmanDesignsTable() { toggleSection('craftsmanDesignsTableContainer', 'toggleCraftsmanDesignsIcon'); }
+
+    function toggleOverallDesignsTable() { toggleSection('overallDesignsTableContainer', 'toggleOverallDesignsIcon'); }
+
+    // --- Favorites Collapse Toggles ---
+    function toggleCraftsmanFavoritesTable() { toggleSection('craftsmanFavoritesTableContainer', 'toggleCraftsmanFavoritesIcon'); }
+    function toggleBuyerFavoritesTable() { toggleSection('buyerFavoritesTableContainer', 'toggleBuyerFavoritesIcon'); }
+
+    // --- Fetch & Render Favorites ---
+    let currentFavorites = [];
+    let currentFavoritesPage = 1;
+    let favoritesPerPage = 50;
+
+    function renderFavoritesPage() {
+        const body = document.getElementById('favoritesListModalBody');
+        body.innerHTML = '';
+        
+        const totalPages = Math.ceil(currentFavorites.length / favoritesPerPage) || 1;
+        document.getElementById('favoritesPageInfo').innerText = `Page ${currentFavoritesPage} of ${totalPages}`;
+        document.getElementById('favoritesPrevPage').disabled = (currentFavoritesPage === 1);
+        document.getElementById('favoritesNextPage').disabled = (currentFavoritesPage === totalPages);
+
+        if (currentFavorites.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No favorites found.</td></tr>';
+            return;
+        }
+
+        const start = (currentFavoritesPage - 1) * favoritesPerPage;
+        const end = start + favoritesPerPage;
+        const paginated = currentFavorites.slice(start, end);
+
+        paginated.forEach(fav => {
+            const tr = document.createElement('tr');
+            
+            let imgHtml = '<div class="text-muted small">No Image</div>';
+            if (fav.image_path) {
+                const imgUrl = `/storage/${fav.image_path}`;
+                imgHtml = `<img src="${imgUrl}" alt="Design" class="rounded border" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;" onclick="window.open('${imgUrl}', '_blank')">`;
+            }
+
+            tr.innerHTML = `
+                <td class="text-center">${imgHtml}</td>
+                <td><span class="badge bg-secondary">${fav.design_code}</span></td>
+                <td class="fw-bold">${fav.design_name}</td>
+                <td>${fav.category}</td>
+                <td class="text-center">${fav.qty}</td>
+                <td class="text-center">${fav.weight_from}</td>
+                <td class="small text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${fav.remarks}">${fav.remarks}</td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function showFavoritesList(userType, userId, categoryFilter, userSubtitle) {
+        document.getElementById('favoritesListModalBody').innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted small">Loading favorites...</div></td></tr>';
+        
+        document.getElementById('favoritesModalSubtitle').innerText = `${userSubtitle} | Category: ${categoryFilter}`;
+        
+        let url = `{{ route('admin.details-all.favorites', ['user_type' => '__USER_TYPE__', 'user_id' => '__USER_ID__']) }}`;
+        url = url.replace('__USER_TYPE__', userType).replace('__USER_ID__', userId);
+        
+        if (categoryFilter && categoryFilter !== 'All') {
+            url += `?category=${encodeURIComponent(categoryFilter)}`;
+        }
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                currentFavorites = data;
+                currentFavoritesPage = 1;
+                favoritesPerPage = parseInt(document.getElementById('favoritesPerPage').value);
+                renderFavoritesPage();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('favoritesListModalBody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load favorites.</td></tr>';
+            });
+            
+        let favoritesModalInstance = bootstrap.Modal.getInstance(document.getElementById('favoritesListModal'));
+        if (!favoritesModalInstance) {
+            favoritesModalInstance = new bootstrap.Modal(document.getElementById('favoritesListModal'));
+        }
+        favoritesModalInstance.show();
+    }
+
+    document.getElementById('favoritesPerPage')?.addEventListener('change', function() {
+        favoritesPerPage = parseInt(this.value);
+        currentFavoritesPage = 1;
+        renderFavoritesPage();
+    });
+
+    document.getElementById('favoritesPrevPage')?.addEventListener('click', function() {
+        if (currentFavoritesPage > 1) {
+            currentFavoritesPage--;
+            renderFavoritesPage();
+        }
+    });
+
+    document.getElementById('favoritesNextPage')?.addEventListener('click', function() {
+        const totalPages = Math.ceil(currentFavorites.length / favoritesPerPage);
+        if (currentFavoritesPage < totalPages) {
+            currentFavoritesPage++;
+            renderFavoritesPage();
+        }
+    });
+
+
     function toggleBuyerDesignsTable() { toggleSection('buyerDesignsTableContainer', 'toggleBuyerDesignsIcon'); }
 
     // Checkbox toggles
@@ -908,7 +1251,7 @@
         document.getElementById('designsNextPage').disabled = (currentDesignsPage === totalPages);
 
         if (currentDesigns.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No designs found.</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No designs found.</td></tr>';
             return;
         }
 
@@ -928,6 +1271,7 @@
                     <td style="vertical-align: middle;">${design.design_code || '-'}</td>
                     <td style="vertical-align: middle;">${design.design_name || '-'}</td>
                     <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category || '-'}</span></td>
+                    <td class="text-center fw-bold" style="vertical-align: middle;">${design.qty || '-'}</td>
                     <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
                     <td style="vertical-align: middle;">
                         <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
@@ -961,10 +1305,33 @@
     function showDesignsList(el, type, categoryFilter = null) {
         const title = el.getAttribute('data-title');
         const bpcode = el.getAttribute('data-bpcode');
+        const count = el.innerText.trim();
         
+        let nameMatch = title.match(/-\s(.*?)\s\(/);
+        if (!nameMatch) nameMatch = title.match(/-\s(.*)$/);
+        const name = nameMatch ? nameMatch[1] : '';
+        const category = categoryFilter === null || categoryFilter === 'All' ? 'All' : categoryFilter;
+        
+        let headerText = '';
+        if (type === 'Buyer') {
+             headerText = `Buyer Name: <strong>${name}</strong> | BP Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
+        } else {
+             headerText = `Craftsman Name: <strong>${name}</strong> | Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
+        }
+
         document.getElementById('designsListModalTitle').innerText = title;
+        let subtitleEl = document.getElementById('designsModalSubtitle');
+        if(!subtitleEl) {
+            const titleEl = document.getElementById('designsListModalTitle');
+            subtitleEl = document.createElement('div');
+            subtitleEl.id = 'designsModalSubtitle';
+            subtitleEl.className = 'text-muted small mt-1';
+            titleEl.parentNode.insertBefore(subtitleEl, titleEl.nextSibling);
+        }
+        subtitleEl.innerHTML = headerText;
+
         const body = document.getElementById('designsListModalBody');
-        body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
         
         designsModalInstance.show();
 
@@ -982,7 +1349,7 @@
             })
             .catch(error => {
                 console.error('Error fetching designs:', error);
-                body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load designs. Please try again.</td></tr>';
+                body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load designs. Please try again.</td></tr>';
             });
     }
 
@@ -1003,7 +1370,8 @@
             const code = row.cells[2]?.innerText || '';
             const name = row.cells[3]?.innerText || '';
             const category = row.cells[4]?.innerText || '';
-            const weight = row.cells[5]?.innerText || '';
+            const qty = row.cells[5]?.innerText || '';
+            const weight = row.cells[6]?.innerText || '';
             const notes = row.querySelector('.design-notes')?.value || '';
 
             tbodyHtml += `
@@ -1014,6 +1382,7 @@
                     <td style="vertical-align: middle; font-weight: bold;">${code}</td>
                     <td style="vertical-align: middle;">${name}</td>
                     <td style="vertical-align: middle;">${category}</td>
+                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${qty}</td>
                     <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
                     <td style="vertical-align: middle;">${notes}</td>
                 </tr>`;
@@ -1044,6 +1413,7 @@
                             <th>Design Code</th>
                             <th>Design Name</th>
                             <th>Category</th>
+                            <th style="text-align: center;">Quantity</th>
                             <th style="text-align: center;">Weight From (g)</th>
                             <th>Notes / Remarks</th>
                         </tr>

@@ -4,13 +4,10 @@
 
 @section('styles')
 <style>
-    /* --- Container for the Searchable Dropdown --- */
 .custom-dropdown-container {
-    position: relative; /* Crucial: Keeps the menu attached to the box */
+    position: relative;
     width: 100%;
 }
-
-/* --- The Box the user clicks --- */
 .custom-dropdown-display {
     background-color: #fff;
     border: 1px solid #ced4da;
@@ -27,8 +24,6 @@
     display: flex;
     align-items: center;
 }
-
-/* Arrow icon for the display box */
 .custom-dropdown-display::after {
     content: "";
     width: 0; 
@@ -39,10 +34,8 @@
     position: absolute;
     right: 10px;
 }
-
-/* --- The Floating Menu (Fixes image_a20c95.png) --- */
 .custom-dropdown-menu {
-    display: none; /* Hidden by default - Toggle with JS */
+    display: none;
     position: absolute;
     top: 100%;
     left: 0;
@@ -51,16 +44,12 @@
     border: 1px solid #ced4da;
     border-radius: 4px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    z-index: 1050; /* Ensures it floats above the table and other filters */
+    z-index: 1050;
     margin-top: 2px;
 }
-
-/* Show class to be toggled via JS */
 .custom-dropdown-menu.active {
     display: block;
 }
-
-/* --- Search Input inside the Menu --- */
 .custom-dropdown-search {
     width: 100%;
     padding: 8px 10px;
@@ -69,16 +58,13 @@
     outline: none;
     font-size: 13px;
 }
-
-/* --- The List of Items --- */
 .custom-dropdown-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 250px; /* Adds scrolling if list is long */
+    max-height: 250px;
     overflow-y: auto;
 }
-
 .custom-dropdown-item {
     padding: 10px 12px;
     font-size: 13px;
@@ -86,13 +72,10 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-
 .custom-dropdown-item:hover {
     background-color: #f8f9fa;
     color: #007bff;
 }
-
-/* Optional: Styling for labels to match your Repairs header */
 .form-label {
     font-weight: 600;
     font-size: 13px;
@@ -100,108 +83,6 @@
     display: block;
 }
 </style>
-@endsection
-
-@section('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Bulk Select Logic
-        const selectAll = document.getElementById('selectAllRepairs');
-        if (selectAll) {
-            selectAll.addEventListener('change', function() {
-                const checkboxes = document.querySelectorAll('.repair-checkbox');
-                checkboxes.forEach(cb => cb.checked = this.checked);
-            });
-        }
-
-        // GENERIC SEARCHABLE DROPDOWN
-        function initSearchableDropdown(containerId, displayId, menuId, searchInputId, listId, hiddenSelectId, placeholder, onSelect = null) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            const display = document.getElementById(displayId);
-            const menu = document.getElementById(menuId);
-            const searchInput = document.getElementById(searchInputId);
-            const listContainer = document.getElementById(listId);
-            const hiddenSelect = document.getElementById(hiddenSelectId);
-
-            function getListItems() {
-                return listContainer.querySelectorAll('.custom-dropdown-item');
-            }
-
-            display.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const isVisible = menu.style.display === 'block';
-                // Close all other menus first
-                document.querySelectorAll('.custom-dropdown-menu').forEach(m => {
-                    if (m !== menu) m.style.display = 'none';
-                });
-                menu.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible) {
-                    searchInput.focus();
-                    searchInput.value = '';
-                    filterItems('');
-                }
-            });
-
-            searchInput.addEventListener('input', function() {
-                filterItems(this.value.toLowerCase());
-            });
-
-            function filterItems(query) {
-                getListItems().forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    if (text.includes(query)) {
-                        item.classList.remove('hidden');
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
-            }
-
-            listContainer.addEventListener('click', function(e) {
-                const item = e.target.closest('.custom-dropdown-item');
-                if (!item) return;
-
-                const val = item.dataset.value;
-                const text = item.textContent.trim();
-                
-                display.textContent = val ? text : placeholder;
-                hiddenSelect.value = val;
-                
-                hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                getListItems().forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-                
-                menu.style.display = 'none';
-
-                if (onSelect) {
-                    onSelect(val, item);
-                }
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!container.contains(e.target)) {
-                    menu.style.display = 'none';
-                }
-            });
-
-            // Set initial state from existing value
-            if (hiddenSelect.value) {
-                const selectedItem = Array.from(getListItems()).find(i => i.dataset.value === hiddenSelect.value);
-                if (selectedItem) {
-                    display.textContent = selectedItem.textContent.trim();
-                    selectedItem.classList.add('selected');
-                }
-            }
-        }
-
-        // Initialize Dropdowns
-        initSearchableDropdown('bp_code_container', 'bp_code_display', 'bp_code_menu', 'bp_code_search', 'bp_code_list', 'bp_code_hidden', '--Select BP Code--');
-        initSearchableDropdown('craftsman_container', 'craftsman_display', 'craftsman_menu', 'craftsman_search', 'craftsman_list', 'craftsman_hidden', '--Select Craftsman--');
-    });
-</script>
 @endsection
 
 @section('content')
@@ -218,14 +99,16 @@
             </div>
 
             @if(session('success'))
-            <div class="alert alert-success mt-3">
-                {{ session('success') }}
-            </div>
+            <div class="alert alert-success mt-3">{{ session('success') }}</div>
+            @endif
+            @if(session('error'))
+            <div class="alert alert-danger mt-3">{{ session('error') }}</div>
             @endif
 
             <div class="card mt-3">
                 <div class="card-body">
                     <form action="{{ route('super-admin.repairs.index') }}" method="GET" class="row g-3 mb-4">
+                        <input type="hidden" name="tab" value="{{ $activeTab }}">
                         <div class="col-md-3">
                             <label class="form-label">Search</label>
                             <input type="text" name="search" class="form-control" placeholder="ID, Product, Buyer, or Craftsman" value="{{ request('search') }}">
@@ -251,7 +134,7 @@
                                         <li class="custom-dropdown-item" data-value="">All Buyers</li>
                                         @foreach($buyers as $buyer)
                                             <li class="custom-dropdown-item" data-value="{{ $buyer->bp_code }}">
-                                                {{ $buyer->bp_code }} - {{ $buyer->customer_name }}
+                                                {{ $buyer->bp_code }} - {{ $buyer->customer_name ?? $buyer->business_name }}
                                             </li>
                                         @endforeach
                                     </ul>
@@ -260,7 +143,7 @@
                                     <option value="">All Buyers</option>
                                     @foreach($buyers as $buyer)
                                         <option value="{{ $buyer->bp_code }}" {{ request('bp_code') == $buyer->bp_code ? 'selected' : '' }}>
-                                            {{ $buyer->bp_code }} - {{ $buyer->customer_name }}
+                                            {{ $buyer->bp_code }} - {{ $buyer->customer_name ?? $buyer->business_name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -301,241 +184,332 @@
                         </div>
                         <div class="col-12 text-end">
                             <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-filter"></i> Filter</button>
-                            <a href="{{ route('super-admin.repairs.index') }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                            <a href="{{ route('super-admin.repairs.index', ['tab' => $activeTab]) }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Reset</a>
                         </div>
                     </form>
 
                     <ul class="nav nav-tabs mb-3" id="repairTabs" role="tablist">
-                        
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'new' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'new']) }}">
+                            <a class="nav-link {{ $activeTab == 'new' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'new', 'page' => null]) }}">
                                 New <span class="badge bg-primary ms-1">{{ $counts['new'] }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'allocated' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'allocated']) }}">
+                            <a class="nav-link {{ $activeTab == 'allocated' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'allocated', 'page' => null]) }}">
                                 Allocated <span class="badge bg-info ms-1">{{ $counts['allocated'] }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'in_process' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'in_process']) }}">
+                            <a class="nav-link {{ $activeTab == 'in_process' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'in_process', 'page' => null]) }}">
                                 In Process <span class="badge bg-warning text-dark ms-1">{{ $counts['in_process'] }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'completed' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'completed']) }}">
+                            <a class="nav-link {{ $activeTab == 'for_approval' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'for_approval', 'page' => null]) }}">
+                                For Approval <span class="badge bg-secondary ms-1">{{ $counts['for_approval'] }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ $activeTab == 'completed' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'completed', 'page' => null]) }}">
                                 Completed <span class="badge bg-success ms-1">{{ $counts['completed'] }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'rejected' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'rejected']) }}">
+                            <a class="nav-link {{ $activeTab == 'rejected' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'rejected', 'page' => null]) }}">
                                 Rejected <span class="badge bg-danger ms-1">{{ $counts['rejected'] }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ $activeTab == 'all' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'all']) }}">
-                                All <span class="badge bg-secondary ms-1">{{ $counts['all'] }}</span>
+                            <a class="nav-link {{ $activeTab == 'all' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'all', 'page' => null]) }}">
+                                All <span class="badge bg-dark ms-1">{{ $counts['all'] }}</span>
                             </a>
                         </li>
                     </ul>
                     
-                    @if(($activeTab == 'new' || $activeTab == 'in_process' || $activeTab == 'all') && $repairs->count() > 0)
-                        <div class="mb-3">
-                            <form id="bulkCompleteForm" action="{{ route('super-admin.repairs.bulk-complete') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Mark selected repairs as completed?')">
-                                    <i class="bi bi-check-circle"></i> Bulk Complete Selected
-                                </button>
-                            </form>
-                        </div>
-                    @endif
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#bulkCompleteModal">
+                            <i class="bi bi-check-circle"></i> Bulk Complete Selected
+                        </button>
+                    </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-striped table-sm">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="selectAllRepairs"></th>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>BP Code</th>
-                                    <th>Product Name</th>
-                                    <th>Weight</th>
-                                    <th>Item Given To</th>
-                                    <th>Status</th>
-                                    <th>Craftsman</th>
-                                    <th>Proof</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($repairs as $repair)
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" name="repair_ids[]" value="{{ $repair->id }}" class="repair-checkbox" form="bulkCompleteForm">
-                                    </td>
-                                    <td>{{ $repair->id }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($repair->repair_date)->format('d M Y') }}</td>
-                                    <td>{{ $repair->buyer ? $repair->buyer->bp_code : 'N/A' }} - {{$repair->buyer->business_name}} </td>
-                                    <td>{{ $repair->product_name }}</td>
-                                    <td>{{ $repair->weight }}</td>
-                                    <td>{{ $repair->item_given_to }}</td>
-                                    <td>
-                                        @if($repair->status == 'Pending')
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                        @elseif($repair->status == 'Accepted')
-                                        <span class="badge bg-info">Accepted</span>
-                                        @elseif($repair->status == 'In_Process')
-                                        <span class="badge bg-info">In Process</span>
-                                        @elseif($repair->status == 'Allocated')
-                                        <span class="badge bg-primary">Allocated</span>
-                                        @elseif($repair->status == 'Craftsman_Completed')
-                                        <span class="badge bg-success">Craftsman Completed</span>
-                                        @elseif($repair->status == 'Craftsman_Rejected')
-                                        <span class="badge bg-danger">Craftsman Rejected</span>
-                                        @elseif($repair->status == 'Completed')
-                                        <span class="badge bg-success">Completed</span>
-                                        @elseif($repair->status == 'Rejected_by_Admin')
-                                        <span class="badge bg-danger">Rejected</span>
-                                        @elseif($repair->status == 'Buyer_Accepted')
-                                        <span class="badge bg-success">Buyer Accepted</span>
-                                        @elseif($repair->status == 'Buyer_Rejected')
-                                        <span class="badge bg-danger">Buyer Rejected</span>
-                                        @else
-                                        <span class="badge bg-secondary">{{ $repair->status }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $repair->craftsman ? $repair->craftsman->craftman_code : '-' }}</td>
-                                    <td>
-                                        @if($repair->image_proof)
-                                        <a href="{{ asset($repair->image_proof) }}" target="_blank">View</a>
-                                        @else
-                                        N/A
-                                        @endif
-                                    </td>
-                                    <td>
-                                        {{-- View --}}
-                                        <a href="{{ route('super-admin.repairs.show', $repair->id) }}" class="btn btn-sm btn-outline-info" title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                    {{-- Main Form Wrapping Table Only --}}
+                    <form id="bulkCompleteForm" action="{{ route('super-admin.repairs.bulk-complete') }}" method="POST">
+                        @csrf
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAllRepairs"></th>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>BP Code</th>
+                                        <th>Product Name</th>
+                                        <th>Weight</th>
+                                        <th>Item Given To</th>
+                                        <th>Status</th>
+                                        <th>Craftsman</th>
+                                        <th>Proof</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($repairs as $repair)
+                                    @php
+                                        $isEditable = $repair->created_at->gt(now()->subDays(60));
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="repair_ids[]" value="{{ $repair->id }}" class="repair-checkbox">
+                                        </td>
+                                        <td>{{ $repair->id }}</td>
+                                        <td>{{ optional($repair->repair_date)->format('d M Y') ?? $repair->created_at->format('d M Y') }}</td>
+                                        <td>{{ optional($repair->buyer)->bp_code ?? 'N/A' }} - {{ optional($repair->buyer)->business_name ?? optional($repair->buyer)->customer_name }}</td>
+                                        <td>{{ $repair->product_name }}</td>
+                                        <td>{{ $repair->weight }}</td>
+                                        <td>{{ $repair->item_given_to }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ str_replace('_', ' ', $repair->status) }}</span>
+                                        </td>
+                                        <td>{{ optional($repair->craftsman)->craftman_code ?? '-' }}</td>
+                                        <td>
+                                            @if($repair->image_proof)
+                                            <a href="{{ asset($repair->image_proof) }}" target="_blank">View</a>
+                                            @else
+                                            N/A
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('super-admin.repairs.show', $repair->id) }}" class="btn btn-sm btn-outline-info" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
 
-                                        {{-- Edit --}}
-                                        @if(in_array($repair->status, ['Pending', 'Accepted']))
-                                        <a href="{{ route('super-admin.repairs.edit', $repair->id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        @endif
+                                            @if($isEditable)
+                                            <a href="{{ route('super-admin.repairs.edit', $repair->id) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @endif
 
-                                        {{-- Accept --}}
-                                        @if($repair->status == 'Pending')
-                                        <form action="{{ route('super-admin.repairs.accept', $repair->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success" title="Accept"><i class="bi bi-check-lg"></i></button>
-                                        </form>
-                                        @endif
+                                            @if($repair->status == 'Pending')
+                                            <button type="submit" formaction="{{ route('super-admin.repairs.accept', $repair->id) }}" class="btn btn-sm btn-success" title="Accept"><i class="bi bi-check-lg"></i> Accept</button>
+                                            <button type="button" class="btn btn-sm btn-danger" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $repair->id }}">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                            @endif
 
-                                        {{-- Reject --}}
-                                        @if($repair->status == 'Pending')
-                                        <button type="button" class="btn btn-sm btn-danger" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $repair->id }}">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                        @endif
+                                            @if(in_array($repair->status, ['Accepted', 'Craftsman_Rejected']))
+                                            <button type="button" class="btn btn-sm btn-primary" title="Allocate to Craftsman" data-bs-toggle="modal" data-bs-target="#allocateModal{{ $repair->id }}">
+                                                <i class="bi bi-person-plus"></i> Allocate
+                                            </button>
+                                            @endif
 
-                                        {{-- Allocate --}}
-                                        @if(in_array($repair->status, ['Accepted', 'Craftsman_Rejected']))
-                                        <button type="button" class="btn btn-sm btn-primary" title="Allocate to Craftsman" data-bs-toggle="modal" data-bs-target="#allocateModal{{ $repair->id }}">
-                                            <i class="bi bi-person-plus"></i>
-                                        </button>
-                                        @endif
+                                            @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
+                                            <button type="button" class="btn btn-sm btn-success" title="Mark Complete" data-bs-toggle="modal" data-bs-target="#completeModal{{ $repair->id }}">
+                                                <i class="bi bi-check-circle"></i> Complete
+                                            </button>
+                                            @endif
 
-                                        {{-- Complete (after craftsman completed) --}}
-                                        @if($repair->status == 'Craftsman_Completed')
-                                        <form action="{{ route('super-admin.repairs.complete', $repair->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success" title="Mark Complete"><i class="bi bi-check-circle"></i></button>
-                                        </form>
-                                        @endif
-
-                                        {{-- Delete --}}
-                                        <form action="{{ route('super-admin.repairs.destroy', $repair->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this repair order?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <button type="submit" form="deleteForm{{$repair->id}}" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this repair order?');">
                                                 <i class="bi bi-trash"></i>
                                             </button>
-                                        </form>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="11" class="text-center py-4">No repairs found.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
 
-                                {{-- Reject Modal --}}
-                                @if($repair->status == 'Pending')
-                                <div class="modal fade" id="rejectModal{{ $repair->id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form action="{{ route('super-admin.repairs.reject', $repair->id) }}" method="POST">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Reject Repair #{{ $repair->id }}</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Rejection Reason</label>
-                                                        <textarea name="reject_reason" class="form-control" rows="3" required></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-danger">Reject</button>
-                                                </div>
-                                            </form>
+                        {{-- Bulk Complete Modal Placed Safely Inside the Main Form --}}
+                        <div class="modal fade" id="bulkCompleteModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Bulk Complete Selected Repairs</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body space-y-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Item Received Through</label>
+                                            <select name="item_received_through" id="bulkReceivedThroughSelect" class="form-select" onchange="checkCustomInput('bulkReceivedThroughSelect', 'bulkReceivedThroughCustom')">
+                                                <option value="">-- Select Source --</option>
+                                                @php
+                                                    $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+                                                @endphp
+                                                @foreach($receivedThroughOptions as $opt)
+                                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                                @endforeach
+                                                <option value="__custom__">+ Add New...</option>
+                                            </select>
+                                            <input type="text" name="item_received_through_custom" id="bulkReceivedThroughCustom" placeholder="Enter new source..." class="form-control mt-2 d-none">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Delivered By Type</label>
+                                            <select name="item_delivered_by_type" class="form-select">
+                                                <option value="Self">Self</option>
+                                                <option value="AJPL">AJPL</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Item Delivered By Name</label>
+                                            <select name="item_delivered_by" id="bulkDeliveredBySelect" class="form-select" onchange="checkCustomInput('bulkDeliveredBySelect', 'bulkDeliveredByCustom')">
+                                                <option value="">-- Select Person --</option>
+                                                @php
+                                                    $deliveredByOptions = \App\Models\Repair::whereNotNull('item_delivered_by')->distinct()->pluck('item_delivered_by');
+                                                @endphp
+                                                @foreach($deliveredByOptions as $opt)
+                                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                                @endforeach
+                                                <option value="__custom__">+ Add New...</option>
+                                            </select>
+                                            <input type="text" name="item_delivered_by_custom" id="bulkDeliveredByCustom" placeholder="Enter new deliverer..." class="form-control mt-2 d-none">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Item Delivered To</label>
+                                            <input type="text" name="item_delivered_to" class="form-control" placeholder="Receiver/Buyer name...">
                                         </div>
                                     </div>
-                                </div>
-                                @endif
-
-                                {{-- Allocate Modal --}}
-                                @if(in_array($repair->status, ['Accepted', 'Craftsman_Rejected']))
-                                <div class="modal fade" id="allocateModal{{ $repair->id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form action="{{ route('super-admin.repairs.allocate', $repair->id) }}" method="POST">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Allocate Repair #{{ $repair->id }}</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Select Craftsman</label>
-                                                        <select name="craftsman_code" class="form-select" required>
-                                                            <option value="">-- Select Craftsman --</option>
-                                                            @foreach(\App\Models\Craftman::all() as $c)
-                                                            <option value="{{ $c->craftman_code }}">{{ $c->craftman_code }} - {{ $c->name }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Allocation Notes</label>
-                                                        <textarea name="allocation_notes" class="form-control" rows="3" placeholder="Add any specific instructions for the craftsman..."></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary">Allocate</button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success" onclick="return confirm('Mark selected repairs as completed?')">Confirm Bulk Complete</button>
                                     </div>
                                 </div>
-                                @endif
-                                @empty
-                                <tr>
-                                    <td colspan="10" class="text-center">No repairs found.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    {{-- Individual Row Modals Rendered Separately Outside Main Form --}}
+                    @foreach($repairs as $repair)
+                        <form id="deleteForm{{$repair->id}}" action="{{ route('super-admin.repairs.destroy', $repair->id) }}" method="POST" class="d-none">
+                            @csrf
+                            @method('DELETE')
+                        </form>
+
+                        @if($repair->status == 'Pending')
+                        <div class="modal fade" id="rejectModal{{ $repair->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="{{ route('super-admin.repairs.reject', $repair->id) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Repair #{{ $repair->id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Rejection Reason</label>
+                                                <textarea name="reject_reason" class="form-control" rows="3" required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger">Reject</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if(in_array($repair->status, ['Accepted', 'Craftsman_Rejected']))
+                        <div class="modal fade" id="allocateModal{{ $repair->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="{{ route('super-admin.repairs.allocate', $repair->id) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Allocate Repair #{{ $repair->id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Select Craftsman</label>
+                                                <select name="craftsman_code" class="form-select" required>
+                                                    <option value="">-- Select Craftsman --</option>
+                                                    @foreach($craftsmen as $c)
+                                                    <option value="{{ $c->craftman_code }}">{{ $c->craftman_code }} - {{ $c->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Allocation Notes</label>
+                                                <textarea name="allocation_notes" class="form-control" rows="3" placeholder="Add instructions..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary">Allocate</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
+                        <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="{{ route('super-admin.repairs.complete', $repair->id) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Complete Repair #{{ $repair->id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body space-y-3">
+                                            <div class="mb-3">
+                                                <label class="form-label">Item Received Through</label>
+                                                <select name="item_received_through" id="receivedThroughSelect{{ $repair->id }}" class="form-select" onchange="checkCustomInput('receivedThroughSelect{{ $repair->id }}', 'receivedThroughCustom{{ $repair->id }}')">
+                                                    <option value="">-- Select Source --</option>
+                                                    @php
+                                                        $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+                                                    @endphp
+                                                    @foreach($receivedThroughOptions as $opt)
+                                                        <option value="{{ $opt }}" {{ $repair->item_received_through == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                                    @endforeach
+                                                    <option value="__custom__">+ Add New...</option>
+                                                </select>
+                                                <input type="text" name="item_received_through_custom" id="receivedThroughCustom{{ $repair->id }}" placeholder="Enter new source..." class="form-control mt-2 d-none">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Delivered By Type</label>
+                                                <select name="item_delivered_by_type" class="form-select">
+                                                    <option value="Self" {{ $repair->item_delivered_by_type == 'Self' ? 'selected' : '' }}>Self</option>
+                                                    <option value="AJPL" {{ $repair->item_delivered_by_type == 'AJPL' ? 'selected' : '' }}>AJPL</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Item Delivered By Name</label>
+                                                <select name="item_delivered_by" id="deliveredBySelect{{ $repair->id }}" class="form-select" onchange="checkCustomInput('deliveredBySelect{{ $repair->id }}', 'deliveredByCustom{{ $repair->id }}')">
+                                                    <option value="">-- Select Person --</option>
+                                                    @php
+                                                        $deliveredByOptions = \App\Models\Repair::whereNotNull('item_delivered_by')->distinct()->pluck('item_delivered_by');
+                                                    @endphp
+                                                    @foreach($deliveredByOptions as $opt)
+                                                        <option value="{{ $opt }}" {{ $repair->item_delivered_by == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                                    @endforeach
+                                                    <option value="__custom__">+ Add New...</option>
+                                                </select>
+                                                <input type="text" name="item_delivered_by_custom" id="deliveredByCustom{{ $repair->id }}" placeholder="Enter new deliverer..." class="form-control mt-2 d-none">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Item Delivered To</label>
+                                                <input type="text" name="item_delivered_to" value="{{ $repair->item_delivered_to }}" class="form-control" placeholder="Receiver/Buyer name...">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-success">Mark as Completed</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    @endforeach
+
                     <div class="mt-3">
                         {{ $repairs->links() }}
                     </div>
@@ -544,4 +518,111 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAllRepairs');
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.repair-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+            });
+        }
+
+        function initSearchableDropdown(containerId, displayId, menuId, searchInputId, listId, hiddenSelectId, placeholder) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const display = document.getElementById(displayId);
+            const menu = document.getElementById(menuId);
+            const searchInput = document.getElementById(searchInputId);
+            const listContainer = document.getElementById(listId);
+            const hiddenSelect = document.getElementById(hiddenSelectId);
+
+            function getListItems() {
+                return listContainer.querySelectorAll('.custom-dropdown-item');
+            }
+
+            display.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = menu.style.display === 'block';
+                document.querySelectorAll('.custom-dropdown-menu').forEach(m => {
+                    if (m !== menu) m.style.display = 'none';
+                });
+                menu.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    searchInput.focus();
+                    searchInput.value = '';
+                    filterItems('');
+                }
+            });
+
+            searchInput.addEventListener('input', function() {
+                filterItems(this.value.toLowerCase());
+            });
+
+            function filterItems(query) {
+                getListItems().forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        item.classList.remove('d-none');
+                    } else {
+                        item.classList.add('d-none');
+                    }
+                });
+            }
+
+            listContainer.addEventListener('click', function(e) {
+                const item = e.target.closest('.custom-dropdown-item');
+                if (!item) return;
+
+                const val = item.dataset.value;
+                const text = item.textContent.trim();
+                
+                display.textContent = val ? text : placeholder;
+                hiddenSelect.value = val;
+                hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                getListItems().forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                menu.style.display = 'none';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!container.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+
+            if (hiddenSelect.value) {
+                const selectedItem = Array.from(getListItems()).find(i => i.dataset.value === hiddenSelect.value);
+                if (selectedItem) {
+                    display.textContent = selectedItem.textContent.trim();
+                    selectedItem.classList.add('selected');
+                }
+            }
+        }
+
+        initSearchableDropdown('bp_code_container', 'bp_code_display', 'bp_code_menu', 'bp_code_search', 'bp_code_list', 'bp_code_hidden', '--Select BP Code--');
+        initSearchableDropdown('craftsman_container', 'craftsman_display', 'craftsman_menu', 'craftsman_search', 'craftsman_list', 'craftsman_hidden', '--Select Craftsman--');
+    });
+
+    function checkCustomInput(selectId, inputId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        if (select.value === '__custom__') {
+            input.classList.remove('d-none');
+            input.required = true;
+            input.focus();
+        } else {
+            input.classList.add('d-none');
+            input.required = false;
+            input.value = '';
+        }
+    }
+</script>
 @endsection

@@ -341,9 +341,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminLoginController::class, 'dashboard'])->name('dashboard');
         Route::get('/global-search', [App\Http\Controllers\Admin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/global-search', [App\Http\Controllers\Admin\GlobalSearchController::class, 'index']);
-        
+
         Route::get('/details-all', [App\Http\Controllers\Admin\DetailsAllController::class, 'index'])->name('details-all');
         Route::get('/details-all/accepted-designs/{bp_code}', [App\Http\Controllers\Admin\DetailsAllController::class, 'getAcceptedDesigns'])->name('details-all.accepted-designs');
+        Route::get('/details-all/favorites/{user_type}/{user_id}', [App\Http\Controllers\Admin\DetailsAllController::class, 'getFavorites'])->name('details-all.favorites');
         Route::post('/logout', [AdminLoginController::class, 'logout'])->name('logout');
         Route::post('/fcm-token', [App\Http\Controllers\Admin\FcmTokenController::class, 'saveAdminToken'])->name('fcm-token.save');
 
@@ -651,9 +652,10 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('/dashboard', [SuperAdminLoginController::class, 'dashboard'])->name('dashboard');
         Route::get('/global-search', [App\Http\Controllers\SuperAdmin\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/global-search', [App\Http\Controllers\SuperAdmin\GlobalSearchController::class, 'index']);
-        
+
         Route::get('/details-all', [App\Http\Controllers\SuperAdmin\DetailsAllController::class, 'index'])->name('details-all');
         Route::get('/details-all/accepted-designs/{bp_code}', [App\Http\Controllers\SuperAdmin\DetailsAllController::class, 'getAcceptedDesigns'])->name('details-all.accepted-designs');
+        Route::get('/details-all/favorites/{user_type}/{user_id}', [App\Http\Controllers\SuperAdmin\DetailsAllController::class, 'getFavorites'])->name('details-all.favorites');
         Route::get('/dashboard/stats', [SuperAdminLoginController::class, 'getDashboardStats'])->name('dashboard.stats');
         Route::get('/dashboard/calendar-data', [SuperAdminLoginController::class, 'getCalendarData'])->name('dashboard.calendar-data');
         Route::post('/logout', [SuperAdminLoginController::class, 'logout'])->name('logout');
@@ -894,11 +896,15 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::get('/{purchaseOrder}/copy', [App\Http\Controllers\SuperAdmin\PurchaseOrderController::class, 'copy'])->name('copy');
         });
 
-        // Repairs Routes
+        // Repairs Routes inside your admin/super-admin prefix group
         Route::prefix('repairs')->name('repairs.')->group(function () {
+            // 1. Place static/action routes BEFORE dynamic /{repair} parameters
+            Route::post('bulk-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
             Route::get('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'index'])->name('index');
             Route::get('/create', [App\Http\Controllers\SuperAdmin\RepairController::class, 'create'])->name('create');
             Route::post('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'store'])->name('store');
+
+            // 2. Dynamic parameter routes go after
             Route::get('/{repair}', [App\Http\Controllers\SuperAdmin\RepairController::class, 'show'])->name('show');
             Route::get('/{repair}/edit', [App\Http\Controllers\SuperAdmin\RepairController::class, 'edit'])->name('edit');
             Route::put('/{repair}', [App\Http\Controllers\SuperAdmin\RepairController::class, 'update'])->name('update');
@@ -907,7 +913,6 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('/{repair}/reject', [App\Http\Controllers\SuperAdmin\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/allocate', [App\Http\Controllers\SuperAdmin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'complete'])->name('complete');
-            Route::post('/bulk-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
         });
 
         // Finance Routes (Dummy for now)
@@ -1003,7 +1008,6 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'destroy'])->name('destroy');
         });
         Route::resource('updates', NewUpdatesController::class);
-
     });
 });
 
@@ -1028,7 +1032,7 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         Route::get('/dashboard', [CraftsmanLoginController::class, 'dashboard'])
             ->name('dashboard')
             ->middleware('craftsman.permission:dashboard');
-            
+
         Route::get('/global-search', [App\Http\Controllers\Craftsman\GlobalSearchController::class, 'index'])->name('global-search');
         Route::post('/global-search', [App\Http\Controllers\Craftsman\GlobalSearchController::class, 'index']);
 

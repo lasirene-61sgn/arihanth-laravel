@@ -1,3 +1,4 @@
+{{-- resources/views/super-admin/repairs/show.blade.php --}}
 @extends('super-admin.layouts.app')
 
 @section('title', 'Repair Details #' . $repair->id)
@@ -13,7 +14,6 @@
         border-radius: 12px;
         background: #ffffff;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease;
     }
     .card-header-clean {
         background: transparent;
@@ -39,8 +39,6 @@
         border-radius: 8px;
         padding: 0.875rem 1rem;
     }
-    
-    /* Modern Vertical Timeline for History Log */
     .timeline-container {
         position: relative;
         padding-left: 1.5rem;
@@ -81,7 +79,6 @@
 </style>
 
 <div class="repair-wrapper py-4 px-2 px-md-4">
-    <!-- Header Bar -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
@@ -94,29 +91,7 @@
             <div class="d-flex align-items-center gap-3">
                 <h2 class="h3 fw-bold text-slate-900 mb-0">Repair Order #{{ $repair->id }}</h2>
                 <div>
-                    @if($repair->status == 'Pending')
-                        <span class="status-pill bg-warning-subtle text-warning-emphasis">Pending</span>
-                    @elseif($repair->status == 'Accepted')
-                        <span class="status-pill bg-info-subtle text-info-emphasis">Accepted</span>
-                    @elseif($repair->status == 'In_Process')
-                        <span class="status-pill bg-info-subtle text-info-emphasis">In Process</span>
-                    @elseif($repair->status == 'Allocated')
-                        <span class="status-pill bg-primary-subtle text-primary">Allocated</span>
-                    @elseif($repair->status == 'Craftsman_Completed')
-                        <span class="status-pill bg-success-subtle text-success">Craftsman Completed</span>
-                    @elseif($repair->status == 'Craftsman_Rejected')
-                        <span class="status-pill bg-danger-subtle text-danger">Craftsman Rejected</span>
-                    @elseif($repair->status == 'Completed')
-                        <span class="status-pill bg-success-subtle text-success">Completed</span>
-                    @elseif($repair->status == 'Rejected_by_Admin')
-                        <span class="status-pill bg-danger-subtle text-danger">Rejected</span>
-                    @elseif($repair->status == 'Buyer_Accepted')
-                        <span class="status-pill bg-success-subtle text-success">Buyer Accepted</span>
-                    @elseif($repair->status == 'Buyer_Rejected')
-                        <span class="status-pill bg-danger-subtle text-danger">Buyer Rejected</span>
-                    @else
-                        <span class="status-pill bg-secondary-subtle text-secondary">{{ $repair->status }}</span>
-                    @endif
+                    <span class="status-pill bg-secondary-subtle text-secondary">{{ str_replace('_', ' ', $repair->status) }}</span>
                 </div>
             </div>
         </div>
@@ -124,7 +99,7 @@
             <a href="{{ route('super-admin.repairs.index') }}" class="btn btn-white btn-sm border shadow-sm px-3 fw-medium">
                 <i class="bi bi-arrow-left me-1"></i> Back
             </a>
-            @if(in_array($repair->status, ['Pending', 'Accepted']))
+            @if($repair->created_at->gt(now()->subDays(60)) && in_array($repair->status, ['Pending', 'Accepted']))
             <a href="{{ route('super-admin.repairs.edit', $repair->id) }}" class="btn btn-primary btn-sm shadow-sm px-3 fw-medium">
                 <i class="bi bi-pencil me-1"></i> Edit Repair
             </a>
@@ -133,9 +108,7 @@
     </div>
 
     <div class="row g-4">
-        <!-- Main Content Column (Left) -->
         <div class="col-lg-8">
-            <!-- General & Product Summary -->
             <div class="card-modern mb-4">
                 <div class="card-header-clean d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0 text-slate-800 fs-6">
@@ -190,11 +163,22 @@
                             <div class="info-label">Notes</div>
                             <div class="text-slate-700 fw-medium small">{{ $repair->notes ?? 'No notes' }}</div>
                         </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Received Through</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_received_through ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Delivered By</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_delivered_by_type }} - {{ $repair->item_delivered_by ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-label">Delivered To</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_delivered_to ?? 'N/A' }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Stakeholders (Buyer & Craftsman Grid) -->
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="card-modern h-100">
@@ -211,7 +195,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="info-label mb-0">Customer Name</span>
-                                    <span class="fw-bold text-slate-900">{{ $repair->buyer->customer_name }}</span>
+                                    <span class="fw-bold text-slate-900">{{ $repair->buyer->customer_name ?? $repair->buyer->business_name }}</span>
                                 </div>
                             @else
                                 <div class="p-3 rounded-2 bg-danger-subtle text-danger small fw-medium">
@@ -254,7 +238,6 @@
                 </div>
             </div>
 
-            <!-- History Log Timeline View -->
             <div class="card-modern mb-4">
                 <div class="card-header-clean">
                     <h5 class="fw-bold mb-0 text-slate-800 fs-6">
@@ -263,192 +246,42 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="timeline-container">
-                        <!-- Created Event -->
                         <div class="timeline-item">
                             <div class="timeline-dot" style="background-color: #64748b;"></div>
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <span class="badge bg-secondary-subtle text-secondary fw-semibold">Created</span>
-                                    <div class="fw-bold text-dark mt-1">
-                                        {{ $repair->creator_details['name'] ?? 'N/A' }} 
-                                        <span class="text-muted fw-normal small">({{ $repair->creator_details['type'] ?? 'N/A' }})</span>
-                                    </div>
+                                    <div class="fw-bold text-dark mt-1">Order Logged</div>
                                 </div>
                                 <div class="text-muted small">
-                                    @if(!empty($repair->created_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->created_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
+                                    {{ $repair->created_at ? \Carbon\Carbon::parse($repair->created_at)->format('d M Y, h:i A') : 'N/A' }}
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Allocated Event -->
-                        @if($repair->allocated_by)
+                        @if($repair->allocated_at)
                         <div class="timeline-item">
                             <div class="timeline-dot" style="background-color: #0d6efd;"></div>
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
                                     <span class="badge bg-primary-subtle text-primary fw-semibold">Allocated</span>
-                                    <div class="fw-bold text-dark mt-1">
-                                        {{ $repair->allocator_details['name'] ?? 'N/A' }} 
-                                        <span class="text-muted fw-normal small">({{ $repair->allocator_details['type'] ?? 'N/A' }})</span>
-                                    </div>
+                                    <div class="fw-bold text-dark mt-1">Assigned to {{ $repair->allocated_craftsman_code }}</div>
                                 </div>
                                 <div class="text-muted small">
-                                    @if(!empty($repair->allocated_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->allocated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
+                                    {{ \Carbon\Carbon::parse($repair->allocated_at)->format('d M Y, h:i A') }}
                                 </div>
                             </div>
                         </div>
                         @endif
-
-                        <!-- Craftsman Allocated Event -->
-                        @if($repair->allocated_craftsman_code)
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #0dcaf0;"></div>
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                <div>
-                                    <span class="badge bg-info-subtle text-info-emphasis fw-semibold">Craftsman Allocated</span>
-                                    <div class="fw-bold text-dark mt-1">
-                                        {{ $repair->craftsman->name ?? 'N/A' }} 
-                                        <span class="text-muted fw-normal small">({{ $repair->allocated_craftsman_code }})</span>
-                                    </div>
-                                </div>
-                                <div class="text-muted small">
-                                    @if(!empty($repair->allocated_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->allocated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Craftsman Accepted Event -->
-                        @if($repair->craftsman_accepted_at)
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #ffc107;"></div>
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                <div>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold">
-                                        @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
-                                            Craftsman Staff Accepted
-                                        @else
-                                            Craftsman Accepted
-                                        @endif
-                                    </span>
-                                    @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
-                                        {{-- Staff accepted: show staff only --}}
-                                        <div class="mt-1" style="background:#f0f0ff; padding:5px 9px; border-radius:6px; border-left:3px solid #4f46e5;">
-                                            <div class="fw-semibold" style="color:#4f46e5; font-size:0.85rem;"><i class="bi bi-person-badge me-1"></i>{{ $repair->acceptedByStaff->staff_code ?? 'N/A' }} - {{ $repair->acceptedByStaff->name ?? 'N/A' }}</div>
-                                        </div>
-                                    @else
-                                        {{-- Craftsman accepted: show craftsman only --}}
-                                        <div class="mt-1">
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $repair->craftsman->craftman_code ?? 'N/A' }}</span>
-                                            <span class="fw-bold text-dark">{{ $repair->craftsman->full_name ?? $repair->craftsman->name ?? 'N/A' }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="text-muted small text-end">
-                                    @if($repair->accepted_by_staff_id && $repair->staff_accepted_at)
-                                        <span style="color:#6d28d9;"><i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->staff_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}</span>
-                                    @elseif(!empty($repair->craftsman_accepted_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->craftsman_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @elseif(!empty($repair->updated_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->updated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Craftsman Completed Event -->
-                                                @if($repair->craftsman_completed_at)
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #198754;"></div>
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                <div>
-                                    <span class="badge bg-success-subtle text-success fw-semibold">
-                                        @if($repair->staff_completed_at)
-                                            Craftsman Staff Completed
-                                        @else
-                                            Craftsman Completed
-                                        @endif
-                                    </span>
-                                    @if($repair->staff_completed_at)
-                                        {{-- Staff completed: show staff only --}}
-                                        <div class="mt-1" style="background:#f0f0ff; padding:5px 9px; border-radius:6px; border-left:3px solid #4f46e5;">
-                                            <div class="fw-semibold" style="color:#4f46e5; font-size:0.85rem;"><i class="bi bi-person-badge me-1"></i>{{ $repair->craftsmanStaff->staff_code ?? 'N/A' }} - {{ $repair->craftsmanStaff->name ?? 'N/A' }}</div>
-                                        </div>
-                                    @else
-                                        {{-- Craftsman completed: show craftsman only --}}
-                                        <div class="mt-1">
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $repair->craftsman->craftman_code ?? 'N/A' }}</span>
-                                            <span class="fw-bold text-dark">{{ $repair->craftsman->full_name ?? $repair->craftsman->name ?? 'N/A' }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="text-muted small text-end">
-                                    @if($repair->staff_completed_at)
-                                        <span style="color:#6d28d9;"><i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->staff_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}</span>
-                                    @elseif(!empty($repair->craftsman_completed_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->craftsman_completed_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @elseif(!empty($repair->updated_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->updated_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Approved Event -->
-                        @if($repair->approved_by)
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #198754;"></div>
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                                <div>
-                                    <span class="badge bg-success-subtle text-success fw-semibold">Approved</span>
-                                    <div class="fw-bold text-dark mt-1">
-                                        {{ $repair->approver_details['name'] ?? 'N/A' }} 
-                                        <span class="text-muted fw-normal small">({{ $repair->approver_details['type'] ?? 'N/A' }})</span>
-                                    </div>
-                                </div>
-                                <div class="text-muted small">
-                                    @if(!empty($repair->approved_at))
-                                        <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->approved_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Buyer Completed Event -->
                         @if($repair->buyer_accepted_at)
                         <div class="timeline-item">
-                            <div class="timeline-dot" style="background-color: #fd7e14;"></div>
+                            <div class="timeline-dot" style="background-color: #198754;"></div>
                             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                                 <div>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold">Buyer Completed</span>
-                                    <div class="fw-bold text-dark mt-1">
-                                        {{ $repair->buyer->business_name ?? $repair->buyer->customer_name ?? 'N/A' }} 
-                                        <span class="text-muted fw-normal small">(Buyer)</span>
-                                    </div>
+                                    <span class="badge bg-success-subtle text-success fw-semibold">Completed</span>
+                                    <div class="fw-bold text-dark mt-1">Marked as Completed & Delivered</div>
                                 </div>
                                 <div class="text-muted small">
-                                    <i class="bi bi-calendar3 me-1"></i>{{ \Carbon\Carbon::parse($repair->buyer_accepted_at)->timezone('Asia/Kolkata')->format('d M Y, h:i A') }}
+                                    {{ \Carbon\Carbon::parse($repair->buyer_accepted_at)->format('d M Y, h:i A') }}
                                 </div>
                             </div>
                         </div>
@@ -456,25 +289,9 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Rejection Reason Card -->
-            @if($repair->reject_reason)
-            <div class="card-modern border-danger-subtle bg-danger-subtle bg-opacity-10 mb-4">
-                <div class="card-header-clean bg-transparent border-bottom-0 pt-4">
-                    <h5 class="fw-bold mb-0 text-danger fs-6">
-                        <i class="bi bi-x-circle me-2"></i>Rejection Reason
-                    </h5>
-                </div>
-                <div class="card-body p-4 pt-1">
-                    <p class="mb-0 text-danger-emphasis small leading-relaxed">{{ $repair->reject_reason }}</p>
-                </div>
-            </div>
-            @endif
         </div>
 
-        <!-- Sidebar Column (Right) -->
         <div class="col-lg-4">
-            <!-- Image Proof Box -->
             <div class="card-modern mb-4">
                 <div class="card-header-clean">
                     <h5 class="fw-bold mb-0 text-slate-800 fs-6">
@@ -500,7 +317,6 @@
                 </div>
             </div>
 
-            <!-- Danger Zone -->
             <div class="card-modern border-danger-subtle">
                 <div class="card-header-clean bg-danger-subtle bg-opacity-25 border-bottom-0">
                     <h5 class="fw-bold mb-0 text-danger fs-6">

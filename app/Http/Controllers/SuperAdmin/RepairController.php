@@ -18,7 +18,6 @@ class RepairController extends Controller
     {
         $query = Repair::with('buyer', 'craftsman');
 
-        // ── Search (ID, Product Name, BP Code/Name, or Craftsman Code/Name) ──
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -27,7 +26,8 @@ class RepairController extends Controller
                   ->orWhere('allocated_craftsman_code', 'like', "%{$search}%")
                   ->orWhereHas('buyer', function($bq) use ($search) {
                       $bq->where('bp_code', 'like', "%{$search}%")
-                        ->orWhere('customer_name', 'like', "%{$search}%");
+                        ->orWhere('customer_name', 'like', "%{$search}%")
+                        ->orWhere('business_name', 'like', "%{$search}%");
                   })
                   ->orWhereHas('craftsman', function($cq) use ($search) {
                       $cq->where('name', 'like', "%{$search}%")
@@ -36,24 +36,20 @@ class RepairController extends Controller
             });
         }
 
-        // ── Filter by Status ──
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // ── Filter by Buyer (BP Code) ──
         if ($request->filled('bp_code')) {
             $query->whereHas('buyer', function($q) use ($request) {
                 $q->where('bp_code', $request->bp_code);
             });
         }
 
-        // ── Filter by Craftsman ──
         if ($request->filled('craftsman_code')) {
             $query->where('allocated_craftsman_code', $request->craftsman_code);
         }
 
-        // ── Filter by Date Range ──
         if ($request->filled('date_from')) {
             $query->whereDate('repair_date', '>=', $request->date_from);
         }
@@ -61,27 +57,21 @@ class RepairController extends Controller
             $query->whereDate('repair_date', '<=', $request->date_to);
         }
 
-        // ── Tab Groups Logic ──
         $activeTab = $request->get('tab', 'new');
         $statusMap = [
-            'new'        => ['Pending', 'Accepted'],
-            'allocated'  => ['Allocated'],
-            'in_process' => ['In_Process'],
-            'completed'  => ['Completed', 'Craftsman_Completed', 'Buyer_Accepted'],
-            'rejected'   => ['Rejected_by_Admin', 'Craftsman_Rejected', 'Buyer_Rejected'],
+            'new'          => ['Pending', 'Accepted'],
+            'allocated'    => ['Allocated'],
+            'in_process'   => ['In_Process'],
+            'for_approval' => ['Craftsman_Completed'],
+            'completed'    => ['Completed', 'Buyer_Accepted'],
+            'rejected'     => ['Rejected_by_Admin', 'Craftsman_Rejected', 'Buyer_Rejected'],
         ];
 
         if ($activeTab !== 'all' && isset($statusMap[$activeTab])) {
             $query->whereIn('status', $statusMap[$activeTab]);
         }
 
-        // Clone query for counts BEFORE pagination
-        $countQuery = clone $query;
-        // However, counts should ideally show totals for the whole set regardless of current tab, 
-        // but respecting search/other filters.
-        
         $baseCountQuery = Repair::query();
-        // Re-apply search/date/buyer/craftsman filters to baseCountQuery for accurate tab counts
         if ($request->filled('search')) {
             $search = $request->search;
             $baseCountQuery->where(function($q) use ($search) {
@@ -114,12 +104,13 @@ class RepairController extends Controller
         }
 
         $counts = [
-            'all'        => (clone $baseCountQuery)->count(),
-            'new'        => (clone $baseCountQuery)->whereIn('status', $statusMap['new'])->count(),
-            'allocated'  => (clone $baseCountQuery)->whereIn('status', $statusMap['allocated'])->count(),
-            'in_process' => (clone $baseCountQuery)->whereIn('status', $statusMap['in_process'])->count(),
-            'completed'  => (clone $baseCountQuery)->whereIn('status', $statusMap['completed'])->count(),
-            'rejected'   => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
+            'all'          => (clone $baseCountQuery)->count(),
+            'new'          => (clone $baseCountQuery)->whereIn('status', $statusMap['new'])->count(),
+            'allocated'    => (clone $baseCountQuery)->whereIn('status', $statusMap['allocated'])->count(),
+            'in_process'   => (clone $baseCountQuery)->whereIn('status', $statusMap['in_process'])->count(),
+            'for_approval' => (clone $baseCountQuery)->whereIn('status', $statusMap['for_approval'])->count(),
+            'completed'    => (clone $baseCountQuery)->whereIn('status', $statusMap['completed'])->count(),
+            'rejected'     => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
         ];
 
         $repairs = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
@@ -176,6 +167,14 @@ class RepairController extends Controller
             $imagePath = 'images/repairs/' . $imageName;
         }
 
+        $receivedThrough = $request->item_received_through === '__custom__' 
+            ? $request->item_received_through_custom 
+            : $request->item_received_through;
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
         Repair::create([
             'buyer_id' => $request->buyer_id,
             'repair_date' => now()->toDateString(),
@@ -190,9 +189,9 @@ class RepairController extends Controller
             'ref' => $request->ref,
             'notes' => $request->notes,
             'item_received_by' => $request->item_received_by,
-            'item_received_through' => $request->item_received_through,
+            'item_received_through' => $receivedThrough,
             'item_delivered_by_type' => $request->item_delivered_by_type,
-            'item_delivered_by' => $request->item_delivered_by,
+            'item_delivered_by' => $deliveredBy,
             'status' => 'Pending',
             'created_by' => auth()->id(),
             'creator_type' => 'super_admin',
@@ -205,6 +204,11 @@ class RepairController extends Controller
     public function edit($id)
     {
         $repair = Repair::findOrFail($id);
+        
+        if ($repair->created_at->lt(now()->subDays(60))) {
+            return redirect()->route('super-admin.repairs.index')->with('error', 'Repair orders older than 60 days cannot be edited.');
+        }
+
         $buyers = Buyer::all();
         $craftsmen = Craftman::all();
         $receivedByOptions = Repair::whereNotNull('item_received_by')->distinct()->pluck('item_received_by');
@@ -216,6 +220,10 @@ class RepairController extends Controller
     public function update(Request $request, $id)
     {
         $repair = Repair::findOrFail($id);
+
+        if ($repair->created_at->lt(now()->subDays(60))) {
+            return redirect()->route('super-admin.repairs.index')->with('error', 'Repair orders older than 60 days cannot be updated.');
+        }
 
         $validator = Validator::make($request->all(), [
             'buyer_id' => 'required|exists:buyers,id',
@@ -248,6 +256,14 @@ class RepairController extends Controller
             $data['image_proof'] = 'images/repairs/' . $imageName;
         }
 
+        if ($request->filled('item_received_through_custom')) {
+            $data['item_received_through'] = $request->item_received_through_custom;
+        }
+
+        if ($request->filled('item_delivered_by_custom')) {
+            $data['item_delivered_by'] = $request->item_delivered_by_custom;
+        }
+
         $repair->update($data);
 
         return redirect()->route('super-admin.repairs.index')->with('success', 'Repair updated successfully.');
@@ -257,7 +273,7 @@ class RepairController extends Controller
     {
         $repair = Repair::findOrFail($id);
         $repair->update(['status' => 'Accepted']);
-        return redirect()->route('super-admin.repairs.index')->with('success', 'Repair accepted successfully.');
+        return redirect()->route('super-admin.repairs.index')->with('success', 'Repair accepted successfully. Ready for allocation.');
     }
 
     public function reject(Request $request, $id)
@@ -287,7 +303,6 @@ class RepairController extends Controller
             'allocated_at' => now(),
         ]);
 
-        // Notify Craftsman
         $craftsman = Craftman::where('craftman_code', $request->craftsman_code)->first();
         if ($craftsman && method_exists($craftsman, 'notify')) {
             $craftsman->notify(new RepairAllocated($repair));
@@ -296,17 +311,29 @@ class RepairController extends Controller
         return redirect()->route('super-admin.repairs.index')->with('success', 'Repair allocated to craftsman successfully.');
     }
 
-    public function complete($id)
+    public function complete(Request $request, $id)
     {
         $repair = Repair::findOrFail($id);
+        
+        $receivedThrough = $request->item_received_through === '__custom__' 
+            ? $request->item_received_through_custom 
+            : $request->item_received_through;
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
         $repair->update([
             'status' => 'Buyer_Accepted',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'buyer_accepted_at' => now(),
+            'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+            'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
+            'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
+            'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
         ]);
         
-        // Notify Buyer
         if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
             $repair->buyer->notify(new RepairCompleted($repair));
         }
@@ -321,9 +348,15 @@ class RepairController extends Controller
             return redirect()->back()->with('error', 'No repair orders selected.');
         }
 
-        $repairs = Repair::whereIn('id', $repairIds)
-            ->whereIn('status', ['Pending', 'Accepted', 'In_Process', 'Craftsman_Completed'])
-            ->get();
+        $receivedThrough = $request->item_received_through === '__custom__' 
+            ? $request->item_received_through_custom 
+            : $request->item_received_through;
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
+        $repairs = Repair::whereIn('id', $repairIds)->get();
             
         foreach ($repairs as $repair) {
             $repair->update([
@@ -331,8 +364,12 @@ class RepairController extends Controller
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'buyer_accepted_at' => now(),
+                'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+                'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
+                'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
+                'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
             ]);
-            // Notify Buyer
+
             if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
                 $repair->buyer->notify(new RepairCompleted($repair));
             }
@@ -351,7 +388,6 @@ class RepairController extends Controller
     {
         $repair = Repair::findOrFail($id);
         
-        // Delete image if exists
         if ($repair->image_proof && file_exists(public_path($repair->image_proof))) {
             unlink(public_path($repair->image_proof));
         }
