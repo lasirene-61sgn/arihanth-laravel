@@ -350,7 +350,7 @@
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const formData = new FormData();
-                let url = `{{ route('super-admin.global-search') }}`;
+                let url = `{{ route('super-admin.global-search', [], false) }}`;
                 let options = {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -369,11 +369,37 @@
                 }
 
                 fetch(url, options)
-                    .then(response => response.json())
-                    .then(data => {
-                        renderResults(data.query, data.results);
+                    .then(async response => {
+                        if (!response.ok) {
+                            let errorMsg = `Server error: ${response.status}`;
+                            try {
+                                const errData = await response.json();
+                                if (errData.message) errorMsg = errData.message;
+                            } catch (e) {
+                                // If not json, ignore
+                            }
+                            throw new Error(errorMsg);
+                        }
+                        return response.json();
                     })
-                    .catch(error => console.error('Error fetching search results:', error))
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.message || 'Unknown error occurred.');
+                        }
+                        renderResults(data.query, data.results || {});
+                    })
+                    .catch(error => {
+                        console.error('Error fetching search results:', error);
+                        resultsContainer.innerHTML = `
+                            <div class="tw-text-center tw-py-12 tw-bg-white dark:tw-bg-slate-800 tw-rounded-3xl tw-shadow-sm tw-border tw-border-red-100 dark:tw-border-red-900/30 tw-max-w-4xl tw-mx-auto tw-animate-fade-in-up">
+                                <div class="tw-text-red-500 tw-mb-4 tw-inline-block tw-p-4 tw-rounded-full tw-bg-red-50 dark:tw-bg-red-900/20">
+                                    <i class="bi bi-exclamation-triangle tw-text-4xl"></i>
+                                </div>
+                                <h3 class="tw-text-xl tw-font-bold tw-text-gray-800 dark:tw-text-gray-100 tw-mb-2">Search Failed</h3>
+                                <p class="tw-text-red-500 dark:tw-text-red-400 tw-max-w-md tw-mx-auto">${error.message}</p>
+                            </div>
+                        `;
+                    })
                     .finally(() => {
                         searchIconContainer.innerHTML = `<i class="bi bi-search tw-text-xl"></i>`;
                     });

@@ -28,6 +28,27 @@ class GlobalSearchController extends Controller
     {
         $query = $request->input('search');
         $hasImage = $request->hasFile('image_search');
+        
+        // Handle cases where the file was uploaded but is invalid (e.g., exceeds upload_max_filesize)
+        if ($request->isMethod('post') && $request->file('image_search') && !$request->file('image_search')->isValid()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Image upload failed: ' . $request->file('image_search')->getErrorMessage() . '. Please try a smaller image.'
+                ], 400);
+            }
+        }
+        
+        // Handle cases where post_max_size is exceeded (PHP clears $_POST and $_FILES)
+        if ($request->isMethod('post') && empty($request->all()) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'The uploaded image exceeds the server\'s maximum allowed size. Please try a smaller image.'
+                ], 413);
+            }
+        }
+
         $results = [];
 
         // Helper function to add results
@@ -60,14 +81,18 @@ class GlobalSearchController extends Controller
                             $url = '#';
                         }
 
-                        // Determine image
+                        // Determine image and ensure storage path formatting for Hostinger
                         $image = null;
                         if (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
                         elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
 
-                        if ($image) $image = asset($image);
+                        if ($image) {
+                            if (!str_starts_with($image, 'http')) {
+                                $image = str_starts_with($image, 'storage/') ? asset($image) : asset('storage/' . $image);
+                            }
+                        }
 
                         // Determine details
                         $detailsText = 'No additional details available.';
@@ -91,99 +116,123 @@ class GlobalSearchController extends Controller
         };
 
         if ($hasImage) {
-            $file = $request->file('image_search');
-            $hasher = new Hasher(new DifferenceHash());
-            $uploadedHashHex = $hasher->hash($file->getRealPath())->toHex();
+            try {
+                $file = $request->file('image_search');
+                $hasher = new Hasher(new DifferenceHash());
+                $uploadedHashHex = $hasher->hash($file->getRealPath())->toHex();
 
-            $allHashes = ImageHash::all();
-            $matchedItems = [];
-
-            $hexToBin = function($hex) {
-                $bin = '';
-                for ($i = 0; $i < strlen($hex); $i++) {
-                    $bin .= str_pad(base_convert($hex[$i], 16, 2), 4, '0', STR_PAD_LEFT);
-                }
-                return str_pad($bin, 64, '0', STR_PAD_LEFT);
-            };
-
-            $uploadedHashBin = $hexToBin($uploadedHashHex);
-
-            foreach ($allHashes as $dbHash) {
-                $dbHashBin = $hexToBin($dbHash->hash);
-
-                $distance = 0;
-                for ($i = 0; $i < 64; $i++) {
-                    if (isset($uploadedHashBin[$i]) && isset($dbHashBin[$i]) && $uploadedHashBin[$i] !== $dbHashBin[$i]) {
-                        $distance++;
+                $allHashes = ImageHash::all();
+                
+                if ($allHashes->count() === 0) {
+                    if ($request->ajax()) {
+                        return response()->json([
+                            'error' => true,
+                            'message' => 'The image search database is empty on this server. No images have been indexed yet.'
+                        ], 400);
                     }
                 }
 
-                if ($distance <= 10) {
-                    $type = $dbHash->hashable_type;
-                    if (!isset($matchedItems[$type])) {
-                        $matchedItems[$type] = [];
+                $matchedItems = [];
+
+                $hexToBin = function($hex) {
+                    $bin = '';
+                    for ($i = 0; $i < strlen($hex); $i++) {
+                        $bin .= str_pad(base_convert($hex[$i], 16, 2), 4, '0', STR_PAD_LEFT);
                     }
-                    $matchedItems[$type][] = $dbHash->hashable_id;
+                    return str_pad($bin, 64, '0', STR_PAD_LEFT);
+                };
+
+                $uploadedHashBin = $hexToBin($uploadedHashHex);
+
+                foreach ($allHashes as $dbHash) {
+                    $dbHashBin = $hexToBin($dbHash->hash);
+
+                    $distance = 0;
+                    for ($i = 0; $i < 64; $i++) {
+                        if (isset($uploadedHashBin[$i]) && isset($dbHashBin[$i]) && $uploadedHashBin[$i] !== $dbHashBin[$i]) {
+                            $distance++;
+                        }
+                    }
+
+                    if ($distance <= 10) {
+                        $type = $dbHash->hashable_type;
+                        if (!isset($matchedItems[$type])) {
+                            $matchedItems[$type] = [];
+                        }
+                        $matchedItems[$type][] = $dbHash->hashable_id;
+                    }
                 }
-            }
 
-            if (isset($matchedItems[WorkOrder::class])) {
-                $workOrders = WorkOrder::whereIn('id', $matchedItems[WorkOrder::class])->get();
-                $addResults('Work Orders', $workOrders, 'super-admin.work-order.show', 'workOrder', 'work_order_number');
-            }
-            if (isset($matchedItems[PurchaseOrder::class])) {
-                $purchaseOrders = PurchaseOrder::whereIn('id', $matchedItems[PurchaseOrder::class])->get();
-                $addResults('Purchase Orders', $purchaseOrders, 'super-admin.purchase-order.show', 'purchaseOrder', 'purchase_order_code');
-            }
-            if (isset($matchedItems[Product::class])) {
-                $products = Product::whereIn('id', $matchedItems[Product::class])->get();
-                $addResults('Products', $products, 'super-admin.product.show', 'product', 'product_name');
+                if (isset($matchedItems[WorkOrder::class])) {
+                    $workOrders = WorkOrder::whereIn('id', $matchedItems[WorkOrder::class])->get();
+                    $addResults('Work Orders', $workOrders, 'super-admin.work-order.show', 'workOrder', 'work_order_number');
+                }
+                if (isset($matchedItems[PurchaseOrder::class])) {
+                    $purchaseOrders = PurchaseOrder::whereIn('id', $matchedItems[PurchaseOrder::class])->get();
+                    $addResults('Purchase Orders', $purchaseOrders, 'super-admin.purchase-order.show', 'purchaseOrder', 'purchase_order_code');
+                }
+                if (isset($matchedItems[Product::class])) {
+                    $products = Product::whereIn('id', $matchedItems[Product::class])->get();
+                    $addResults('Products', $products, 'super-admin.product.show', 'product', 'product_name');
 
-                // Match Favorites containing these products
-                $matchingProductIds = $products->pluck('id')->toArray();
-                $productFavorites = Favorite::whereIn('product_id', $matchingProductIds)
-                    ->with('product')
-                    ->limit(20)
-                    ->get();
+                    // Match Favorites containing these products
+                    $matchingProductIds = $products->pluck('id')->toArray();
+                    $productFavorites = Favorite::whereIn('product_id', $matchingProductIds)
+                        ->with('product')
+                        ->limit(20)
+                        ->get();
 
-                $productFavorites->each(function ($fav) {
-                    $fav->custom_display = !empty($fav->design_name)
-                        ? $fav->design_name
-                        : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
+                    $productFavorites->each(function ($fav) {
+                        $fav->custom_display = !empty($fav->design_name)
+                            ? $fav->design_name
+                            : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
 
-                    $fav->details = "Assigned to " . ucfirst($fav->user_type) . " (User ID: {$fav->user_id})";
-                    if ($fav->product && !empty($fav->product->product_image)) {
-                        $fav->image = $fav->product->product_image;
-                    }
-                });
+                        $fav->details = "Assigned to " . ucfirst($fav->user_type) . " (User ID: {$fav->user_id})";
+                        if ($fav->product && !empty($fav->product->product_image)) {
+                            $rawImg = $fav->product->product_image;
+                            $fav->image = !str_starts_with($rawImg, 'http') 
+                                ? (str_starts_with($rawImg, 'storage/') ? asset($rawImg) : asset('storage/' . $rawImg))
+                                : $rawImg;
+                        }
+                    });
 
-                $addResults(
-                    'Favorites',
-                    $productFavorites,
-                    'super-admin.favorites.show',
-                    function ($item) {
-                        return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
-                    },
-                    'custom_display'
-                );
-            }
-            if (isset($matchedItems[Design::class])) {
-                $designs = Design::whereIn('id', $matchedItems[Design::class])->get();
-                $addResults('Designs', $designs, 'super-admin.design.show', 'design', 'design_code');
-            }
-            if (isset($matchedItems[Catalogue::class])) {
-                try {
-                    $catalogues = Catalogue::whereIn('id', $matchedItems[Catalogue::class])->get();
-                    $addResults('Catalogues', $catalogues, 'super-admin.catalogue.show', 'catalogue', 'catalogue_name');
-                } catch (\Exception $e) {}
-            }
-            if (isset($matchedItems[Craftman::class])) {
-                $craftsmen = Craftman::whereIn('id', $matchedItems[Craftman::class])->get();
-                $addResults('Craftsmen', $craftsmen, 'super-admin.business-partner.craftman.show', 'craftman', 'name');
-            }
-            if (isset($matchedItems[Buyer::class])) {
-                $buyers = Buyer::whereIn('id', $matchedItems[Buyer::class])->get();
-                $addResults('Buyers', $buyers, 'super-admin.business-partner.buyer.show', 'buyer', 'name');
+                    $addResults(
+                        'Favorites',
+                        $productFavorites,
+                        'super-admin.favorites.show',
+                        function ($item) {
+                            return ['user_id' => $item->user_id, 'user_type' => $item->user_type];
+                        },
+                        'custom_display'
+                    );
+                }
+                if (isset($matchedItems[Design::class])) {
+                    $designs = Design::whereIn('id', $matchedItems[Design::class])->get();
+                    $addResults('Designs', $designs, 'super-admin.design.show', 'design', 'design_code');
+                }
+                if (isset($matchedItems[Catalogue::class])) {
+                    try {
+                        $catalogues = Catalogue::whereIn('id', $matchedItems[Catalogue::class])->get();
+                        $addResults('Catalogues', $catalogues, 'super-admin.catalogue.show', 'catalogue', 'catalogue_name');
+                    } catch (\Exception $e) {}
+                }
+                if (isset($matchedItems[Craftman::class])) {
+                    $craftsmen = Craftman::whereIn('id', $matchedItems[Craftman::class])->get();
+                    $addResults('Craftsmen', $craftsmen, 'super-admin.business-partner.craftman.show', 'craftman', 'name');
+                }
+                if (isset($matchedItems[Buyer::class])) {
+                    $buyers = Buyer::whereIn('id', $matchedItems[Buyer::class])->get();
+                    $addResults('Buyers', $buyers, 'super-admin.business-partner.buyer.show', 'buyer', 'name');
+                }
+
+            } catch (\Exception $e) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'error' => true,
+                        'message' => 'Image search processing error: ' . $e->getMessage()
+                    ], 500);
+                }
+                throw $e;
             }
 
         } elseif (!empty($query)) {
@@ -297,7 +346,7 @@ class GlobalSearchController extends Controller
             $addResults('Repairs', $repairs, 'super-admin.repairs.show', 'repair', 'order_no');
 
             // Favorites (Checks design_name, product design code, and buyer/craftsman names)
-            $craftmanTable = (new Craftman)->getTable(); // dynamically gets 'craftmen' or 'craftsmen'
+            $craftmanTable = (new Craftman)->getTable();
             $buyerTable = (new Buyer)->getTable();
 
             $favorites = Favorite::select('favorites.*')
@@ -323,12 +372,10 @@ class GlobalSearchController extends Controller
                 ->get();
 
             $favorites->each(function ($fav) {
-                // 1. Set display title
                 $fav->custom_display = !empty($fav->design_name)
                     ? $fav->design_name
                     : ($fav->product->design_code ?? 'Design #' . $fav->product_id);
 
-                // 2. Fetch assigned user
                 $assignedName = 'User #' . $fav->user_id;
                 if ($fav->user_type === 'buyer') {
                     $b = Buyer::find($fav->user_id);
@@ -341,9 +388,11 @@ class GlobalSearchController extends Controller
                 $fav->details = "Assigned to: {$assignedName} (" . ucfirst($fav->user_type) . ")"
                     . ($fav->product && !empty($fav->product->design_code) ? " | Code: {$fav->product->design_code}" : "");
 
-                // 3. Fallback image
                 if (isset($fav->product) && !empty($fav->product->product_image)) {
-                    $fav->image = $fav->product->product_image;
+                    $rawImg = $fav->product->product_image;
+                    $fav->image = !str_starts_with($rawImg, 'http') 
+                        ? (str_starts_with($rawImg, 'storage/') ? asset($rawImg) : asset('storage/' . $rawImg))
+                        : $rawImg;
                 }
             });
 
