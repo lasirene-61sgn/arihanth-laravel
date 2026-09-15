@@ -199,6 +199,18 @@
                                     <small class="text-muted">Current: <a href="{{ asset($repair->image_proof) }}" target="_blank">View</a></small>
                                 @endif
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Completion Proof <small class="text-muted">(uploaded by craftsman)</small></label>
+                                @if($repair->completion_proof)
+                                    <div class="mt-1">
+                                        <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-camera me-1"></i>View Completion Proof
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="form-control-plaintext text-muted small">Not uploaded yet</div>
+                                @endif
+                            </div>
                         </div>
 
                         <!-- Item Tracking Fields -->

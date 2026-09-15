@@ -69,7 +69,7 @@ class LoginController extends Controller
                                     ->count();
         $designsCount = \App\Models\Product::notFromFrozenAccounts()
                                     ->whereNotNull('type')
-                                    ->where('design_status', 'Pending')
+                                    ->where('design_status', 'Accepted')
                                     ->count();
         $workOrdersCount = \App\Models\WorkOrder::where('status', 'new')->count();
         $purchaseOrdersCount = \App\Models\PurchaseOrder::where('status', 'created')

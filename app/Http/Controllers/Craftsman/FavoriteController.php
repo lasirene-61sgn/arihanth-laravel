@@ -30,6 +30,24 @@ class FavoriteController extends Controller
         ]);
 
         $craftsman = $this->currentCraftsman();
+        $product = Product::findOrFail($request->product_id);
+
+        // Check if design is locked for this craftsman
+        if ($product->isDesignLocked($craftsman)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This design is currently locked and cannot be added to favorites.'
+            ], 403);
+        }
+
+        // Security check: Ensure it's an accepted design
+        if (!$product->design_code || $product->design_status !== 'Accepted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Design not found in the approved catalogue.'
+            ], 404);
+        }
+
         $designName = filled($request->design_name) ? trim($request->design_name) : null;
 
         // Check if already favorited
@@ -39,7 +57,6 @@ class FavoriteController extends Controller
             ->first();
 
         if ($favorite) {
-            // Update existing custom design name if passed
             $favorite->update([
                 'design_name' => $designName
             ]);
@@ -51,7 +68,6 @@ class FavoriteController extends Controller
             ]);
         }
 
-        // Create new favorite with custom design name
         $favorite = Favorite::create([
             'user_id'     => $craftsman->id,
             'user_type'   => 'craftsman',

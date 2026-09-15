@@ -78,17 +78,27 @@ class RepairController extends Controller
         }
 
         $request->validate([
-            'weight' => 'required|numeric|min:0'
+            'weight' => 'required|numeric|min:0',
+            'completion_proof' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $craftsmanCode = $this->currentCraftsman()->craftman_code;
         $repair = Repair::where('allocated_craftsman_code', $craftsmanCode)->findOrFail($id);
         
+        $completionProofPath = null;
+        if ($request->hasFile('completion_proof')) {
+            $image = $request->file('completion_proof');
+            $imageName = time() . '_completion_' . $image->getClientOriginalName();
+            $image->move(public_path('images/repairs'), $imageName);
+            $completionProofPath = 'images/repairs/' . $imageName;
+        }
+
         $updateData = [
             'craftsman_status' => 'Completed',
             'status' => 'Craftsman_Completed',
             'craftsman_completed_at' => now(),
             'weight' => $request->weight,
+            'completion_proof' => $completionProofPath,
         ];
         
         if ($staff = $this->currentStaff()) {

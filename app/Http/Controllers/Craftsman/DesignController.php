@@ -19,69 +19,74 @@ class DesignController extends Controller
 
 
     public function index(Request $request)
-{
-    $craftsman = Auth::guard('craftsman')->user();
+    {
+        $craftsman = Auth::guard('craftsman')->user();
 
-    // Designs section: ALL accepted designs
-    // No bp_code filter - shows all accepted designs from any buyer/craftsman
-    // Lock check is handled in show() when viewing a specific design
-    $query = Product::with(['category', 'subcategory'])
-        ->whereNotNull('design_code')
-        ->where('design_status', 'Accepted')
-        ->whereNotNull('type')
-        ->notFromFrozenAccounts();
+        // Designs section: ALL accepted designs
+        // No bp_code filter - shows all accepted designs from any buyer/craftsman
+        // Lock check is handled in show() when viewing a specific design
+        $query = Product::with(['category', 'subcategory'])
+            ->whereNotNull('design_code')
+            ->where('design_status', 'Accepted')
+            ->whereNotNull('type')
+            ->notFromFrozenAccounts();
 
-    // --- SEARCH & FILTERS ---
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function ($q) use ($search) {
-            $q->where('product_name', 'like', "%{$search}%")
-                ->orWhere('design_code', 'like', "%{$search}%")
-                ->orWhere('product_code', 'like', "%{$search}%");
-        });
+        // --- SEARCH & FILTERS ---
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('design_code', 'like', "%{$search}%")
+                    ->orWhere('product_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('filter_design_code')) {
+            $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
+        }
+        if ($request->filled('filter_product_code')) {
+            $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
+        }
+        if ($request->filled('filter_product_name')) {
+            $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
+        }
+        if ($request->filled('filter_category')) {
+            $query->where('product_category_id', $request->filter_category);
+        }
+        if ($request->filled('filter_subcategory')) {
+            $query->where('product_subcategory_id', $request->filter_subcategory);
+        }
+
+        // --- SORTING ---
+        $sort = $request->get('sort', 'latest');
+        if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
+        elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
+        else $query->latest();
+
+        $designs = $query->paginate(15)->withQueryString();
+
+        // Fetch dropdown data
+        $categories = ProductCategory::orderBy('name')->get();
+        $subcategories = ProductSubcategory::orderBy('name')->get();
+
+        return view('craftsman.design.index', compact('designs', 'categories', 'subcategories'));
     }
-
-    if ($request->filled('filter_design_code')) {
-        $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
-    }
-    if ($request->filled('filter_product_code')) {
-        $query->where('product_code', 'like', '%' . $request->filter_product_code . '%');
-    }
-    if ($request->filled('filter_product_name')) {
-        $query->where('product_name', 'like', '%' . $request->filter_product_name . '%');
-    }
-    if ($request->filled('filter_category')) {
-        $query->where('product_category_id', $request->filter_category);
-    }
-    if ($request->filled('filter_subcategory')) {
-        $query->where('product_subcategory_id', $request->filter_subcategory);
-    }
-
-    // --- SORTING ---
-    $sort = $request->get('sort', 'latest');
-    if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
-    elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
-    else $query->latest();
-
-    $designs = $query->paginate(15)->withQueryString();
-
-    // Fetch dropdown data
-    $categories = ProductCategory::orderBy('name')->get();
-    $subcategories = ProductSubcategory::orderBy('name')->get();
-
-    return view('craftsman.design.index', compact('designs', 'categories', 'subcategories'));
-}
-
-
-
     /**
      * Display specific design details.
      */
     public function show($id)
     {
+        $craftsman = $this->currentCraftsman();
         $product = Product::with(['category', 'subcategory', 'images'])->findOrFail($id);
 
-        if ($product->isDesignLocked($this->currentCraftsman())) {
+        // Check if it's favorited by this craftsman
+        $isFavorited = \App\Models\Favorite::where('user_id', $craftsman->id)
+            ->where('user_type', 'craftsman')
+            ->where('product_id', $product->id)
+            ->exists();
+
+        // Only block with 403 if it is NOT in their favorites and is locked
+        if (!$isFavorited && $product->isDesignLocked($craftsman)) {
             abort(403, 'This design is currently locked.');
         }
 

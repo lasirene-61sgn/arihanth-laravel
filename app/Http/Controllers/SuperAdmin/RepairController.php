@@ -314,7 +314,12 @@ class RepairController extends Controller
     public function complete(Request $request, $id)
     {
         $repair = Repair::findOrFail($id);
-        
+
+        $request->validate([
+            'weight' => 'nullable|numeric|min:0',
+            'completion_proof' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
         $receivedThrough = $request->item_received_through === '__custom__' 
             ? $request->item_received_through_custom 
             : $request->item_received_through;
@@ -323,11 +328,40 @@ class RepairController extends Controller
             ? $request->item_delivered_by_custom 
             : $request->item_delivered_by;
 
+        $completionProofPath = $repair->completion_proof;
+        if ($request->hasFile('completion_proof')) {
+            $image = $request->file('completion_proof');
+            $imageName = time() . '_completion_' . $image->getClientOriginalName();
+            $image->move(public_path('images/repairs'), $imageName);
+            $completionProofPath = 'images/repairs/' . $imageName;
+        }
+
+        $completedName = null;
+        $completedCode = null;
+        $completedMobile = null;
+
+        if ($request->craftsman === '__custom__') {
+            $completedName = $request->completed_craftsman_name;
+            $completedCode = $request->completed_craftsman_code;
+            $completedMobile = $request->completed_craftsman_mobile;
+        } else {
+            $completedCode = $request->craftsman;
+            $craftsman = \App\Models\Craftman::where('craftman_code', $completedCode)->first();
+            if ($craftsman) {
+                $completedName = $craftsman->name;
+            }
+        }
+
         $repair->update([
             'status' => 'Buyer_Accepted',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'buyer_accepted_at' => now(),
+            'weight' => $request->weight ?: $repair->weight,
+            'completion_proof' => $completionProofPath,
+            'completed_craftsman_name' => $completedName,
+            'completed_craftsman_code' => $completedCode,
+            'completed_craftsman_mobile' => $completedMobile,
             'item_received_through' => $receivedThrough ?: $repair->item_received_through,
             'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
             'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
@@ -348,6 +382,11 @@ class RepairController extends Controller
             return redirect()->back()->with('error', 'No repair orders selected.');
         }
 
+        $request->validate([
+            'weight' => 'nullable|numeric|min:0',
+            'completion_proof' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
         $receivedThrough = $request->item_received_through === '__custom__' 
             ? $request->item_received_through_custom 
             : $request->item_received_through;
@@ -355,6 +394,30 @@ class RepairController extends Controller
         $deliveredBy = $request->item_delivered_by === '__custom__' 
             ? $request->item_delivered_by_custom 
             : $request->item_delivered_by;
+
+        $completionProofPath = null;
+        if ($request->hasFile('completion_proof')) {
+            $image = $request->file('completion_proof');
+            $imageName = time() . '_bulk_completion_' . $image->getClientOriginalName();
+            $image->move(public_path('images/repairs'), $imageName);
+            $completionProofPath = 'images/repairs/' . $imageName;
+        }
+
+        $completedName = null;
+        $completedCode = null;
+        $completedMobile = null;
+
+        if ($request->craftsman === '__custom__') {
+            $completedName = $request->completed_craftsman_name;
+            $completedCode = $request->completed_craftsman_code;
+            $completedMobile = $request->completed_craftsman_mobile;
+        } else {
+            $completedCode = $request->craftsman;
+            $craftsman = \App\Models\Craftman::where('craftman_code', $completedCode)->first();
+            if ($craftsman) {
+                $completedName = $craftsman->name;
+            }
+        }
 
         $repairs = Repair::whereIn('id', $repairIds)->get();
             
@@ -364,6 +427,11 @@ class RepairController extends Controller
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'buyer_accepted_at' => now(),
+                'weight' => $request->weight ?: $repair->weight,
+                'completion_proof' => $completionProofPath ?: $repair->completion_proof,
+                'completed_craftsman_name' => $completedName,
+                'completed_craftsman_code' => $completedCode,
+                'completed_craftsman_mobile' => $completedMobile,
                 'item_received_through' => $receivedThrough ?: $repair->item_received_through,
                 'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
                 'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,

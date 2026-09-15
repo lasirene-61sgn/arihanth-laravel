@@ -251,7 +251,7 @@
                     </div>
 
                     <!-- Users Card -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">
+                    <!-- <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">
                         <a href="{{ route('super-admin.user.index') }}" class="tw-no-underline">
                             <div class="tw-p-4">
                                 <div class="tw-flex tw-justify-between tw-items-start">
@@ -265,7 +265,7 @@
                                 </div>
                             </div>
                         </a>
-                    </div>
+                    </div> -->
 
                     <!-- Finance Card -->
                     <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">
@@ -443,24 +443,24 @@
 
 
                     <!-- Most Selling Products -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#mostSellingProductsModal">
+                    <!-- <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#mostSellingProductsModal">
                         <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
                             <i class="bi bi-graph-up-arrow tw-text-green-500 tw-text-xl"></i>
                             <i class="bi bi-arrow-right tw-text-gray-400"></i>
                         </div>
                         <h3 class="tw-text-xl tw-font-bold tw-text-gray-900 dark:tw-text-white tw-mb-1">{{ !empty($mostSellingProductsFull) ? collect($mostSellingProductsFull)->first()['count'] : 0 }}</h3>
                         <p class="tw-text-[10px] tw-font-bold tw-text-gray-500 dark:tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-0">{{ __('messages.most_selling_products') }}</p>
-                    </div>
+                    </div> -->
 
                     <!-- Least Selling Products -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#leastSellingProductsModal">
+                    <!-- <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#leastSellingProductsModal">
                         <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
                             <i class="bi bi-graph-down-arrow tw-text-red-500 tw-text-xl"></i>
                             <i class="bi bi-arrow-right tw-text-gray-400"></i>
                         </div>
                         <h3 class="tw-text-xl tw-font-bold tw-text-gray-900 dark:tw-text-white tw-mb-1">{{ !empty($leastSellingProductsFull) ? collect($leastSellingProductsFull)->first()['count'] : 0 }}</h3>
                         <p class="tw-text-[10px] tw-font-bold tw-text-gray-500 dark:tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-0">{{ __('messages.least_selling_products') }}</p>
-                    </div>
+                    </div> -->
 
                     <!-- Quick Payments -->
                     <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">
@@ -483,24 +483,24 @@
                     </div>
 
                     <!-- Top Picks Clients -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#topPicksClientsModal">
+                    <!-- <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#topPicksClientsModal">
                         <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
                             <i class="bi bi-people-fill tw-text-emerald-500 tw-text-xl"></i>
                             <i class="bi bi-arrow-right tw-text-gray-400"></i>
                         </div>
                         <h3 class="tw-text-xl tw-font-bold tw-text-gray-900 dark:tw-text-white tw-mb-1">{{ !empty($topPicksClients) ? collect($topPicksClients)->first() : 0 }}</h3>
                         <p class="tw-text-[10px] tw-font-bold tw-text-gray-500 dark:tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-0">{{ __('messages.top_picks_clients') }}</p>
-                    </div>
+                    </div> -->
 
                     <!-- Least Pick Clients -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#leastPicksClientsModal">
+                    <!-- <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-p-4 tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg tw-cursor-pointer" data-bs-toggle="modal" data-bs-target="#leastPicksClientsModal">
                         <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
                             <i class="bi bi-person-x tw-text-gray-500 tw-text-xl"></i>
                             <i class="bi bi-arrow-right tw-text-gray-400"></i>
                         </div>
                         <h3 class="tw-text-xl tw-font-bold tw-text-gray-900 dark:tw-text-white tw-mb-1">{{ !empty($leastPicksClients) ? collect($leastPicksClients)->first() : 0 }}</h3>
                         <p class="tw-text-[10px] tw-font-bold tw-text-gray-500 dark:tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-0">{{ __('messages.least_pick_clients') }}</p>
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Quick Links Section -->

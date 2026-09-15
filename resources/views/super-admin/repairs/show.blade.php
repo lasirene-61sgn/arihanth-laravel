@@ -317,6 +317,32 @@
                 </div>
             </div>
 
+            <!-- Completion Proof Preview Box -->
+            <div class="card-modern mb-4">
+                <div class="card-header-clean">
+                    <h5 class="fw-bold mb-0 text-slate-800 fs-6">
+                        <i class="bi bi-camera text-success me-2"></i>Completion Proof
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    @if($repair->completion_proof)
+                        <div class="p-2 border rounded-3 bg-light mb-3">
+                            <a href="{{ asset($repair->completion_proof) }}" target="_blank">
+                                <img src="{{ asset($repair->completion_proof) }}" class="img-fluid rounded" alt="Completion Proof" style="max-height: 280px; width: 100%; object-fit: contain;">
+                            </a>
+                        </div>
+                        <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="btn btn-outline-success btn-sm w-100 fw-medium">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> View Full Resolution
+                        </a>
+                    @else
+                        <div class="py-5 text-muted bg-light rounded-3 border-dashed">
+                            <i class="bi bi-camera fs-1 opacity-25 d-block mb-2"></i>
+                            <span class="small fw-medium">No completion proof uploaded</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             <div class="card-modern border-danger-subtle">
                 <div class="card-header-clean bg-danger-subtle bg-opacity-25 border-bottom-0">
                     <h5 class="fw-bold mb-0 text-danger fs-6">

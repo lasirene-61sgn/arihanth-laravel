@@ -42,7 +42,11 @@ class Repair extends Model
         'item_received_by',
         'item_received_through',
         'item_delivered_by_type',
-        'item_delivered_by'
+        'item_delivered_by',
+        'completion_proof',
+        'completed_craftsman_name',
+        'completed_craftsman_code',
+        'completed_craftsman_mobile'
     ];
 
     protected $appends = ['creator_details', 'approver_details', 'allocator_details'];

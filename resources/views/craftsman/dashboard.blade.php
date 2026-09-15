@@ -12,13 +12,17 @@
         border-radius: 3px;
         display: inline-block;
     }
+
     @media print {
         body * {
             visibility: hidden !important;
         }
-        #modalPrintContent, #modalPrintContent * {
+
+        #modalPrintContent,
+        #modalPrintContent * {
             visibility: visible !important;
         }
+
         #modalPrintContent {
             position: absolute !important;
             left: 0 !important;
@@ -27,6 +31,7 @@
             background: white !important;
             padding: 20px !important;
         }
+
         .no-print {
             display: none !important;
         }
@@ -113,33 +118,33 @@
         </div>
 
         @if($designCategories->isEmpty())
-            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
-                <i class="bi bi-palette text-2xl block mb-1"></i>
-                No accepted designs found under your craftsman account.
-            </div>
+        <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+            <i class="bi bi-palette text-2xl block mb-1"></i>
+            No accepted designs found under your craftsman account.
+        </div>
         @else
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                @foreach($designCategories as $category)
-                    <div onclick="openCraftsmanDesignModal('{{ addslashes($category['category']) }}')" 
-                         class="group relative bg-emerald-50/40 hover:bg-emerald-100/60 p-4 rounded-xl border border-emerald-200 hover:border-emerald-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold text-emerald-950 group-hover:text-emerald-800 truncate" title="{{ $category['category'] }}">
-                                {{ $category['category'] }}
-                            </span>
-                            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
-                                <i class="bi bi-gem"></i>
-                            </span>
-                        </div>
-                        <div class="text-2xl font-black text-emerald-700 group-hover:scale-105 transition-transform origin-left">
-                            {{ $category['count'] }}
-                        </div>
-                        <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                            <span>Max Wt:</span>
-                            <span class="font-bold text-slate-700">{{ number_format($category['weight_to'], 2) }} g</span>
-                        </div>
-                    </div>
-                @endforeach
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            @foreach($designCategories as $category)
+            <div onclick="openCraftsmanDesignModal('{{ addslashes($category['category']) }}')"
+                class="group relative bg-emerald-50/40 hover:bg-emerald-100/60 p-4 rounded-xl border border-emerald-200 hover:border-emerald-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-emerald-950 group-hover:text-emerald-800 truncate" title="{{ $category['category'] }}">
+                        {{ $category['category'] }}
+                    </span>
+                    <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                        <i class="bi bi-gem"></i>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-emerald-700 group-hover:scale-105 transition-transform origin-left">
+                    {{ $category['count'] }}
+                </div>
+                <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>Max Wt:</span>
+                    <span class="font-bold text-slate-700">{{ number_format($category['weight_to'], 2) }} g</span>
+                </div>
             </div>
+            @endforeach
+        </div>
         @endif
     </div>
 
@@ -159,29 +164,29 @@
         </div>
 
         @if($favoritesCategories->isEmpty())
-            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
-                <i class="bi bi-heart text-2xl block mb-1"></i>
-                No favorites found. Add designs to your favorites to see them here.
-            </div>
+        <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+            <i class="bi bi-heart text-2xl block mb-1"></i>
+            No favorites found. Add designs to your favorites to see them here.
+        </div>
         @else
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                @foreach($favoritesCategories as $category)
-                    <div onclick="openFavoritesCategoryModal('{{ addslashes($category['category']) }}')" 
-                         class="group relative bg-rose-50/40 hover:bg-rose-100/60 p-4 rounded-xl border border-rose-200/80 hover:border-rose-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-800 truncate" title="{{ $category['category'] }}">
-                                {{ $category['category'] }}
-                            </span>
-                            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs">
-                                <i class="bi bi-heart-fill"></i>
-                            </span>
-                        </div>
-                        <div class="text-2xl font-black text-rose-600 group-hover:scale-105 transition-transform origin-left">
-                            {{ $category['count'] }}
-                        </div>
-                    </div>
-                @endforeach
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            @foreach($favoritesCategories as $category)
+            <div onclick="openFavoritesCategoryModal('{{ addslashes($category['category']) }}')"
+                class="group relative bg-rose-50/40 hover:bg-rose-100/60 p-4 rounded-xl border border-rose-200/80 hover:border-rose-400 transition-all cursor-pointer shadow-xs hover:shadow-md">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-700 group-hover:text-rose-800 truncate" title="{{ $category['category'] }}">
+                        {{ $category['category'] }}
+                    </span>
+                    <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs">
+                        <i class="bi bi-heart-fill"></i>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-rose-600 group-hover:scale-105 transition-transform origin-left">
+                    {{ $category['count'] }}
+                </div>
             </div>
+            @endforeach
+        </div>
         @endif
     </div>
 </div>
@@ -305,6 +310,7 @@
                         <div class="flex items-center gap-2 mt-3 text-xs font-bold">
                             <span class="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-100">Work Orders: {{ $woStats['allocated'] }}</span>
                             <span class="bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-100">Purchase Orders: {{ $poStats['allocated'] }}</span>
+
                         </div>
                     </div>
 
@@ -384,14 +390,14 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-emerald-600">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" 
-                               id="modalLiveSearch" 
-                               class="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-700 focus:outline-none" 
-                               placeholder="Type to filter order #, product, due date..." 
-                               autocomplete="off">
-                        <button type="button" 
-                                id="clearModalSearchBtn" 
-                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 hidden">
+                        <input type="text"
+                            id="modalLiveSearch"
+                            class="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-700 focus:outline-none"
+                            placeholder="Type to filter order #, product, due date..."
+                            autocomplete="off">
+                        <button type="button"
+                            id="clearModalSearchBtn"
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 hidden">
                             <i class="bi bi-x-circle-fill"></i>
                         </button>
                     </div>
@@ -427,8 +433,8 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-sm">
                         @forelse($allWorkOrders as $wo)
-                        <tr class="modal-wo-row hover:bg-emerald-50/40 transition" 
-                            data-status="{{ strtolower($wo->craftsman_status ?? $wo->status) }}" 
+                        <tr class="modal-wo-row hover:bg-emerald-50/40 transition"
+                            data-status="{{ strtolower($wo->craftsman_status ?? $wo->status) }}"
                             data-is-overdue="{{ $wo->is_delayed ? '1' : '0' }}">
                             <td class="px-6 py-4 font-bold text-emerald-950 col-wo_number">
                                 <span class="modal-search-item" data-text="{{ $wo->work_order_number }}">{{ $wo->work_order_number }}</span>
@@ -447,8 +453,8 @@
                             </td>
                             <td class="px-6 py-4 col-status">
                                 @php
-                                    $statusVal = strtolower($wo->craftsman_status ?? $wo->status);
-                                    $badge = $statusVal === 'completed' ? 'bg-green-100 text-green-800' : ($wo->is_delayed ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800');
+                                $statusVal = strtolower($wo->craftsman_status ?? $wo->status);
+                                $badge = $statusVal === 'completed' ? 'bg-green-100 text-green-800' : ($wo->is_delayed ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800');
                                 @endphp
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase modal-search-item {{ $badge }}" data-text="{{ $wo->craftsman_status ?? $wo->status }}">
                                     {{ $wo->craftsman_status ?? $wo->status }}
@@ -456,11 +462,11 @@
                             </td>
                             <td class="px-6 py-4 col-delay">
                                 @if($wo->is_delayed)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
-                                        <i class="bi bi-clock-history mr-1"></i> {{ $wo->days_delayed }} {{ Str::plural('Day', $wo->days_delayed) }} Overdue
-                                    </span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                                    <i class="bi bi-clock-history mr-1"></i> {{ $wo->days_delayed }} {{ Str::plural('Day', $wo->days_delayed) }} Overdue
+                                </span>
                                 @else
-                                    <span class="text-xs text-emerald-600 font-medium"><i class="bi bi-check-circle mr-1"></i> On Track</span>
+                                <span class="text-xs text-emerald-600 font-medium"><i class="bi bi-check-circle mr-1"></i> On Track</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-center no-print col-action">
@@ -497,8 +503,8 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-sm">
                         @forelse($allPurchaseOrders as $po)
-                        <tr class="modal-po-row hover:bg-blue-50/40 transition" 
-                            data-status="{{ strtolower($po->craftsman_status ?? $po->status) }}" 
+                        <tr class="modal-po-row hover:bg-blue-50/40 transition"
+                            data-status="{{ strtolower($po->craftsman_status ?? $po->status) }}"
                             data-is-overdue="{{ $po->is_delayed ? '1' : '0' }}">
                             <td class="px-6 py-4 font-bold text-blue-950 col-po_number">
                                 <span class="modal-search-item" data-text="{{ $po->purchase_order_code ?? $po->po_number }}">{{ $po->purchase_order_code ?? $po->po_number }}</span>
@@ -517,8 +523,8 @@
                             </td>
                             <td class="px-6 py-4 col-status">
                                 @php
-                                    $statusVal = strtolower($po->craftsman_status ?? $po->status);
-                                    $badge = in_array($statusVal, ['completed', 'approved']) ? 'bg-green-100 text-green-800' : ($po->is_delayed ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800');
+                                $statusVal = strtolower($po->craftsman_status ?? $po->status);
+                                $badge = in_array($statusVal, ['completed', 'approved']) ? 'bg-green-100 text-green-800' : ($po->is_delayed ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800');
                                 @endphp
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase modal-search-item {{ $badge }}" data-text="{{ $po->craftsman_status ?? $po->status }}">
                                     {{ $po->craftsman_status ?? $po->status }}
@@ -526,11 +532,11 @@
                             </td>
                             <td class="px-6 py-4 col-delay">
                                 @if($po->is_delayed)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
-                                        <i class="bi bi-clock-history mr-1"></i> {{ $po->days_delayed }} {{ Str::plural('Day', $po->days_delayed) }} Overdue
-                                    </span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                                    <i class="bi bi-clock-history mr-1"></i> {{ $po->days_delayed }} {{ Str::plural('Day', $po->days_delayed) }} Overdue
+                                </span>
                                 @else
-                                    <span class="text-xs text-blue-600 font-medium"><i class="bi bi-check-circle mr-1"></i> On Track</span>
+                                <span class="text-xs text-blue-600 font-medium"><i class="bi bi-check-circle mr-1"></i> On Track</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-center no-print col-action">
@@ -657,7 +663,7 @@
 
         const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
         const tbody = document.getElementById('craftsmanCategoryDesignsBody');
-        
+
         document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
 
         if (!filtered.length) {
@@ -672,9 +678,9 @@
         } else {
             let html = '';
             filtered.forEach(item => {
-                const imgHtml = item.image_url 
-                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
-                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+                const imgHtml = item.image_url ?
+                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
+                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
 
                 html += `
                     <tr class="hover:bg-emerald-50/30 transition-colors">
@@ -704,7 +710,7 @@
 
         const filtered = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
         const tbody = document.getElementById('favoritesCategoryBody');
-        
+
         document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
 
         if (!filtered.length) {
@@ -719,9 +725,9 @@
         } else {
             let html = '';
             filtered.forEach(item => {
-                const imgHtml = item.image_url 
-                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
-                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+                const imgHtml = item.image_url ?
+                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
+                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
 
                 html += `
                     <tr class="hover:bg-rose-50/30 transition-colors">
@@ -861,7 +867,7 @@
         filterTable(poRows, poNoMatch, 'modalPoCount');
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('modalLiveSearch');
         const clearBtn = document.getElementById('clearModalSearchBtn');
 
@@ -870,7 +876,7 @@
         }
 
         if (clearBtn) {
-            clearBtn.addEventListener('click', function () {
+            clearBtn.addEventListener('click', function() {
                 searchInput.value = '';
                 applyModalFilter();
                 searchInput.focus();
@@ -885,7 +891,7 @@
 
     function executePrint() {
         const checkboxes = document.querySelectorAll('#columnCheckboxes input[type="checkbox"]');
-        
+
         checkboxes.forEach(cb => {
             const classNames = cb.value.split(',');
             classNames.forEach(cls => {

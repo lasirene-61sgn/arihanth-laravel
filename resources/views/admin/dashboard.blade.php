@@ -348,7 +348,7 @@
 
 
                         <!-- Most Selling Products -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
+                        <!-- <div class="col-xl-3 col-lg-6 col-md-6">
                             <div class="analytics-card h-100" data-bs-toggle="modal" data-bs-target="#mostSellingProductsModal" style="cursor: pointer;">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -359,10 +359,10 @@
                                     <p class="analytics-label mb-0">MOST SELLING PRODUCTS</p>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Least Selling Products -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
+                        <!-- <div class="col-xl-3 col-lg-6 col-md-6">
                             <div class="analytics-card h-100" data-bs-toggle="modal" data-bs-target="#leastSellingProductsModal" style="cursor: pointer;">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -373,7 +373,7 @@
                                     <p class="analytics-label mb-0">LEAST SELLING PRODUCTS</p>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Quick Payments -->
                         <div class="col-xl-3 col-lg-6 col-md-6">
@@ -403,7 +403,7 @@
                             </div>
                         </div>
 
-                        <div class="col-xl-3 col-lg-6 col-md-6">
+                        <!-- <div class="col-xl-3 col-lg-6 col-md-6">
                             <div class="analytics-card h-100" data-bs-toggle="modal" data-bs-target="#topPicksClientsModal" style="cursor: pointer;">
                                 <div class="card-body p-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -427,7 +427,7 @@
                                     <p class="analytics-label mb-0">{{ strtoupper(__('messages.least_pick_clients')) }}</p>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- Quick Links Section -->

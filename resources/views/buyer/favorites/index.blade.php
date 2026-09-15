@@ -7,7 +7,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">My Favorites</h1>
-            <p class="text-sm text-slate-500">Your curated collection of favorite designs (All unlocked)</p>
+            <p class="text-sm text-slate-500">Your curated collection of favorite designs</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('buyer.design.index') }}"
@@ -29,13 +29,23 @@
             @if($favorites->count() > 0)
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @foreach($favorites as $favorite)
-                @php $design = $favorite->product; @endphp
+                @php 
+                    $design = $favorite->product; 
+                    $isLocked = $design ? $design->isDesignLocked(Auth::guard('buyer')->user()) : false;
+                @endphp
                 <div class="group flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-pink-200 transition-all duration-300 overflow-hidden relative">
                     <div class="relative aspect-[4/3] bg-white p-4 overflow-hidden">
+                        {{-- Show Locked Badge if design is locked --}}
+                        @if($isLocked)
+                        <span class="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full z-10 shadow-md flex items-center gap-1">
+                            <i class="bi bi-lock-fill"></i> Locked
+                        </span>
+                        @endif
+
                         @php
-                        $imagesCount = $design->images ? $design->images->count() : 0;
+                        $imagesCount = $design && $design->images ? $design->images->count() : 0;
                         $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
-                        if (!$firstImage && $design->product_image) {
+                        if (!$firstImage && $design && $design->product_image) {
                             $imgs = explode(',', $design->product_image);
                             $firstImage = trim($imgs[0]);
                         }
@@ -50,17 +60,16 @@
                         @endphp
 
                         @if($imgSrc)
-                        {{-- Unlocked: No blur, no lock logo --}}
                         <img src="{{ $imgSrc }}"
-                            class="w-full h-full object-contain transition-all duration-500 group-hover:scale-110"
-                            alt="{{ $design->product_name }}">
+                            class="w-full h-full object-contain transition-all duration-500 group-hover:scale-110 {{ $isLocked ? 'opacity-75' : '' }}"
+                            alt="{{ $design->product_name ?? 'Design' }}">
                         @else
                         <div class="w-full h-full bg-slate-50 rounded-lg flex items-center justify-center text-slate-300">
                             <i class="bi bi-image text-4xl"></i>
                         </div>
                         @endif
 
-                        <form action="{{ route('buyer.favorites.destroy', $favorite->id) }}" method="POST" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <form action="{{ route('buyer.favorites.destroy', $favorite->id) }}" method="POST" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors" title="Remove from Favorites">
@@ -70,34 +79,34 @@
                     </div>
 
                     <div class="p-4 flex flex-col flex-1 border-t border-slate-50">
+                        @if($design)
                         <div class="flex flex-col items-center justify-center mb-3 gap-1.5">
-                            <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate max-w-[90%]"
-                                title="{{ $design->design_code }}">
-                                {{ $design->design_code }}
-                            </h6>
+                            <div class="flex items-center justify-center gap-1.5 w-full">
+                                <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate max-w-[80%]"
+                                    title="{{ $design->design_code }}">
+                                    {{ $design->design_code }}
+                                </h6>
 
-                            <div class="flex items-center gap-1.5 max-w-[95%]">
-                                
-                                <!-- <button type="button" 
+                                {{-- Active Edit Custom Name Button --}}
+                                <button type="button" 
                                     onclick="editFavoriteName({{ $favorite->id }}, '{{ addslashes($favorite->design_name ?? '') }}', '{{ addslashes($design->design_code) }}')" 
-                                    class="text-slate-400 hover:text-slate-700 text-xs p-1" 
+                                    class="text-slate-400 hover:text-slate-700 text-xs p-1.5 bg-slate-50 border border-slate-200 rounded-lg transition-colors" 
                                     title="Edit Custom Design Name">
                                     <i class="bi bi-pencil-square"></i>
-                                </button> -->
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex justify-between items-center text-xs text-slate-500 mb-4">
-                            <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"> {{ $design->category->name ?? 'N/A' }}</span>
+                            <span class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{{ $design->category->name ?? 'N/A' }}</span>
                             <span class="font-bold text-slate-700">{{ $design->weight_from }}-{{ $design->weight_to }} gm</span>
-                            
                         </div>
 
-                        <span id="fav-text-{{ $favorite->id }}" class="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md truncate" title="{{ $favorite->design_name ?: 'No custom name' }}">
-                                    {{ $favorite->design_name ?: 'Add Custom Name' }}
-                                </span>
+                        <span id="fav-text-{{ $favorite->id }}" class="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md truncate text-center block" title="{{ $favorite->design_name ?: 'No custom name' }}">
+                            {{ $favorite->design_name ?: 'Add Custom Name' }}
+                        </span>
+
                         <div class="mt-auto pt-4 border-t border-slate-50 flex gap-2">
-                            {{-- Always unlocked in Favorites view --}}
                             <a href="{{ route('buyer.design.show', $design->id) }}"
                                 class="flex-1 inline-flex items-center justify-center py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-blue-600 transition-colors">
                                 <i class="bi bi-eye mr-1.5"></i> Details
@@ -111,6 +120,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -212,6 +222,7 @@ function saveEditedName(event) {
             const badge = document.getElementById(`fav-text-${editTargetFavId}`);
             if (badge) {
                 badge.textContent = newName || 'Add Custom Name';
+                badge.title = newName || 'No custom name';
             }
         }
         alert(data.message || 'Updated successfully!');

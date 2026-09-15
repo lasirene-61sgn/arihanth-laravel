@@ -26,41 +26,47 @@
             @if($favorites->count() > 0)
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @foreach($favorites as $favorite)
-                @php $design = $favorite->product; @endphp
-                @php
-                $isLocked = $design->isDesignLocked(Auth::guard('craftsman')->user());
+                @php 
+                    $design = $favorite->product; 
+                    $isLocked = $design ? $design->isDesignLocked(Auth::guard('craftsman')->user()) : false;
 
-                $imagesCount = $design->images->count();
-                $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
+                    $imagesCount = $design && $design->images ? $design->images->count() : 0;
+                    $firstImage = $imagesCount > 0 ? $design->images->first()->path : null;
 
-                if (!$firstImage && $design->product_image) {
-                $imgs = explode(',', $design->product_image);
-                $firstImage = trim($imgs[0]);
-                }
+                    if (!$firstImage && $design && $design->product_image) {
+                        $imgs = explode(',', $design->product_image);
+                        $firstImage = trim($imgs[0]);
+                    }
 
-                $imgSrc = null;
-                if ($firstImage) {
-                if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
-                elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
-                elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
-                else { $imgSrc = asset('storage/products/' . $firstImage); }
-                }
+                    $imgSrc = null;
+                    if ($firstImage) {
+                        if (str_starts_with($firstImage, 'http')) { $imgSrc = $firstImage; }
+                        elseif (str_starts_with($firstImage, 'products/')) { $imgSrc = asset('storage/' . $firstImage); }
+                        elseif (str_starts_with($firstImage, 'images/') || str_starts_with($firstImage, 'storage/')) { $imgSrc = asset($firstImage); }
+                        else { $imgSrc = asset('storage/products/' . $firstImage); }
+                    }
                 @endphp
 
-                <div class="group bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
+                <div class="group bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative">
 
                     <div class="relative h-56 bg-white overflow-hidden flex items-center justify-center p-4">
+                        @if($isLocked)
+                        <span class="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full z-10 shadow-md flex items-center gap-1">
+                            <i class="bi bi-lock-fill"></i> Locked
+                        </span>
+                        @endif
+
                         @if($imgSrc)
                         <img src="{{ $imgSrc }}"
-                            class="w-full h-full object-contain transition-all duration-500 group-hover:scale-110"
-                            alt="{{ $design->product_name }}">
+                            class="w-full h-full object-contain transition-all duration-500 group-hover:scale-110 {{ $isLocked ? 'opacity-75' : '' }}"
+                            alt="{{ $design->product_name ?? 'Design' }}">
                         @else
                         <div class="flex flex-col items-center justify-center text-emerald-100">
                             <i class="bi bi-image text-5xl"></i>
                         </div>
                         @endif
 
-                        <form action="{{ route('craftsman.favorites.destroy', $favorite->id) }}" method="POST" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <form action="{{ route('craftsman.favorites.destroy', $favorite->id) }}" method="POST" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors" title="Remove from Favorites">
@@ -70,6 +76,7 @@
                     </div>
 
                     <div class="p-4 flex flex-col flex-grow bg-white border-t border-emerald-50">
+                        @if($design)
                         <div class="flex justify-between items-start mb-2">
                             <div class="max-w-[70%] mx-auto flex flex-col items-center justify-center gap-1">
                                 <h6 class="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1 rounded-lg shadow-sm text-center truncate w-full"
@@ -90,26 +97,20 @@
                         </div>
 
                         <div class="mt-auto flex gap-2">
-                            @if(!$isLocked)
                             <a href="{{ route('craftsman.design.show', $design->id) }}"
                                 class="flex-1 text-center bg-emerald-900 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-emerald-800 transition-all active:scale-95 shadow-sm">
                                 Details
                             </a>
-                            @else
-                            <button disabled
-                                class="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-400 text-sm font-bold py-2.5 rounded-xl cursor-not-allowed border border-slate-200">
-                                <i class="bi bi-lock-fill"></i> Locked
-                            </button>
-                            @endif
 
                             <form action="{{ route('craftsman.favorites.destroy', $favorite->id) }}" method="POST" class="flex-none">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="p-2.5 bg-red-50 text-red-600 border border-red-100 rounded-xl hover:bg-red-100 transition-colors">
+                                <button type="submit" class="p-2.5 bg-red-50 text-red-600 border border-red-100 rounded-xl hover:bg-red-100 transition-colors" title="Remove from favorites">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
                 </div>
                 @endforeach

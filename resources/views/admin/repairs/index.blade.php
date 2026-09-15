@@ -221,7 +221,7 @@
                         </button>
                     </div>
 
-                    <form id="bulkCompleteForm" action="{{ route('admin.repairs.bulk-complete') }}" method="POST">
+                    <form id="bulkCompleteForm" action="{{ route('admin.repairs.bulk-complete') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                     <div class="table-responsive">
@@ -238,6 +238,7 @@
                                     <th>Status</th>
                                     <th>Craftsman</th>
                                     <th>Proof</th>
+                                    <th>Completion Proof</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -284,6 +285,13 @@
                                                 <a href="{{ asset($repair->image_proof) }}" target="_blank">View</a>
                                             @else
                                                 N/A
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($repair->completion_proof)
+                                                <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="text-success fw-semibold"><i class="bi bi-camera me-1"></i>View</a>
+                                            @else
+                                                <span class="text-muted">N/A</span>
                                             @endif
                                         </td>
                                         <td>
@@ -423,6 +431,42 @@
                                 </div>
                                 <div class="modal-body">
                                     <div class="mb-3">
+                                        <label class="form-label">Final Weight (grams)</label>
+                                        <input type="number" step="0.01" name="weight" class="form-control" placeholder="Optional bulk weight">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Completion Proof Image</label>
+                                        <input type="file" name="completion_proof" class="form-control" accept="image/*">
+                                        <div class="form-text text-muted">Upload an image if applicable (JPEG, PNG, GIF, WebP, max 4MB)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Craftsman / Staff</label>
+                                        <select name="craftsman" id="bulkCraftsmanSelect" class="form-select" onchange="checkCustomCraftsman('bulkCraftsmanSelect', 'bulkCustomCraftsmanFields')">
+                                            <option value="">-- Select Craftsman --</option>
+                                            @php
+                                                $craftsmen = \App\Models\Craftman::all();
+                                            @endphp
+                                            @foreach($craftsmen as $c)
+                                                <option value="{{ $c->craftman_code }}">{{ $c->craftman_code }} - {{ $c->name }}</option>
+                                            @endforeach
+                                            <option value="__custom__">+ Add New Details...</option>
+                                        </select>
+                                    </div>
+                                    <div id="bulkCustomCraftsmanFields" class="d-none border p-3 mb-3 bg-light rounded">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Name</label>
+                                            <input type="text" name="completed_craftsman_name" class="form-control form-control-sm" placeholder="Craftsman Name">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Code</label>
+                                            <input type="text" name="completed_craftsman_code" class="form-control form-control-sm" placeholder="Craftsman Code">
+                                        </div>
+                                        <div>
+                                            <label class="form-label small">Mobile Number</label>
+                                            <input type="text" name="completed_craftsman_mobile" class="form-control form-control-sm" placeholder="Mobile Number">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
                                         <label class="form-label">Item Received Through</label>
                                         <select name="item_received_through" id="bulkReceivedThroughSelect" class="form-select" onchange="checkCustomInput('bulkReceivedThroughSelect', 'bulkReceivedThroughCustom')">
                                             <option value="">-- Select Source --</option>
@@ -477,13 +521,46 @@
                         <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <form action="{{ route('admin.repairs.complete', $repair->id) }}" method="POST">
+                                    <form action="{{ route('admin.repairs.complete', $repair->id) }}" method="POST" enctype="multipart/form-data">
                                         @csrf
                                         <div class="modal-header">
                                             <h5 class="modal-title">Complete Repair #{{ $repair->id }}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Final Weight (grams)</label>
+                                                <input type="number" step="0.01" name="weight" class="form-control" placeholder="Weight" value="{{ $repair->weight }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Completion Proof Image</label>
+                                                <input type="file" name="completion_proof" class="form-control" accept="image/*">
+                                                <div class="form-text text-muted">Upload an image if applicable (JPEG, PNG, GIF, WebP, max 4MB)</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Craftsman / Staff</label>
+                                                <select name="craftsman" id="craftsmanSelect{{ $repair->id }}" class="form-select" onchange="checkCustomCraftsman('craftsmanSelect{{ $repair->id }}', 'customCraftsmanFields{{ $repair->id }}')">
+                                                    <option value="">-- Select Craftsman --</option>
+                                                    @foreach($craftsmen as $c)
+                                                        <option value="{{ $c->craftman_code }}" {{ $repair->allocated_craftsman_code == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->name }}</option>
+                                                    @endforeach
+                                                    <option value="__custom__">+ Add New Details...</option>
+                                                </select>
+                                            </div>
+                                            <div id="customCraftsmanFields{{ $repair->id }}" class="d-none border p-3 mb-3 bg-light rounded">
+                                                <div class="mb-2">
+                                                    <label class="form-label small">Name</label>
+                                                    <input type="text" name="completed_craftsman_name" class="form-control form-control-sm" placeholder="Craftsman Name">
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label class="form-label small">Code</label>
+                                                    <input type="text" name="completed_craftsman_code" class="form-control form-control-sm" placeholder="Craftsman Code">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label small">Mobile Number</label>
+                                                    <input type="text" name="completed_craftsman_mobile" class="form-control form-control-sm" placeholder="Mobile Number">
+                                                </div>
+                                            </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Item Received Through</label>
                                                 <select name="item_received_through" id="receivedThroughSelect{{ $repair->id }}" class="form-select" onchange="checkCustomInput('receivedThroughSelect{{ $repair->id }}', 'receivedThroughCustom{{ $repair->id }}')">
@@ -656,6 +733,16 @@
             input.classList.add('d-none');
             input.required = false;
             input.value = '';
+        }
+    }
+
+    function checkCustomCraftsman(selectId, containerId) {
+        const select = document.getElementById(selectId);
+        const container = document.getElementById(containerId);
+        if (select.value === '__custom__') {
+            container.classList.remove('d-none');
+        } else {
+            container.classList.add('d-none');
         }
     }
 </script>

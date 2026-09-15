@@ -13,7 +13,8 @@ class FavoriteController extends Controller
     public function index()
     {
         $buyer = Auth::guard('buyer')->user();
-        
+
+        // Keep all favorites, including ones that have become locked
         $favorites = Favorite::where('user_id', $buyer->id)
             ->where('user_type', 'buyer')
             ->with(['product.category', 'product.images'])
@@ -31,22 +32,31 @@ class FavoriteController extends Controller
         ]);
 
         $buyer = Auth::guard('buyer')->user();
-        
-        $designName = filled($request->design_name) 
-            ? trim($request->design_name) 
-            : null;
+        $product = Product::findOrFail($request->product_id);
 
-        // Check if already in favorites
+        if ($product->isDesignLocked($buyer)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This design is currently locked and cannot be added to favorites.'
+            ], 403);
+        }
+
+        if (!$product->design_code || $product->design_status !== 'Accepted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Design not found in the approved catalogue.'
+            ], 404);
+        }
+
+        $designName = filled($request->design_name) ? trim($request->design_name) : null;
+
         $favorite = Favorite::where('user_id', $buyer->id)
             ->where('user_type', 'buyer')
             ->where('product_id', $request->product_id)
             ->first();
 
         if ($favorite) {
-            // Update existing custom name
-            $favorite->update([
-                'design_name' => $designName
-            ]);
+            $favorite->update(['design_name' => $designName]);
 
             return response()->json([
                 'success' => true,
@@ -55,7 +65,6 @@ class FavoriteController extends Controller
             ]);
         }
 
-        // Add new favorite
         $favorite = Favorite::create([
             'user_id'     => $buyer->id,
             'user_type'   => 'buyer',
@@ -70,10 +79,37 @@ class FavoriteController extends Controller
         ]);
     }
 
+    /**
+     * Update custom design name via AJAX modal
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'design_name' => 'nullable|string|max:255',
+        ]);
+
+        $buyer = Auth::guard('buyer')->user();
+
+        $favorite = Favorite::where('user_id', $buyer->id)
+            ->where('user_type', 'buyer')
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $favorite->update([
+            'design_name' => filled($request->design_name) ? trim($request->design_name) : null
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Custom design name updated successfully!',
+            'data'    => $favorite
+        ]);
+    }
+
     public function destroy($id)
     {
         $buyer = Auth::guard('buyer')->user();
-        
+
         $favorite = Favorite::where('user_id', $buyer->id)
             ->where('user_type', 'buyer')
             ->where('id', $id)

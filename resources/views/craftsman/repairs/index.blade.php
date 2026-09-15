@@ -95,6 +95,7 @@
                             <th>Notes</th>
                             
                             <th>Proof</th>
+                            <th>Completion Proof</th>
                             <th>Status</th>
                             <!-- <th>Due Date</th> -->
                             <th class="text-end pe-4">Actions</th>
@@ -127,6 +128,15 @@
                                     @if($repair->image_proof)
                                         <a href="{{ asset($repair->image_proof) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 small">
                                             <i class="bi bi-image me-1"></i>View
+                                        </a>
+                                    @else
+                                        <span class="text-muted small">N/A</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($repair->completion_proof)
+                                        <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="btn btn-sm btn-outline-success py-0 px-2 small">
+                                            <i class="bi bi-camera me-1"></i>View
                                         </a>
                                     @else
                                         <span class="text-muted small">N/A</span>
@@ -183,7 +193,7 @@
                             <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
-                                        <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST">
+                                        <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST" enctype="multipart/form-data">
                                             @csrf
                                             <div class="modal-header">
                                                 <h5 class="modal-title">Complete Repair #{{ $repair->order_no ?? $repair->id }}</h5>
@@ -193,6 +203,11 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Final Weight (grams)</label>
                                                     <input type="number" step="0.01" name="weight" class="form-control" placeholder="Enter weight after repair" value="{{ $repair->weight }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Completion Proof <span class="text-danger">*</span></label>
+                                                    <input type="file" name="completion_proof" class="form-control" accept="image/*" required>
+                                                    <div class="form-text text-muted">Upload an image as proof of repair completion (JPEG, PNG, GIF, WebP, max 4MB)</div>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">

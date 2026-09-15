@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\ProductCategory;
 use App\Models\ProductSubcategory;
 use App\Models\BuyerDesignExport;
+use App\Models\Favorite;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DesignController extends Controller
@@ -68,15 +69,38 @@ class DesignController extends Controller
     /**
      * Display the details of a specific accepted design.
      */
+    // public function show($id)
+    // {
+    //     $product = Product::with(['category', 'subcategory', 'images'])->findOrFail($id);
+
+    //     if ($product->isDesignLocked(Auth::guard('buyer')->user())) {
+    //         abort(403, 'This design is currently locked.');
+    //     }
+
+    //     // Security check: only show if it has an official design code
+    //     if (!$product->design_code || $product->design_status !== 'Accepted') {
+    //         abort(404, 'Design not found in the approved catalogue.');
+    //     }
+
+    //     return view('buyer.design.show', compact('product'));
+    // }
+
     public function show($id)
     {
+        $buyer = Auth::guard('buyer')->user();
         $product = Product::with(['category', 'subcategory', 'images'])->findOrFail($id);
 
-        if ($product->isDesignLocked(Auth::guard('buyer')->user())) {
+        // Check if it's favorited by this buyer
+        $isFavorited = Favorite::where('user_id', $buyer->id)
+            ->where('user_type', 'buyer')
+            ->where('product_id', $product->id)
+            ->exists();
+
+        // Only apply the lock check if it is NOT in their favorites
+        if (!$isFavorited && $product->isDesignLocked($buyer)) {
             abort(403, 'This design is currently locked.');
         }
 
-        // Security check: only show if it has an official design code
         if (!$product->design_code || $product->design_status !== 'Accepted') {
             abort(404, 'Design not found in the approved catalogue.');
         }
