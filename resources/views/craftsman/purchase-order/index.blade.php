@@ -218,7 +218,7 @@
                                 <th class="px-6 py-4 w-12 text-center">
                                     <input type="checkbox" id="selectAllOrders" class="w-4 h-4 text-emerald-600 bg-emerald-50 border-emerald-200 rounded focus:ring-emerald-500 cursor-pointer">
                                 </th>
-                                <th class="px-6 py-4 w-8"></th>
+                                <!-- <th class="px-6 py-4 w-8"></th> -->
                                 <th class="px-6 py-4">PO Code</th>
                                 <th class="px-6 py-4">Items Count</th>
                                 <th class="px-6 py-4">{{ $currentTab == 'allocated' || $currentTab == 'in-process' ? 'Allocated' : $tabTitle }} Date</th>
@@ -299,11 +299,11 @@
                                 <td class="px-6 py-4 text-center">
                                     <input type="checkbox" name="purchase_order_ids[]" value="{{ $order->id }}" class="order-checkbox w-4 h-4 text-emerald-600 bg-emerald-100 border-emerald-200 rounded focus:ring-emerald-500 cursor-pointer">
                                 </td>
-                                <td class="px-6 py-2 text-center">
+                                <!-- <td class="px-6 py-2 text-center">
                                     <button type="button" class="toggle-items-btn w-8 h-8 rounded-full hover:bg-emerald-100 text-emerald-600 transition-all flex items-center justify-center" data-order-id="{{ $order->id }}">
                                         <i class="bi bi-chevron-down transition-transform duration-300"></i>
                                     </button>
-                                </td>
+                                </td> -->
                                 <td class="px-6 py-4">
                                     <span class="font-bold text-emerald-950 block">{{ $order->purchase_order_code }}</span>
                                     @if($isOverdue)

@@ -36,7 +36,9 @@
     .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 36px !important;
     }
-    tr[style*="background-color"] > td, tr[style*="background-color"] > th {
+
+    tr[style*="background-color"]>td,
+    tr[style*="background-color"]>th {
         background-color: transparent !important;
     }
 </style>
@@ -69,308 +71,308 @@
             <!-- Filter Section -->
             <div class="row mb-3">
                 <div class="col-md-12">
-                                                    <div id="filterSection" class="bg-white tw-border tw-border-slate-200 tw-rounded-xl tw-shadow-sm tw-mb-6 tw-overflow-hidden" style="display: {{ request()->anyFilled(['search', 'filter_po_code', 'filter_craftsman', 'filter_design_code', 'filter_status', 'category_filter', 'sub_category_filter', 'filter_date_from', 'filter_date_to']) ? 'block' : 'none' }};">
-                                <div class="tw-p-6">
-                                    <h3 class="tw-text-sm tw-font-bold tw-text-slate-800 tw-uppercase tw-tracking-wider tw-mb-4">Advanced Filters</h3>
-                                    <form action="{{ route('super-admin.purchase-order.index') }}" method="GET">
-                                        <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
-                                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 lg:tw-grid-cols-4 tw-gap-6">
-                                            <!-- Search -->
-                                            <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-1">
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Search Orders</label>
-                                                <div class="tw-relative">
-                                                    <span class="tw-absolute tw-inset-y-0 tw-left-0 tw-pl-3 tw-flex tw-items-center tw-text-slate-400">
-                                                        <i class="bi bi-search"></i>
-                                                    </span>
-                                                    <input type="text" name="search" value="{{ request('search') }}" 
-                                                           class="tw-block tw-w-full tw-pl-10 tw-pr-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all" 
-                                                           placeholder="PO Code / Items...">
-                                                </div>
-                                            </div>
-
-                                            <!-- PO Code Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">PO Code</label>
-                                                <input type="text" name="filter_po_code" value="{{ request('filter_po_code') }}" 
-                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                            </div>
-
-                                            <!-- Design Code Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Design Code</label>
-                                                <input type="text" name="design_code_filter" value="{{ request('design_code_filter') }}" 
-                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all"
-                                                       placeholder="e.g. DS0001">
-                                            </div>
-
-                                            <!-- Category Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Category</label>
-                                                <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                                    <option value="">All Categories</option>
-                                                    @foreach($categories as $category)
-                                                        <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <!-- Sub Category Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Sub Category</label>
-                                                <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                                    <option value="">All Sub Categories</option>
-                                                    @foreach($subCategories as $subCategory)
-                                                        <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <!-- Craftsman Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Craftsman Code</label>
-                                                <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                                    <option value="">All Craftsmen</option>
-                                                    @foreach($craftsmen as $c)
-                                                        <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-
-                                            <!-- Status Filter -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Status</label>
-                                                <select name="filter_status" 
-                                                        class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                                    <option value="">All Statuses</option>
-                                                    <option value="created" {{ request('filter_status') == 'created' ? 'selected' : '' }}>Created</option>
-                                                    <option value="allocated" {{ request('filter_status') == 'allocated' ? 'selected' : '' }}>Allocated</option>
-                                                    <option value="in_process" {{ request('filter_status') == 'in_process' ? 'selected' : '' }}>In Process</option>
-                                                    <option value="for_approval" {{ request('filter_status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
-                                                    <option value="completed" {{ request('filter_status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                                                    <option value="rejected" {{ request('filter_status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                                                    <option value="overdue" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                                                </select>
-                                            </div>
-
-                                            <!-- Date From -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">From Date</label>
-                                                <input type="date" name="filter_date_from" value="{{ request('filter_date_from') }}" 
-                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                            </div>
-
-                                            <!-- Date To -->
-                                            <div>
-                                                <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">To Date</label>
-                                                <input type="date" name="filter_date_to" value="{{ request('filter_date_to') }}" 
-                                                       class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
-                                            </div>
-
-                                            <!-- Action Buttons -->
-                                            <div class="tw-col-span-1 lg:tw-col-span-2 tw-flex tw-items-end tw-gap-3 tw-pt-2">
-                                                <button type="submit" class="tw-flex-1 tw-bg-maroon hover:tw-bg-maroon-dark tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-shadow-sm">
-                                                    Apply Filters
-                                                </button>
-                                                <a href="{{ route('super-admin.purchase-order.index', ['tab' => request('tab', 'created')]) }}" 
-                                                   class="tw-flex-1 tw-bg-slate-100 hover:tw-bg-slate-200 tw-text-slate-700 tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-text-center tw-border tw-border-slate-200 tw-no-underline">
-                                                    Reset
-                                                </a>
-                                            </div>
+                    <div id="filterSection" class="bg-white tw-border tw-border-slate-200 tw-rounded-xl tw-shadow-sm tw-mb-6 tw-overflow-hidden" style="display: {{ request()->anyFilled(['search', 'filter_po_code', 'filter_craftsman', 'filter_design_code', 'filter_status', 'category_filter', 'sub_category_filter', 'filter_date_from', 'filter_date_to']) ? 'block' : 'none' }};">
+                        <div class="tw-p-6">
+                            <h3 class="tw-text-sm tw-font-bold tw-text-slate-800 tw-uppercase tw-tracking-wider tw-mb-4">Advanced Filters</h3>
+                            <form action="{{ route('super-admin.purchase-order.index') }}" method="GET">
+                                <input type="hidden" name="tab" value="{{ request('tab', 'created') }}">
+                                <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 lg:tw-grid-cols-4 tw-gap-6">
+                                    <!-- Search -->
+                                    <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-1">
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Search Orders</label>
+                                        <div class="tw-relative">
+                                            <span class="tw-absolute tw-inset-y-0 tw-left-0 tw-pl-3 tw-flex tw-items-center tw-text-slate-400">
+                                                <i class="bi bi-search"></i>
+                                            </span>
+                                            <input type="text" name="search" value="{{ request('search') }}"
+                                                class="tw-block tw-w-full tw-pl-10 tw-pr-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all"
+                                                placeholder="PO Code / Items...">
                                         </div>
-                                    </form>
+                                    </div>
+
+                                    <!-- PO Code Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">PO Code</label>
+                                        <input type="text" name="filter_po_code" value="{{ request('filter_po_code') }}"
+                                            class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                    </div>
+
+                                    <!-- Design Code Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Design Code</label>
+                                        <input type="text" name="design_code_filter" value="{{ request('design_code_filter') }}"
+                                            class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all"
+                                            placeholder="e.g. DS0001">
+                                    </div>
+
+                                    <!-- Category Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Category</label>
+                                        <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            <option value="">All Categories</option>
+                                            @foreach($categories as $category)
+                                            <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Sub Category Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Sub Category</label>
+                                        <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            <option value="">All Sub Categories</option>
+                                            @foreach($subCategories as $subCategory)
+                                            <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Craftsman Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Craftsman Code</label>
+                                        <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            <option value="">All Craftsmen</option>
+                                            @foreach($craftsmen as $c)
+                                            <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Status Filter -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Status</label>
+                                        <select name="filter_status"
+                                            class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                            <option value="">All Statuses</option>
+                                            <option value="created" {{ request('filter_status') == 'created' ? 'selected' : '' }}>Created</option>
+                                            <option value="allocated" {{ request('filter_status') == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                            <option value="in_process" {{ request('filter_status') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                            <option value="for_approval" {{ request('filter_status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                                            <option value="completed" {{ request('filter_status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                            <option value="rejected" {{ request('filter_status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                            <option value="overdue" {{ request('filter_status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Date From -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">From Date</label>
+                                        <input type="date" name="filter_date_from" value="{{ request('filter_date_from') }}"
+                                            class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                    </div>
+
+                                    <!-- Date To -->
+                                    <div>
+                                        <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">To Date</label>
+                                        <input type="date" name="filter_date_to" value="{{ request('filter_date_to') }}"
+                                            class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="tw-col-span-1 lg:tw-col-span-2 tw-flex tw-items-end tw-gap-3 tw-pt-2">
+                                        <button type="submit" class="tw-flex-1 tw-bg-maroon hover:tw-bg-maroon-dark tw-text-white tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-shadow-sm">
+                                            Apply Filters
+                                        </button>
+                                        <a href="{{ route('super-admin.purchase-order.index', ['tab' => request('tab', 'created')]) }}"
+                                            class="tw-flex-1 tw-bg-slate-100 hover:tw-bg-slate-200 tw-text-slate-700 tw-font-bold tw-py-2 tw-px-4 tw-rounded-lg tw-transition-colors tw-text-sm tw-text-center tw-border tw-border-slate-200 tw-no-underline">
+                                            Reset
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
+                            </form>
                         </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            @endif
+        @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
 
-            <ul class="nav nav-tabs" id="poTabs" role="tablist">
-                @php
-                $overdueOrders = collect();
-                $nowGlobal = \Carbon\Carbon::now();
-                
-                $checkOverdue = function($po) use ($nowGlobal, &$overdueOrders) {
-                    $dueDateValue = $po->craftsman_due_date ?? $po->due_date ?? null;
-                    if ($dueDateValue) {
-                        $dueDate = \Carbon\Carbon::parse($dueDateValue);
-                        if ($dueDate->lt($nowGlobal->startOfDay()) || ($dueDate->isToday() && $nowGlobal->hour >= 12)) {
-                            if(!$overdueOrders->contains('id', $po->id)) {
-                                $overdueOrders->push($po);
-                            }
-                        }
-                    }
-                };
+        <ul class="nav nav-tabs" id="poTabs" role="tablist">
+            @php
+            $overdueOrders = collect();
+            $nowGlobal = \Carbon\Carbon::now();
 
-                foreach($createdOrders as $po) $checkOverdue($po);
-                foreach($allocatedOrders as $po) $checkOverdue($po);
-                foreach($inProcessOrders as $po) $checkOverdue($po);
-                foreach($forApprovalOrders as $po) $checkOverdue($po);
+            $checkOverdue = function($po) use ($nowGlobal, &$overdueOrders) {
+            $dueDateValue = $po->craftsman_due_date ?? $po->due_date ?? null;
+            if ($dueDateValue) {
+            $dueDate = \Carbon\Carbon::parse($dueDateValue);
+            if ($dueDate->lt($nowGlobal->startOfDay()) || ($dueDate->isToday() && $nowGlobal->hour >= 12)) {
+            if(!$overdueOrders->contains('id', $po->id)) {
+            $overdueOrders->push($po);
+            }
+            }
+            }
+            };
 
-                $tabDefinitions = [
-                
-                ['id' => 'created', 'label' => __('messages.created'), 'data' => $createdOrders],
-                ['id' => 'allocated', 'label' => __('messages.allocated'), 'data' => $allocatedOrders],
-                ['id' => 'in_process', 'label' => __('messages.in_process'), 'data' => $inProcessOrders],
-                ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
-                ['id' => 'for_approval', 'label' => __('messages.for_approval'), 'data' => $forApprovalOrders],
-                ['id' => 'completed', 'label' => __('messages.completed'), 'data' => $completedOrders],
-                ['id' => 'rejected', 'label' => __('messages.rejected'), 'data' => $rejectedOrders],
-                ];
-                @endphp
-                @foreach($tabDefinitions as $index => $tab)
-                <li class="nav-item">
-                    <button class="nav-link {{ request('tab', 'created') == $tab['id'] ? 'active' : '' }}"
-                        id="tab-{{ $tab['id'] }}"
-                        data-bs-toggle="tab"
-                        data-bs-target="#content-{{ $tab['id'] }}"
-                        type="button" role="tab">
-                        {{ $tab['label'] }} ({{ $tab['data']->count() }})
-                    </button>
-                </li>
-                @endforeach
-            </ul>
+            foreach($createdOrders as $po) $checkOverdue($po);
+            foreach($allocatedOrders as $po) $checkOverdue($po);
+            foreach($inProcessOrders as $po) $checkOverdue($po);
+            foreach($forApprovalOrders as $po) $checkOverdue($po);
 
-            <div class="tab-content" id="poTabsContent">
-                @foreach($tabDefinitions as $index => $tab)
-                <div class="tab-pane fade {{ request('tab', 'created') == $tab['id'] ? 'show active' : '' }}"
-                    id="content-{{ $tab['id'] }}"
-                    role="tabpanel"
-                    aria-labelledby="tab-{{ $tab['id'] }}">
+            $tabDefinitions = [
 
-                    <div class="card mt-3 shadow-sm">
-                        <div class="card-header d-flex justify-content-between align-items-center bg-white">
-                            <h5 class="mb-0">{{ $tab['label'] }} Orders</h5>
-                            <!-- @if(($tab['id'] == 'created' || $tab['id'] == 'allocated') && $tab['data']->count() > 0)
+            ['id' => 'created', 'label' => __('messages.created'), 'data' => $createdOrders],
+            ['id' => 'allocated', 'label' => __('messages.allocated'), 'data' => $allocatedOrders],
+            ['id' => 'in_process', 'label' => __('messages.in_process'), 'data' => $inProcessOrders],
+            ['id' => 'overdue', 'label' => 'Overdue', 'data' => $overdueOrders],
+            ['id' => 'for_approval', 'label' => __('messages.for_approval'), 'data' => $forApprovalOrders],
+            ['id' => 'completed', 'label' => __('messages.completed'), 'data' => $completedOrders],
+            ['id' => 'rejected', 'label' => __('messages.rejected'), 'data' => $rejectedOrders],
+            ];
+            @endphp
+            @foreach($tabDefinitions as $index => $tab)
+            <li class="nav-item">
+                <button class="nav-link {{ request('tab', 'created') == $tab['id'] ? 'active' : '' }}"
+                    id="tab-{{ $tab['id'] }}"
+                    data-bs-toggle="tab"
+                    data-bs-target="#content-{{ $tab['id'] }}"
+                    type="button" role="tab">
+                    {{ $tab['label'] }} ({{ $tab['data']->count() }})
+                </button>
+            </li>
+            @endforeach
+        </ul>
+
+        <div class="tab-content" id="poTabsContent">
+            @foreach($tabDefinitions as $index => $tab)
+            <div class="tab-pane fade {{ request('tab', 'created') == $tab['id'] ? 'show active' : '' }}"
+                id="content-{{ $tab['id'] }}"
+                role="tabpanel"
+                aria-labelledby="tab-{{ $tab['id'] }}">
+
+                <div class="card mt-3 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <h5 class="mb-0">{{ $tab['label'] }} Orders</h5>
+                        <!-- @if(($tab['id'] == 'created' || $tab['id'] == 'allocated') && $tab['data']->count() > 0)
                             <button type="button" class="btn btn-sm btn-indigo bulk-start-btn ms-2" style="display:none; background-color: #6610f2; color: white;">
                                 <i class="bi bi-play-fill"></i> Bulk Start
                             </button>
                             @endif -->
 
-                            @if($tab['id'] == 'created' && $tab['data']->count() > 0)
-                            <button type="button" class="btn btn-sm btn-success bulk-allocate-btn ms-2" style="display:none;" data-bs-toggle="modal" data-bs-target="#bulkAllocateModal">
-                                <i class="bi bi-people"></i> {{ __('messages.bulk_allocate_selected') }}
-                            </button>
-                            @endif
+                        @if($tab['id'] == 'created' && $tab['data']->count() > 0)
+                        <button type="button" class="btn btn-sm btn-success bulk-allocate-btn ms-2" style="display:none;" data-bs-toggle="modal" data-bs-target="#bulkAllocateModal">
+                            <i class="bi bi-people"></i> {{ __('messages.bulk_allocate_selected') }}
+                        </button>
+                        @endif
 
-                            @if(($tab['id'] == 'in_process' || $tab['id'] == 'for_approval') && $tab['data']->count() > 0)
-                            <button type="button" class="btn btn-sm btn-success bulk-complete-btn ms-2" style="display:none; background-color: #198754; color: white;">
-                                <i class="bi bi-check-circle"></i> Bulk Complete
-                            </button>
-                            @endif
+                        @if(($tab['id'] == 'in_process' || $tab['id'] == 'for_approval') && $tab['data']->count() > 0)
+                        <button type="button" class="btn btn-sm btn-success bulk-complete-btn ms-2" style="display:none; background-color: #198754; color: white;">
+                            <i class="bi bi-check-circle"></i> Bulk Complete
+                        </button>
+                        @endif
 
-                            @if($tab['id'] == 'for_approval' && $tab['data']->count() > 0)
-                            <button type="button" class="btn btn-sm btn-success bulk-approve-btn ms-2" style="display:none;">
-                                <i class="bi bi-check-all"></i> {{ __('messages.bulk_approve_selected') }}
-                            </button>
-                            @endif
+                        @if($tab['id'] == 'for_approval' && $tab['data']->count() > 0)
+                        <button type="button" class="btn btn-sm btn-success bulk-approve-btn ms-2" style="display:none;">
+                            <i class="bi bi-check-all"></i> {{ __('messages.bulk_approve_selected') }}
+                        </button>
+                        @endif
 
-                            @if($tab['id'] == 'completed')
-                            <form method="GET" action="{{ route('super-admin.purchase-order.index') }}" class="d-inline-block ms-2" id="completed-filter-form">
-                                <input type="hidden" name="tab" value="completed">
-                                <select name="completed_filter" onchange="document.getElementById('completed-filter-form').submit();" class="form-select form-select-sm">
-                                    <option value="">All Time</option>
-                                    <option value="day" {{ request('completed_filter') == 'day' ? 'selected' : '' }}>Today</option>
-                                    <option value="week" {{ request('completed_filter') == 'week' ? 'selected' : '' }}>This Week</option>
-                                    <option value="month" {{ request('completed_filter') == 'month' ? 'selected' : '' }}>This Month</option>
-                                </select>
-                            </form>
-                            @endif
+                        @if($tab['id'] == 'completed')
+                        <form method="GET" action="{{ route('super-admin.purchase-order.index') }}" class="d-inline-block ms-2" id="completed-filter-form">
+                            <input type="hidden" name="tab" value="completed">
+                            <select name="completed_filter" onchange="document.getElementById('completed-filter-form').submit();" class="form-select form-select-sm">
+                                <option value="">All Time</option>
+                                <option value="day" {{ request('completed_filter') == 'day' ? 'selected' : '' }}>Today</option>
+                                <option value="week" {{ request('completed_filter') == 'week' ? 'selected' : '' }}>This Week</option>
+                                <option value="month" {{ request('completed_filter') == 'month' ? 'selected' : '' }}>This Month</option>
+                            </select>
+                        </form>
+                        @endif
 
-                            <button type="button" class="btn btn-sm btn-dark bulk-print-btn ms-2" style="display:none;" onclick="submitBulkPrint()">
-                                <i class="bi bi-printer"></i> {{ __('messages.bulk_print_share') }}
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-bordered po-datatable" id="table-{{ $tab['id'] }}">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="30"><input type="checkbox" class="select-all"></th>
-                                            <th>{{ __('messages.po_order') }}</th>
-                                            <th>{{ __('messages.created_at') }}</th>
-                                            <th>{{ __('messages.due_date') }}</th>
-                                            <th>{{ __('messages.items') }}</th>
-                                            <th>{{ __('messages.total_weight') }}</th>
-                                            @if($tab['id'] != 'created')
-                                            <th>{{ __('messages.craftsman') }}</th>
-                                            @endif
-                                            <th>{{ __('messages.actions') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($tab['data'] as $po)
-                                                                                                        @php
-                                $rowStyle = '';
-                                $isOverdue = false;
-                                $isDueWithin48Hours = false;
-                                $allocatedWithin48Hours = false;
-                                $now = \Carbon\Carbon::now();
+                        <button type="button" class="btn btn-sm btn-dark bulk-print-btn ms-2" style="display:none;" onclick="submitBulkPrint()">
+                            <i class="bi bi-printer"></i> {{ __('messages.bulk_print_share') }}
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered po-datatable" id="table-{{ $tab['id'] }}">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="30"><input type="checkbox" class="select-all"></th>
+                                        <th>{{ __('messages.po_order') }}</th>
+                                        <th>{{ __('messages.created_at') }}</th>
+                                        <th>{{ __('messages.due_date') }}</th>
+                                        <th>{{ __('messages.items') }}</th>
+                                        <th>{{ __('messages.total_weight') }}</th>
+                                        @if($tab['id'] != 'created')
+                                        <th>{{ __('messages.craftsman') }}</th>
+                                        @endif
+                                        <th>{{ __('messages.actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($tab['data'] as $po)
+                                    @php
+                                    $rowStyle = '';
+                                    $isOverdue = false;
+                                    $isDueWithin48Hours = false;
+                                    $allocatedWithin48Hours = false;
+                                    $now = \Carbon\Carbon::now();
 
-                                // For PO and WorkOrder
-                                $dueDateValue = null;
-                                if (isset($order) && isset($order->craftsman_due_date)) {
+                                    // For PO and WorkOrder
+                                    $dueDateValue = null;
+                                    if (isset($order) && isset($order->craftsman_due_date)) {
                                     $dueDateValue = $order->craftsman_due_date;
-                                } elseif (isset($order) && isset($order->due_date)) {
+                                    } elseif (isset($order) && isset($order->due_date)) {
                                     $dueDateValue = $order->due_date;
-                                } elseif (isset($po) && isset($po->due_date)) {
+                                    } elseif (isset($po) && isset($po->due_date)) {
                                     $dueDateValue = $po->due_date;
-                                }
+                                    }
 
-                                if ($dueDateValue) {
+                                    if ($dueDateValue) {
                                     $dueDate = \Carbon\Carbon::parse($dueDateValue);
                                     if ($dueDate->lt($now->startOfDay()) || ($dueDate->isToday() && $now->hour >= 12)) {
-                                        $isOverdue = true;
+                                    $isOverdue = true;
                                     } else {
-                                        $hoursDiff = $now->diffInHours($dueDate, false);
-                                        if ($hoursDiff >= 0 && $hoursDiff <= 48) {
-                                            $isDueWithin48Hours = true;
+                                    $hoursDiff = $now->diffInHours($dueDate, false);
+                                    if ($hoursDiff >= 0 && $hoursDiff <= 48) {
+                                        $isDueWithin48Hours=true;
                                         }
-                                    }
-                                }
+                                        }
+                                        }
 
-                                // Handle updated_at for allocated within 48h
-                                $updatedAtValue = null;
-                                if (isset($order) && isset($order->updated_at)) {
-                                    $updatedAtValue = $order->updated_at;
-                                } elseif (isset($po) && isset($po->updated_at)) {
-                                    $updatedAtValue = $po->updated_at;
-                                }
+                                        // Handle updated_at for allocated within 48h
+                                        $updatedAtValue=null;
+                                        if (isset($order) && isset($order->updated_at)) {
+                                        $updatedAtValue = $order->updated_at;
+                                        } elseif (isset($po) && isset($po->updated_at)) {
+                                        $updatedAtValue = $po->updated_at;
+                                        }
 
-                                $currentTabString = '';
-                                if (isset($activeTab)) {
-                                    $currentTabString = $activeTab;
-                                } elseif (isset($currentTab)) {
-                                    $currentTabString = $currentTab;
-                                } elseif (isset($tab['id'])) {
-                                    $currentTabString = $tab['id'];
-                                }
+                                        $currentTabString = '';
+                                        if (isset($activeTab)) {
+                                        $currentTabString = $activeTab;
+                                        } elseif (isset($currentTab)) {
+                                        $currentTabString = $currentTab;
+                                        } elseif (isset($tab['id'])) {
+                                        $currentTabString = $tab['id'];
+                                        }
 
-                                if (($currentTabString == 'allocated-orders' || $currentTabString == 'allocated') && $updatedAtValue) {
-                                    if (\Carbon\Carbon::parse($updatedAtValue)->diffInHours($now) <= 48) {
-                                        $allocatedWithin48Hours = true;
-                                    }
-                                }
+                                        if (($currentTabString == 'allocated-orders' || $currentTabString == 'allocated') && $updatedAtValue) {
+                                        if (\Carbon\Carbon::parse($updatedAtValue)->diffInHours($now) <= 48) {
+                                            $allocatedWithin48Hours=true;
+                                            }
+                                            }
 
-                                if ($isOverdue) {
-                                    $rowStyle = 'background-color: rgba(255, 228, 230, 0.8) !important;'; // rose
-                                } elseif ($isDueWithin48Hours) {
-                                    $rowStyle = 'background-color: rgba(255, 237, 213, 0.8) !important;'; // orange
-                                } elseif ($currentTabString == 'in-process-orders' || $currentTabString == 'in-process' || $currentTabString == 'in_process') {
-                                    $rowStyle = 'background-color: rgba(220, 252, 231, 0.8) !important;'; // green
-                                } elseif (($currentTabString == 'allocated-orders' || $currentTabString == 'allocated') && $allocatedWithin48Hours) {
-                                    $rowStyle = 'background-color: rgba(219, 234, 254, 0.8) !important;'; // blue
-                                } elseif ($currentTabString == 'new-orders' || $currentTabString == 'created') {
-                                    $rowStyle = 'background-color: rgba(254, 252, 232, 0.8) !important;'; // yellow
-                                }
-@endphp
-                                <tr class="hover:tw-bg-gray-50 tw-transition-colors  " style="{{ $rowStyle }}">
+                                            if ($isOverdue) {
+                                            $rowStyle='background-color: rgba(255, 228, 230, 0.8) !important;' ; // rose
+                                            } elseif ($isDueWithin48Hours) {
+                                            $rowStyle='background-color: rgba(255, 237, 213, 0.8) !important;' ; // orange
+                                            } elseif ($currentTabString=='in-process-orders' || $currentTabString=='in-process' || $currentTabString=='in_process' ) {
+                                            $rowStyle='background-color: rgba(220, 252, 231, 0.8) !important;' ; // green
+                                            } elseif (($currentTabString=='allocated-orders' || $currentTabString=='allocated' ) && $allocatedWithin48Hours) {
+                                            $rowStyle='background-color: rgba(219, 234, 254, 0.8) !important;' ; // blue
+                                            } elseif ($currentTabString=='new-orders' || $currentTabString=='created' ) {
+                                            $rowStyle='background-color: rgba(254, 252, 232, 0.8) !important;' ; // yellow
+                                            }
+                                            @endphp
+                                            <tr class="hover:tw-bg-gray-50 tw-transition-colors  " style="{{ $rowStyle }}">
                                             <td><input type="checkbox" class="po-checkbox" value="{{ $po->id }}"></td>
                                             <td class="fw-bold text-primary">{{ $po->purchase_order_code }}</td>
                                             <td class="fw-bold text-primary">{{ $po->created_at ? $po->created_at->format('d M, Y') : 'N/A'}}</td>
@@ -379,11 +381,12 @@
                                             <td>{{ number_format(collect($po->items)->sum('total'), 2) }}g</td>
                                             @if($tab['id'] != 'created')
                                             <td>{{ $po->allocated_craftsman_code ?? 'N/A' }}
-@if(isset($po) && $po->staff_completed_at && $po->craftsmanStaff)
-    <br><span style="font-size: 11px; color: #7e22ce; font-weight: bold;">Staff(C): {{ $po->craftsmanStaff->name }}</span>
-@elseif(isset($po) && $po->staff_accepted_at && $po->acceptedByStaff)
-    <br><span style="font-size: 11px; color: #2563eb; font-weight: bold;">Staff(A): {{ $po->acceptedByStaff->name }}</span>
-@endif</td>
+                                                @if(isset($po) && $po->staff_completed_at && $po->craftsmanStaff)
+                                                <br><span style="font-size: 11px; color: #7e22ce; font-weight: bold;">Staff(C): {{ $po->craftsmanStaff->name }}</span>
+                                                @elseif(isset($po) && $po->staff_accepted_at && $po->acceptedByStaff)
+                                                <br><span style="font-size: 11px; color: #2563eb; font-weight: bold;">Staff(A): {{ $po->acceptedByStaff->name }}</span>
+                                                @endif
+                                            </td>
                                             @endif
                                             <td>
                                                 <div class="btn-group btn-group-sm">
@@ -394,105 +397,105 @@
                                                         <div class="p-3 bg-light border-bottom">
                                                             <h6 class="mb-2"><strong>Items Added:</strong></h6>
                                                             @if(is_array($po->items) && count($po->items) > 0)
-                                                                <div class="table-responsive">
-                                                                    <table class="table table-sm table-bordered mb-0 bg-white">
-                                                                        <thead class="table-secondary">
-                                                                            <tr>
-                                                                                <th>Category</th>
-                                                                                <th>Product / Design</th>
-                                                                                <th>Grams calculation</th>
-                                                                                <th>Total Weight</th>
-                                                                                <th>Image</th>
-                                                                                <th>Notes</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            @foreach($po->items as $item)
-                                                                                @php
-                                                                                    $productId = $item['product_id'] ?? null;
-                                                                                    $prodModel = $productId ? \App\Models\Product::with(['images', 'subcategory', 'category'])->find($productId) : null;
-                                                                                    
-                                                                                    $prodName = $prodModel ? $prodModel->product_name : ($item['product_name'] ?? $item['manual_product'] ?? 'N/A');
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-bordered mb-0 bg-white">
+                                                                    <thead class="table-secondary">
+                                                                        <tr>
+                                                                            <th>Category</th>
+                                                                            <th>Product / Design</th>
+                                                                            <th>Grams calculation</th>
+                                                                            <th>Total Weight</th>
+                                                                            <th>Image</th>
+                                                                            <th>Notes</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @foreach($po->items as $item)
+                                                                        @php
+                                                                        $productId = $item['product_id'] ?? null;
+                                                                        $prodModel = $productId ? \App\Models\Product::with(['images', 'subcategory', 'category'])->find($productId) : null;
 
-                                                                                    $catName = 'N/A';
-                                                                                    if (!empty($item['category_name']) && $item['category_name'] !== 'N/A') {
-                                                                                        $catName = $item['category_name'];
-                                                                                    } elseif (!empty($item['produts_category']) && $item['produts_category'] !== 'N/A') {
-                                                                                        $catName = $item['produts_category'];
-                                                                                    } elseif (!empty($item['category'])) {
-                                                                                        if (is_numeric($item['category'])) {
-                                                                                            $cat = \App\Models\ProductCategory::find($item['category']);
-                                                                                            $catName = $cat ? $cat->name : 'N/A';
-                                                                                        } else {
-                                                                                            $catName = $item['category'];
-                                                                                        }
-                                                                                    }
-                                                                                    if (($catName === 'N/A' || empty($catName)) && $prodModel && $prodModel->category) {
-                                                                                        $catName = $prodModel->category->name;
-                                                                                    }
+                                                                        $prodName = $prodModel ? $prodModel->product_name : ($item['product_name'] ?? $item['manual_product'] ?? 'N/A');
 
-                                                                                    $subName = 'N/A';
-                                                                                    if (!empty($item['subcategory_name']) && $item['subcategory_name'] !== 'N/A') {
-                                                                                        $subName = $item['subcategory_name'];
-                                                                                    } elseif (!empty($item['sub_category_name']) && $item['sub_category_name'] !== 'N/A') {
-                                                                                        $subName = $item['sub_category_name'];
-                                                                                    } elseif ($prodModel && $prodModel->subcategory) {
-                                                                                        $subName = $prodModel->subcategory->name;
-                                                                                    } elseif (!empty($item['subcategory'])) {
-                                                                                        if (is_numeric($item['subcategory'])) {
-                                                                                            $sub = \App\Models\ProductSubcategory::find($item['subcategory']);
-                                                                                            $subName = $sub ? $sub->name : 'N/A';
-                                                                                        } else {
-                                                                                            $subName = $item['subcategory'];
-                                                                                        }
-                                                                                    }
+                                                                        $catName = 'N/A';
+                                                                        if (!empty($item['category_name']) && $item['category_name'] !== 'N/A') {
+                                                                        $catName = $item['category_name'];
+                                                                        } elseif (!empty($item['produts_category']) && $item['produts_category'] !== 'N/A') {
+                                                                        $catName = $item['produts_category'];
+                                                                        } elseif (!empty($item['category'])) {
+                                                                        if (is_numeric($item['category'])) {
+                                                                        $cat = \App\Models\ProductCategory::find($item['category']);
+                                                                        $catName = $cat ? $cat->name : 'N/A';
+                                                                        } else {
+                                                                        $catName = $item['category'];
+                                                                        }
+                                                                        }
+                                                                        if (($catName === 'N/A' || empty($catName)) && $prodModel && $prodModel->category) {
+                                                                        $catName = $prodModel->category->name;
+                                                                        }
 
-                                                                                    $designModel = $productId ? \App\Models\Design::where('product_id', $productId)->first() : null;
-                                                                                    $designCode = $designModel ? $designModel->design_code : ($item['design_code'] ?? 'N/A');
+                                                                        $subName = 'N/A';
+                                                                        if (!empty($item['subcategory_name']) && $item['subcategory_name'] !== 'N/A') {
+                                                                        $subName = $item['subcategory_name'];
+                                                                        } elseif (!empty($item['sub_category_name']) && $item['sub_category_name'] !== 'N/A') {
+                                                                        $subName = $item['sub_category_name'];
+                                                                        } elseif ($prodModel && $prodModel->subcategory) {
+                                                                        $subName = $prodModel->subcategory->name;
+                                                                        } elseif (!empty($item['subcategory'])) {
+                                                                        if (is_numeric($item['subcategory'])) {
+                                                                        $sub = \App\Models\ProductSubcategory::find($item['subcategory']);
+                                                                        $subName = $sub ? $sub->name : 'N/A';
+                                                                        } else {
+                                                                        $subName = $item['subcategory'];
+                                                                        }
+                                                                        }
+
+                                                                        $designModel = $productId ? \App\Models\Design::where('product_id', $productId)->first() : null;
+                                                                        $designCode = $designModel ? $designModel->design_code : ($item['design_code'] ?? 'N/A');
                                                                         $designName = $designModel ? $designModel->design_name : 'N/A';
 
-                                                                                    $imageSrc = null;
-                                                                                    if (!empty($item['image'])) {
-                                                                                        $imageSrc = str_contains($item['image'], 'images/') ? asset($item['image']) : asset('storage/' . $item['image']);
-                                                                                    } elseif ($designModel && !empty($designModel->image)) {
-                                                                                        $imageSrc = str_starts_with($designModel->image, 'storage/') || str_starts_with($designModel->image, 'images/') ? asset($designModel->image) : asset('storage/' . $designModel->image);
-                                                                                    } elseif ($prodModel && $prodModel->images->count() > 0) {
-                                                                                        $path = $prodModel->images[0]->path;
-                                                                                        $imageSrc = str_starts_with($path, 'storage/') || str_starts_with($path, 'images/') ? asset($path) : asset('storage/' . $path);
-                                                                                    }
-                                                                                @endphp
-                                                                                <tr>
-                                                                                    <td>{{ $catName }}</td>
-                                                                                    <td>
-                                                                                        <span class="fw-bold d-block">{{ $prodName }}</span>
-                                                                                        <small class="text-blue-600">Sub: {{ $subName }}</small>
-                                                                                        <br><small class="text-muted">Design: {{ $designCode }}</small>
-                                                                                    </td>
-                                                                                    <td>
-                                                                                        @if(isset($item['grams']) && is_array($item['grams']))
-                                                                                            @foreach($item['grams'] as $i => $gram)
-                                                                                                <div>{{ $gram }}g × {{ is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1 }} = <strong>{{ number_format(is_array($item['individual_totals'] ?? null) ? ($item['individual_totals'][$i] ?? 0) : ($item['individual_totals'] ?? 0), 2) }}g</strong></div>
-                                                                                            @endforeach
-                                                                                        @else
-                                                                                            {{ $item['grams'] ?? 0 }}g × {{ $item['quantity'] ?? 0 }} = <strong>{{ number_format((float)($item['grams'] ?? 0) * (float)($item['quantity'] ?? 0), 2) }}g</strong>
-                                                                                        @endif
-                                                                                    </td>
-                                                                                    <td class="fw-bold">{{ number_format((float)($item['total'] ?? 0), 2) }}g</td>
-                                                                                    <td>
-                                                                                        @if($imageSrc)
-                                                                                            <img src="{{ $imageSrc }}" class="img-thumbnail" style="max-height: 50px; cursor: pointer;" onclick="window.open(this.src, '_blank')" alt="Item Image">
-                                                                                        @else
-                                                                                            <span class="text-muted small">No Image</span>
-                                                                                        @endif
-                                                                                    </td>
-                                                                                    <td><small>{{ $item['item_notes'] ?? '-' }}</small></td>
-                                                                                </tr>
-                                                                            @endforeach
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
+                                                                        $imageSrc = null;
+                                                                        if (!empty($item['image'])) {
+                                                                        $imageSrc = str_contains($item['image'], 'images/') ? asset($item['image']) : asset('storage/' . $item['image']);
+                                                                        } elseif ($designModel && !empty($designModel->image)) {
+                                                                        $imageSrc = str_starts_with($designModel->image, 'storage/') || str_starts_with($designModel->image, 'images/') ? asset($designModel->image) : asset('storage/' . $designModel->image);
+                                                                        } elseif ($prodModel && $prodModel->images->count() > 0) {
+                                                                        $path = $prodModel->images[0]->path;
+                                                                        $imageSrc = str_starts_with($path, 'storage/') || str_starts_with($path, 'images/') ? asset($path) : asset('storage/' . $path);
+                                                                        }
+                                                                        @endphp
+                                                                        <tr>
+                                                                            <td>{{ $catName }}</td>
+                                                                            <td>
+                                                                                <span class="fw-bold d-block">{{ $prodName }}</span>
+                                                                                <small class="text-blue-600">Sub: {{ $subName }}</small>
+                                                                                <br><small class="text-muted">Design: {{ $designCode }}</small>
+                                                                            </td>
+                                                                            <td>
+                                                                                @if(isset($item['grams']) && is_array($item['grams']))
+                                                                                @foreach($item['grams'] as $i => $gram)
+                                                                                <div>{{ $gram }}g × {{ is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1 }} = <strong>{{ number_format(is_array($item['individual_totals'] ?? null) ? ($item['individual_totals'][$i] ?? 0) : ($item['individual_totals'] ?? 0), 2) }}g</strong></div>
+                                                                                @endforeach
+                                                                                @else
+                                                                                {{ $item['grams'] ?? 0 }}g × {{ $item['quantity'] ?? 0 }} = <strong>{{ number_format((float)($item['grams'] ?? 0) * (float)($item['quantity'] ?? 0), 2) }}g</strong>
+                                                                                @endif
+                                                                            </td>
+                                                                            <td class="fw-bold">{{ number_format((float)($item['total'] ?? 0), 2) }}g</td>
+                                                                            <td>
+                                                                                @if($imageSrc)
+                                                                                <img src="{{ $imageSrc }}" class="img-thumbnail" style="max-height: 50px; cursor: pointer;" onclick="window.open(this.src, '_blank')" alt="Item Image">
+                                                                                @else
+                                                                                <span class="text-muted small">No Image</span>
+                                                                                @endif
+                                                                            </td>
+                                                                            <td><small>{{ $item['item_notes'] ?? '-' }}</small></td>
+                                                                        </tr>
+                                                                        @endforeach
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
                                                             @else
-                                                                <p class="text-muted mb-0">No items found.</p>
+                                                            <p class="text-muted mb-0">No items found.</p>
                                                             @endif
                                                         </div>
                                                     </template>
@@ -501,6 +504,15 @@
                                                     @if($tab['id'] == 'created')
                                                     <a href="{{ route('super-admin.purchase-order.edit', ['purchaseOrder' => $po->id, 'return_url' => url()->full()]) }}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                                                     <a href="{{ route('super-admin.purchase-order.allocate', $po) }}" class="btn btn-outline-success" title="Allocate"><i class="bi bi-person-plus"></i></a>
+                                                    @endif
+
+                                                    @if($tab['id'] == 'allocated')
+                                                    <form action="{{ route('super-admin.purchase-order.reallocate', $po) }}" method="POST" class="d-inline" onsubmit="return confirm('Reset this order and move it back to Created tab?');">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-warning" title="Reallocate">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                        </button>
+                                                    </form>
                                                     @endif
 
                                                     @if($tab['id'] == 'rejected')
@@ -517,17 +529,20 @@
                                                         @csrf
                                                         <button type="submit" class="btn btn-outline-success" title="Approve"><i class="bi bi-check-lg"></i></button>
                                                     </form>
-                                                    <button type="submit" class="btn btn-outline-warning" title="Reallocate">
-                                                        <i class="bi bi-arrow-repeat"></i>
-                                                    </button>
+                                                    <form action="{{ route('super-admin.purchase-order.reallocate', $po) }}" method="POST" class="d-inline" onsubmit="return confirm('Reset this order and move it back to Created tab?');">
+                                                        @csrf
+                                                        <!-- <button type="submit" class="btn btn-outline-warning" title="Reallocate">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                        </button> -->
+                                                    </form>
                                                     @endif
 
                                                     @if($tab['id'] == 'completed')
                                                     <form action="{{ route('super-admin.purchase-order.reallocate', $po) }}" method="POST" class="d-inline" onsubmit="return confirm('Reset this order and move it back to Created tab?');">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-outline-warning" title="Reallocate">
+                                                        <!-- <button type="submit" class="btn btn-outline-warning" title="Reallocate">
                                                             <i class="bi bi-arrow-repeat"></i>
-                                                        </button>
+                                                        </button> -->
                                                     </form>
                                                     <a href="{{ route('super-admin.purchase-order.copy', $po) }}"
                                                         class="btn btn-outline-success" title="Copy">
@@ -542,18 +557,18 @@
                                                     </form>
                                                 </div>
                                             </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                            </tr>
+                                            @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                @endforeach
             </div>
+            @endforeach
         </div>
     </div>
+</div>
 </div>
 
 {{-- MODALS --}}
@@ -621,7 +636,7 @@
 <script>
     $(document).ready(function() {
         // Update export link on tab change
-        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
             var target = $(e.target).attr("id").replace('tab-', '');
             var url = new URL($('#export-btn').attr('href'));
             url.searchParams.set('tab', target);
@@ -650,7 +665,7 @@
         });
 
         // Toggle child rows
-        $('.po-datatable tbody').on('click', '.toggle-items-btn', function () {
+        $('.po-datatable tbody').on('click', '.toggle-items-btn', function() {
             var tr = $(this).closest('tr');
             var table = $(this).closest('table').DataTable();
             var row = table.row(tr);

@@ -540,7 +540,7 @@
                                             </a>
                                         @endif
 
-                                        @if($tab['id'] == 'rejected')
+                                        @if(in_array($tab['id'], ['rejected', 'allocated', 'in_process']))
                                             <form action="{{ route('admin.purchase-order.reallocate', $po) }}" method="POST" class="inline-block" onsubmit="return confirm('Reset this order and move it back to Created tab?');">
                                                 @csrf
                                                 <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all duration-200" title="Reallocate">

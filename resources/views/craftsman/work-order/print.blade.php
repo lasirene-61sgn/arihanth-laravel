@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Order - {{ $workOrder->work_order_number }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -38,8 +39,7 @@
     </div>
 
     <div id="print-content">
-        @foreach($workOrders as $workOrder)
-        <div class="page-container max-w-3xl mx-auto bg-white border-x border-gray-200 md:my-4 shadow-sm overflow-hidden flex flex-col justify-between h-screen">
+        <div class="page-container max-w-3xl mx-auto bg-white border-x border-gray-200 md:my-4 shadow-sm overflow-hidden flex flex-col justify-between h-screen p-8">
             
             <div class="space-y-4">
                 <div class="flex gap-6 items-start">
@@ -113,7 +113,6 @@
                 <span>Generated: {{ now()->format('d/m/Y') }}</span>
             </div>
         </div>
-        @endforeach
     </div>
 
     <script>
@@ -121,7 +120,7 @@
             const content = document.getElementById('print-content');
             html2canvas(content, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'Work-Order.png';
+                link.download = 'Work-Order-{{ $workOrder->work_order_number }}.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             });

@@ -80,11 +80,11 @@
                         </div>
                         <div class="col-sm-6 col-md-4">
                             <label class="text-muted small fw-medium d-block mb-1">Product Code</label>
-                            <span class="fw-bold text-dark">{{ $product->product_code }}</span>
+                            <span class="fw-bold text-dark">{{ $product ? $product->product_code : 'N/A' }}</span>
                         </div>
                         <div class="col-sm-6 col-md-4">
                             <label class="text-muted small fw-medium d-block mb-1">Design Code</label>
-                            <span class="fw-bold text-dark">{{ $product->design_code }}</span>
+                            <span class="fw-bold text-dark">{{ $product ? $product->design_code : 'N/A' }}</span>
                         </div>
 
                         

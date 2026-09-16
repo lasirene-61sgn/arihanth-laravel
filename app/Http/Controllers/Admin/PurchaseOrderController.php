@@ -836,7 +836,7 @@ class PurchaseOrderController extends Controller
             }
         }
         $craftsmen = Craftman::all();
-        return view('admin.purchase-order.allocate', compact('purchaseOrder', 'itemsWithDetails', 'craftsmen', 'categories', 'subCategories'));
+        return view('admin.purchase-order.allocate', compact('purchaseOrder', 'itemsWithDetails', 'craftsmen'));
     }
 
     public function allocateStore(Request $request, PurchaseOrder $purchaseOrder)
