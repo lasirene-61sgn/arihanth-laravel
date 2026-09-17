@@ -124,6 +124,8 @@ class GenerateImageHashesCommand extends Command
                     } catch (\Exception $e) {
                         $items = collect(); // Ignore if table doesn't exist
                     }
+                } elseif ($modelData['class'] === Product::class) {
+                    $items = Product::all();
                 } else {
                     $items = $modelData['class']::whereNotNull($modelData['image_field'])
                         ->where($modelData['image_field'], '!=', '')
@@ -140,6 +142,17 @@ class GenerateImageHashesCommand extends Command
                             foreach ($poItems as $poItem) {
                                 if (isset($poItem['image']) && !empty($poItem['image'])) {
                                     $hashImage($hasher, $modelData['class'], $item->id, $poItem['image']);
+                                }
+                            }
+                        }
+                    } elseif ($modelData['class'] === Product::class) {
+                        if (!empty($item->product_image)) {
+                            $hashImage($hasher, $modelData['class'], $item->id, $item->product_image);
+                        }
+                        if ($item->images && $item->images->count() > 0) {
+                            foreach ($item->images as $prodImg) {
+                                if (!empty($prodImg->path)) {
+                                    $hashImage($hasher, $modelData['class'], $item->id, $prodImg->path);
                                 }
                             }
                         }

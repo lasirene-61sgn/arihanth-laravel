@@ -2,6 +2,24 @@
 
 @section('title', 'Reallocate Work Order')
 
+@section('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.375rem !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px !important;
+        padding-left: 12px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="container-fluid">
     <div class="row">
@@ -63,7 +81,7 @@
                                 
                                 <div class="mb-3">
                                     <label for="allocated_craftsman_bp_code" class="form-label">Select Craftsman *</label>
-                                    <select class="form-select @error('allocated_craftsman_bp_code') is-invalid @enderror" 
+                                    <select class="form-select select2 @error('allocated_craftsman_bp_code') is-invalid @enderror" 
                                             id="allocated_craftsman_bp_code" name="allocated_craftsman_bp_code" required>
                                         <option value="">Choose a craftsman</option>
                                         @foreach($craftsmen as $craftsman)
@@ -109,4 +127,18 @@
         </div>
     </div>
 </div>
+
+@section('scripts')
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#allocated_craftsman_bp_code').select2({
+            width: '100%',
+            placeholder: 'Choose a craftsman',
+            allowClear: true
+        });
+    });
+</script>
+@endsection
 @endsection

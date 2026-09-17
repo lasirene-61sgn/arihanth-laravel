@@ -707,6 +707,17 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Design Preview</h5>
+                    <div class="ms-auto me-3 d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.zoomUniversalPreview(0.25)" title="Zoom In">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.zoomUniversalPreview(-0.25)" title="Zoom Out">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.resetUniversalPreviewZoom()" title="Reset Zoom">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-0" style="overflow: auto; max-height: 80vh;" id="modalPreviewContainer">
@@ -1009,7 +1020,40 @@
         // ===============================
         // MODAL PREVIEW
         // ===============================
+        window.currentPreviewZoom = 1;
+
+        window.zoomUniversalPreview = function(step) {
+            window.currentPreviewZoom += step;
+            if (window.currentPreviewZoom < 0.25) window.currentPreviewZoom = 0.25;
+            if (window.currentPreviewZoom > 20) window.currentPreviewZoom = 20;
+            window.applyUniversalPreviewZoom();
+        };
+
+        window.resetUniversalPreviewZoom = function() {
+            window.currentPreviewZoom = 1;
+            window.applyUniversalPreviewZoom();
+        };
+
+        window.applyUniversalPreviewZoom = function() {
+            const container = document.getElementById('modalPreviewContainer');
+            Array.from(container.children).forEach(child => {
+                if (window.currentPreviewZoom > 1) {
+                    child.classList.remove('img-fluid');
+                } else {
+                    child.classList.add('img-fluid');
+                }
+                child.style.width = (window.currentPreviewZoom * 100) + '%';
+                child.style.height = 'auto';
+                child.style.transition = 'width 0.2s ease-in-out';
+                child.style.cursor = 'zoom-in';
+                child.onclick = function() {
+                    window.zoomUniversalPreview(0.5);
+                };
+            });
+        };
+
         window.openUniversalPreview = async function(url, type) {
+            window.currentPreviewZoom = 1;
             const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
             modal.show();
 
@@ -1051,6 +1095,9 @@
                 img.className = 'img-fluid';
                 container.appendChild(img);
             }
+            
+            // Apply initial zoom
+            window.applyUniversalPreviewZoom();
         };
 
 

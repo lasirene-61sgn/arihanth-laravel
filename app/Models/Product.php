@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasImageHash;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, HasImageHash;
 
     protected $fillable = [
         'product_code',
@@ -89,6 +90,21 @@ class Product extends Model
     public function getSubcategoryIdAttribute()
     {
         return $this->product_subcategory_id;
+    }
+
+    public function getImageUrlAttribute()
+    {
+        if (!empty($this->product_image)) {
+            return $this->product_image;
+        }
+        
+        if ($this->images && $this->images->count() > 0) {
+            $firstImage = $this->images->first();
+            if ($firstImage && $firstImage->path) {
+                return $firstImage->path;
+            }
+        }
+        return null;
     }
 
     public function images()

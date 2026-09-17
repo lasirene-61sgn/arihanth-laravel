@@ -83,14 +83,23 @@ class GlobalSearchController extends Controller
 
                         // Determine image and ensure storage path formatting for Hostinger
                         $image = null;
-                        if (isset($item->product_image)) $image = $item->product_image;
+                        if (isset($item->preview_image_url) && !empty($item->preview_image_url)) $image = $item->preview_image_url;
+                        elseif (isset($item->image_url) && !empty($item->image_url)) $image = $item->image_url;
+                        elseif (isset($item->product_image_url) && !empty($item->product_image_url)) $image = $item->product_image_url;
+                        elseif (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
                         elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
 
-                        if ($image) {
-                            if (!str_starts_with($image, 'http')) {
-                                $image = str_starts_with($image, 'storage/') ? asset($image) : asset('storage/' . $image);
+                        if ($image && !filter_var($image, FILTER_VALIDATE_URL)) {
+                            if (str_starts_with($image, 'http')) {
+                                // already full url
+                            } elseif (str_starts_with($image, 'images/') || str_starts_with($image, 'assets/') || str_starts_with($image, 'public/')) {
+                                $image = asset($image);
+                            } elseif (str_starts_with($image, 'storage/')) {
+                                $image = asset($image);
+                            } else {
+                                $image = asset('storage/' . $image);
                             }
                         }
 
@@ -226,13 +235,10 @@ class GlobalSearchController extends Controller
                 }
 
             } catch (\Exception $e) {
-                if ($request->ajax()) {
-                    return response()->json([
-                        'error' => true,
-                        'message' => 'Image search processing error: ' . $e->getMessage()
-                    ], 500);
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['error' => 'Unable to process image. Please upload a valid JPG/PNG.'], 422);
                 }
-                throw $e;
+                return back()->with('error', 'Unable to process the uploaded image.');
             }
 
         } elseif (!empty($query)) {

@@ -401,6 +401,15 @@
                             <i class="bi bi-x-circle-fill"></i>
                         </button>
                     </div>
+
+                    <div class="flex gap-2" id="modalPrintActionsWrapper">
+                        <button type="button" onclick="document.getElementById('modalWoPrintForm').submit()" id="modalWoPrintBtn" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                            <i class="bi bi-file-earmark-pdf-fill mr-1.5"></i> Print Selected Docs
+                        </button>
+                        <button type="button" onclick="document.getElementById('modalPoPrintForm').submit()" id="modalPoPrintBtn" class="hidden px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                            <i class="bi bi-file-earmark-pdf-fill mr-1.5"></i> Print Selected Docs
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -418,9 +427,12 @@
             </div>
 
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white" id="modalWoTableWrapper">
+                <form action="{{ route('craftsman.work-order.print-selected') }}" method="POST" id="modalWoPrintForm" target="_blank">
+                    @csrf
                 <table class="w-full text-left border-collapse" id="modalWoTable">
-                    <thead class="bg-emerald-50 text-emerald-900 uppercase text-xs font-bold sticky top-0 border-b border-emerald-100">
+                    <thead class="bg-emerald-50 text-emerald-900 uppercase text-xs font-bold sticky top-0 border-b border-emerald-100 z-10">
                         <tr>
+                            <th class="px-6 py-4 text-center no-print"><input type="checkbox" id="selectAllModalWo" class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"></th>
                             <th class="px-6 py-4 col-wo_number">Work Order #</th>
                             <th class="px-6 py-4 col-product">Product</th>
                             <th class="px-6 py-4 text-center col-qty">Qty</th>
@@ -436,6 +448,9 @@
                         <tr class="modal-wo-row hover:bg-emerald-50/40 transition"
                             data-status="{{ strtolower($wo->craftsman_status ?? $wo->status) }}"
                             data-is-overdue="{{ $wo->is_delayed ? '1' : '0' }}">
+                            <td class="px-6 py-4 text-center no-print">
+                                <input type="checkbox" name="work_order_ids[]" value="{{ $wo->id }}" class="modal-wo-checkbox rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                            </td>
                             <td class="px-6 py-4 font-bold text-emerald-950 col-wo_number">
                                 <span class="modal-search-item" data-text="{{ $wo->work_order_number }}">{{ $wo->work_order_number }}</span>
                             </td>
@@ -481,16 +496,20 @@
                         </tr>
                         @endforelse
                         <tr id="modalWoNoMatch" class="hidden">
-                            <td colspan="8" class="text-center py-8 text-slate-500">No matching work orders found.</td>
+                            <td colspan="9" class="text-center py-8 text-slate-500">No matching work orders found.</td>
                         </tr>
                     </tbody>
                 </table>
+                </form>
             </div>
 
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white hidden" id="modalPoTableWrapper">
+                <form action="{{ route('craftsman.purchase-order.print-selected') }}" method="POST" id="modalPoPrintForm" target="_blank">
+                    @csrf
                 <table class="w-full text-left border-collapse" id="modalPoTable">
-                    <thead class="bg-blue-50 text-blue-900 uppercase text-xs font-bold sticky top-0 border-b border-blue-100">
+                    <thead class="bg-blue-50 text-blue-900 uppercase text-xs font-bold sticky top-0 border-b border-blue-100 z-10">
                         <tr>
+                            <th class="px-6 py-4 text-center no-print"><input type="checkbox" id="selectAllModalPo" class="rounded border-blue-300 text-blue-600 focus:ring-blue-500"></th>
                             <th class="px-6 py-4 col-po_number">Purchase Order #</th>
                             <th class="px-6 py-4 col-product">PO Details</th>
                             <th class="px-6 py-4 text-center col-qty">Items Qty</th>
@@ -506,6 +525,9 @@
                         <tr class="modal-po-row hover:bg-blue-50/40 transition"
                             data-status="{{ strtolower($po->craftsman_status ?? $po->status) }}"
                             data-is-overdue="{{ $po->is_delayed ? '1' : '0' }}">
+                            <td class="px-6 py-4 text-center no-print">
+                                <input type="checkbox" name="purchase_order_ids[]" value="{{ $po->id }}" class="modal-po-checkbox rounded border-blue-300 text-blue-600 focus:ring-blue-500">
+                            </td>
                             <td class="px-6 py-4 font-bold text-blue-950 col-po_number">
                                 <span class="modal-search-item" data-text="{{ $po->purchase_order_code ?? $po->po_number }}">{{ $po->purchase_order_code ?? $po->po_number }}</span>
                             </td>
@@ -551,10 +573,11 @@
                         </tr>
                         @endforelse
                         <tr id="modalPoNoMatch" class="hidden">
-                            <td colspan="8" class="text-center py-8 text-slate-500">No matching purchase orders found.</td>
+                            <td colspan="9" class="text-center py-8 text-slate-500">No matching purchase orders found.</td>
                         </tr>
                     </tbody>
                 </table>
+                </form>
             </div>
         </div>
     </div>
@@ -785,17 +808,24 @@
         const poWrapper = document.getElementById('modalPoTableWrapper');
         const tabWoBtn = document.getElementById('modalTabWoBtn');
         const tabPoBtn = document.getElementById('modalTabPoBtn');
+        
+        const woPrintBtn = document.getElementById('modalWoPrintBtn');
+        const poPrintBtn = document.getElementById('modalPoPrintBtn');
 
         if (type === 'wo') {
             woWrapper.classList.remove('hidden');
             poWrapper.classList.add('hidden');
             tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-emerald-900 text-white shadow";
             tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
+            woPrintBtn.classList.remove('hidden');
+            poPrintBtn.classList.add('hidden');
         } else {
             woWrapper.classList.add('hidden');
             poWrapper.classList.remove('hidden');
             tabPoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition bg-blue-900 text-white shadow";
             tabWoBtn.className = "px-5 py-2 rounded-lg text-xs font-bold transition text-emerald-800 hover:bg-emerald-200";
+            woPrintBtn.classList.add('hidden');
+            poPrintBtn.classList.remove('hidden');
         }
 
         applyModalFilter();
@@ -880,6 +910,31 @@
                 searchInput.value = '';
                 applyModalFilter();
                 searchInput.focus();
+            });
+        }
+        
+        // Modal Select All Checkboxes
+        const selectAllModalWo = document.getElementById('selectAllModalWo');
+        if(selectAllModalWo) {
+            selectAllModalWo.addEventListener('change', function() {
+                document.querySelectorAll('.modal-wo-checkbox').forEach(cb => {
+                    // Only check visible rows
+                    if(cb.closest('tr').style.display !== 'none') {
+                        cb.checked = this.checked;
+                    }
+                });
+            });
+        }
+        
+        const selectAllModalPo = document.getElementById('selectAllModalPo');
+        if(selectAllModalPo) {
+            selectAllModalPo.addEventListener('change', function() {
+                document.querySelectorAll('.modal-po-checkbox').forEach(cb => {
+                    // Only check visible rows
+                    if(cb.closest('tr').style.display !== 'none') {
+                        cb.checked = this.checked;
+                    }
+                });
             });
         }
     });

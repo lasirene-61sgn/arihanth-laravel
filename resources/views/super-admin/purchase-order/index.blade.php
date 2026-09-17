@@ -108,7 +108,7 @@
                                     <!-- Category Filter -->
                                     <div>
                                         <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Category</label>
-                                        <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                        <select name="category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all select2-filter">
                                             <option value="">All Categories</option>
                                             @foreach($categories as $category)
                                             <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
@@ -119,7 +119,7 @@
                                     <!-- Sub Category Filter -->
                                     <div>
                                         <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Sub Category</label>
-                                        <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                        <select name="sub_category_filter" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all select2-filter">
                                             <option value="">All Sub Categories</option>
                                             @foreach($subCategories as $subCategory)
                                             <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
@@ -130,7 +130,7 @@
                                     <!-- Craftsman Filter -->
                                     <div>
                                         <label class="tw-block tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-mb-2">Craftsman Code</label>
-                                        <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all">
+                                        <select name="filter_craftsman" class="tw-block tw-w-full tw-px-3 tw-py-2 tw-border tw-border-slate-200 tw-rounded-lg tw-bg-slate-50 focus:tw-bg-white focus:tw-ring-2 focus:tw-ring-magenta-500 focus:tw-border-magenta-500 tw-text-sm tw-transition-all select2-filter">
                                             <option value="">All Craftsmen</option>
                                             @foreach($craftsmen as $c)
                                             <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
@@ -635,6 +635,11 @@
 
 <script>
     $(document).ready(function() {
+        // Initialize Select2 for filters
+        $('.select2-filter').select2({
+            width: '100%'
+        });
+
         // Update export link on tab change
         $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
             var target = $(e.target).attr("id").replace('tab-', '');

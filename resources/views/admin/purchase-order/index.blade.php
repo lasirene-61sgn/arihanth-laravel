@@ -3,6 +3,7 @@
 @section('title', 'Purchase Order Management')
 
 @section('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     /* Custom scrollbar for horizontal tabs */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -103,7 +104,7 @@
                     <!-- Category Filter -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Category</label>
-                        <select name="category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                        <select name="category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all select2-filter">
                             <option value="">All Categories</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category_filter') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
@@ -114,7 +115,7 @@
                     <!-- Sub Category Filter -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Sub Category</label>
-                        <select name="sub_category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                        <select name="sub_category_filter" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all select2-filter">
                             <option value="">All Sub Categories</option>
                             @foreach($subCategories as $subCategory)
                                 <option value="{{ $subCategory->id }}" {{ request('sub_category_filter') == $subCategory->id ? 'selected' : '' }}>{{ $subCategory->name }}</option>
@@ -125,7 +126,7 @@
                     <!-- Craftsman Filter -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Craftsman Code</label>
-                        <select name="filter_craftsman" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all">
+                        <select name="filter_craftsman" class="block w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-magenta-500 focus:border-magenta-500 text-sm transition-all select2-filter">
                             <option value="">All Craftsmen</option>
                             @foreach($craftsmen as $c)
                                 <option value="{{ $c->craftman_code }}" {{ request('filter_craftsman') == $c->craftman_code ? 'selected' : '' }}>{{ $c->craftman_code }} - {{ $c->business_name }}</option>
@@ -703,6 +704,12 @@ $(document).ready(function() {
         dropdownParent: $('#bulkAllocateModal'),
         placeholder: "Select Craftsman",
         allowClear: true,
+        width: '100%',
+        theme: "default"
+    });
+    
+    // Initialize Select2 for filters
+    $('.select2-filter').select2({
         width: '100%',
         theme: "default"
     });

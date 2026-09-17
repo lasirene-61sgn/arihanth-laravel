@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasImageHash;
 
 class PurchaseOrder extends Model
 {
+    use HasImageHash;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -95,6 +98,22 @@ class PurchaseOrder extends Model
     public function isAllocated()
     {
         return !is_null($this->allocated_craftsman_code);
+    }
+
+    /**
+     * Get the first image URL from the items for preview purposes
+     */
+    public function getImageUrlAttribute()
+    {
+        $items = $this->items_with_image_urls;
+        if (is_array($items) || $items instanceof \Traversable) {
+            foreach ($items as $item) {
+                if (!empty($item['image_url'])) {
+                    return $item['image_url'];
+                }
+            }
+        }
+        return null;
     }
 
     /**

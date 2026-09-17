@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasImageHash;
 
 class Design extends Model
 {
+    use HasFactory, HasImageHash;
+
     /**
      * The attributes that are mass assignable.
      *

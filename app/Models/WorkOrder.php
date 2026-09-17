@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasImageHash;
 
 class WorkOrder extends Model
 {
-    use HasFactory;
+    use HasFactory, HasImageHash;
 
     /**
      * The attributes that should be appended to the model's array form.

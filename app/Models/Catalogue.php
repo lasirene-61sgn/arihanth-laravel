@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasImageHash;
+
 class Catalogue extends Model
 {
+    use HasImageHash;
     /**
      * The attributes that are mass assignable.
      *
