@@ -169,6 +169,34 @@
         </div>
     </div>
 
+    <div class="favorites-container" style="margin-bottom: 24px; padding: 16px;">
+        <form action="{{ route('super-admin.favorites.show', [$user->id, $user_type]) }}" method="GET" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div style="flex: 1; min-width: 200px;">
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search design code or name..." style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <select name="category_id" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: white;">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ (isset($categoryId) && $categoryId == $category->id) ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                    <i class="bi bi-search" style="margin-right: 4px;"></i> Filter
+                </button>
+                @if(!empty($search) || !empty($categoryId))
+                    <a href="{{ route('super-admin.favorites.show', [$user->id, $user_type]) }}" style="padding: 8px 16px; background: #e5e7eb; color: #374151; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                        Clear
+                    </a>
+                @endif
+            </div>
+        </form>
+    </div>
+
     <div class="favorites-container">
         <div class="table-responsive">
             <table class="table">
@@ -247,4 +275,41 @@
         </div>
     </div>
 </div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Select2 custom styling */
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        background-color: white;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 12px;
+        color: #374151;
+        line-height: normal;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 10px;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #2563eb;
+        outline: none;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('select[name="category_id"]').select2({
+            placeholder: "All Categories",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 @endsection

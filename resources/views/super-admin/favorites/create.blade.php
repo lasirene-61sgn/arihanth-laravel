@@ -229,6 +229,56 @@
             templateSelection: formatProduct
         });
 
+        const existingFavorites = @json($existingFavorites);
+
+        function updateAvailableProducts() {
+            let selectedBuyers = $('#buyers').val() || [];
+            let selectedCraftsmen = $('#craftsmen').val() || [];
+            
+            // Collect all product IDs that are already favorited by the selected users
+            let disabledProductIds = new Set();
+            
+            selectedBuyers.forEach(function(buyerId) {
+                if (existingFavorites.buyer && existingFavorites.buyer[buyerId]) {
+                    existingFavorites.buyer[buyerId].forEach(pid => disabledProductIds.add(pid.toString()));
+                }
+            });
+            
+            selectedCraftsmen.forEach(function(craftsmanId) {
+                if (existingFavorites.craftsman && existingFavorites.craftsman[craftsmanId]) {
+                    existingFavorites.craftsman[craftsmanId].forEach(pid => disabledProductIds.add(pid.toString()));
+                }
+            });
+
+            // Iterate over all options in the products select
+            $('#products option').each(function() {
+                let pid = $(this).val();
+                if (pid && disabledProductIds.has(pid.toString())) {
+                    $(this).prop('disabled', true);
+                    // If it was selected, unselect it
+                    if ($(this).is(':selected')) {
+                        $(this).prop('selected', false);
+                    }
+                } else {
+                    $(this).prop('disabled', false);
+                }
+            });
+            
+            // Refresh select2 UI
+            $('#products').select2({
+                width: '100%',
+                placeholder: "Select designs...",
+                templateResult: formatProduct,
+                templateSelection: formatProduct
+            });
+            
+            syncInputs();
+        }
+
+        $('#buyers, #craftsmen').on('change', function() {
+            updateAvailableProducts();
+        });
+
         // Store active inputs to prevent wiping values when adding users/products
         let activeValues = {
             global: {},

@@ -20,7 +20,37 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+        <div class="p-4 border-b border-gray-100 bg-gray-50">
+            <form action="{{ route('admin.favorites.show', [$user->id, $user_type]) }}" method="GET" class="flex flex-col md:flex-row items-center gap-3">
+                
+                <div class="w-full md:w-1/3">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search design code or name..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+
+                <div class="w-full md:w-1/3">
+                    <select name="category_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ (isset($categoryId) && $categoryId == $category->id) ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-full md:w-auto flex items-center gap-2">
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm w-full md:w-auto text-center">
+                        <i class="bi bi-search mr-1"></i> Filter
+                    </button>
+                    @if(!empty($search) || !empty($categoryId))
+                        <a href="{{ route('admin.favorites.show', [$user->id, $user_type]) }}" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors shadow-sm w-full md:w-auto text-center whitespace-nowrap">
+                            Clear
+                        </a>
+                    @endif
+                </div>
+            </form>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-gray-50">
@@ -94,4 +124,41 @@
         </div>
     </div>
 </div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Select2 custom styling for Tailwind-like UI */
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        background-color: white;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 1rem;
+        color: #374151;
+        line-height: normal;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 10px;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #6366f1;
+        outline: none;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('select[name="category_id"]').select2({
+            placeholder: "All Categories",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 @endsection

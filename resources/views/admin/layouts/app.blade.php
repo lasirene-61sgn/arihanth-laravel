@@ -1053,6 +1053,11 @@
         };
 
         window.openUniversalPreview = async function(url, type) {
+            if (type === 'image') {
+                window.open(url, '_blank');
+                return;
+            }
+
             window.currentPreviewZoom = 1;
             const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
             modal.show();

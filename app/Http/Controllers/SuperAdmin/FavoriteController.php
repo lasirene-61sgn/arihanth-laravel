@@ -57,7 +57,22 @@ class FavoriteController extends Controller
         $buyers = \App\Models\Buyer::all();
         $craftsmen = \App\Models\Craftman::all();
         $products = \App\Models\Product::with('images')->whereNotNull('design_code')->get();
-        return view('super-admin.favorites.create', compact('buyers', 'craftsmen', 'products'));
+
+        $existingFavorites = [
+            'buyer' => [],
+            'craftsman' => []
+        ];
+        
+        $favorites = Favorite::select('user_type', 'user_id', 'product_id')->get();
+        foreach ($favorites as $fav) {
+            $type = strtolower($fav->user_type);
+            if (!isset($existingFavorites[$type][$fav->user_id])) {
+                $existingFavorites[$type][$fav->user_id] = [];
+            }
+            $existingFavorites[$type][$fav->user_id][] = $fav->product_id;
+        }
+
+        return view('super-admin.favorites.create', compact('buyers', 'craftsmen', 'products', 'existingFavorites'));
     }
 
     public function store(Request $request)
@@ -133,17 +148,44 @@ class FavoriteController extends Controller
         return redirect()->route('super-admin.favorites.index')->with('success', 'Favorites successfully assigned with custom design names.');
     }
 
-    public function show($user_id, $user_type)
+    public function show(Request $request, $user_id, $user_type)
     {
-        $favorites = Favorite::where('user_id', $user_id)
+        $search = $request->input('search');
+        $categoryId = $request->input('category_id');
+
+        $query = Favorite::where('user_id', $user_id)
                     ->where('user_type', $user_type)
-                    ->with('product.images')
-                    ->latest()
-                    ->get();
+                    ->with('product.images');
+
+        if ($search || $categoryId) {
+            $query->whereHas('product', function($q) use ($search, $categoryId) {
+                if ($search) {
+                    $q->where(function($subQ) use ($search) {
+                        $subQ->where('design_code', 'LIKE', "%{$search}%")
+                             ->orWhere('product_name', 'LIKE', "%{$search}%");
+                    });
+                }
+                if ($categoryId) {
+                    $q->where('product_category_id', $categoryId);
+                }
+            });
+        }
+        
+        // Also allow search by favorite design name
+        if ($search) {
+            $query->orWhere(function($q) use ($search, $user_id, $user_type) {
+                $q->where('user_id', $user_id)
+                  ->where('user_type', $user_type)
+                  ->where('design_name', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $favorites = $query->latest()->get();
 
         $user = $user_type == 'buyer' ? \App\Models\Buyer::find($user_id) : \App\Models\Craftman::find($user_id);
+        $categories = \App\Models\ProductCategory::all();
 
-        return view('super-admin.favorites.show', compact('favorites', 'user', 'user_type'));
+        return view('super-admin.favorites.show', compact('favorites', 'user', 'user_type', 'search', 'categoryId', 'categories'));
     }
 
     public function edit($user_id, $user_type)
