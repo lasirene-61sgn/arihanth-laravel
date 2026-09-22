@@ -102,7 +102,7 @@
                                             <th>Row Total</th>
                                             <th>Size</th>
                                             @if($purchaseOrder->craftsman_status == 'allocated' || $purchaseOrder->craftsman_status == 'in_process')
-                                                <th class="text-center">Action</th>
+                                                <!-- <th class="text-center">Action</th> -->
                                             @endif
                                         </tr>
                                     </thead>
@@ -185,9 +185,9 @@
                                                         <form method="POST" action="{{ route('craftsman.purchase-order.complete-items', $purchaseOrder) }}">
                                                             @csrf
                                                             <input type="hidden" name="selected_items[]" value="{{ $index }}">
-                                                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Mark this item as completed?')">
+                                                            <!-- <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Mark this item as completed?')">
                                                                 <i class="bi bi-check-circle"></i> Complete Item
-                                                            </button>
+                                                            </button> -->
                                                         </form>
                                                     </td>
                                                 @endif
@@ -323,9 +323,9 @@
                 @if($purchaseOrder->craftsman_status == 'in_process')
                     <form method="POST" action="{{ route('craftsman.purchase-order.complete', $purchaseOrder) }}">
                         @csrf
-                        <button type="submit" class="btn btn-success btn-lg px-5" onclick="return confirm('Mark this entire order as completed?')">
+                        <!-- <button type="submit" class="btn btn-success btn-lg px-5" onclick="return confirm('Mark this entire order as completed?')">
                             <i class="bi bi-check2-all"></i> Mark as Completed
-                        </button>
+                        </button> -->
                     </form>
                 @endif
             </div>

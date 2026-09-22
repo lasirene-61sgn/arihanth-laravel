@@ -183,33 +183,36 @@
                     <form method="GET" action="{{ route('super-admin.details-all') }}" class="row g-3 flex-grow-1 align-items-end mb-0">
                         <div class="col-md-3">
                             <label class="form-label text-muted small fw-bold">Status Filter</label>
-                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="all" {{ $status == 'all' ? 'selected' : '' }}>All Statuses</option>
-                                <option value="in_process" {{ $status == 'in_process' ? 'selected' : '' }}>In Process</option>
-                                <option value="for_approval" {{ $status == 'for_approval' ? 'selected' : '' }}>For Approval</option>
-                                <option value="allocated" {{ $status == 'allocated' ? 'selected' : '' }}>Allocated</option>
-                                <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Completed</option>
-                                <option value="overdue" {{ $status == 'overdue' ? 'selected' : '' }}>Overdue Only (Overdue > 0)</option>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="all" {{ request('status', 'all') == 'all' ? 'selected' : '' }}>All Statuses</option>
+                                <option value="in_process" {{ request('status') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                <option value="for_approval" {{ request('status') == 'for_approval' ? 'selected' : '' }}>For Approval</option>
+                                <option value="allocated" {{ request('status') == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue Only (Overdue > 0)</option>
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label text-muted small fw-bold">Sort By</label>
-                            <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="allocated" {{ $sortBy == 'allocated' ? 'selected' : '' }}>Allocated</option>
-                                <option value="in_process" {{ $sortBy == 'in_process' ? 'selected' : '' }}>In Process</option>
-                                <option value="completed" {{ $sortBy == 'completed' ? 'selected' : '' }}>Completed</option>
-                                <option value="overdue" {{ $sortBy == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                                <option value="total_weight" {{ $sortBy == 'total_weight' ? 'selected' : '' }}>Total Combined Weight</option>
-                                <option value="wa_total_weight" {{ $sortBy == 'wa_total_weight' ? 'selected' : '' }}>WO Weight</option>
-                                <option value="po_total_weight" {{ $sortBy == 'po_total_weight' ? 'selected' : '' }}>PO Weight</option>
+                            <select name="sort_by" class="form-select form-select-sm">
+                                <option value="allocated" {{ request('sort_by', 'allocated') == 'allocated' ? 'selected' : '' }}>Allocated</option>
+                                <option value="in_process" {{ request('sort_by') == 'in_process' ? 'selected' : '' }}>In Process</option>
+                                <option value="completed" {{ request('sort_by') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="overdue" {{ request('sort_by') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                <option value="total_weight" {{ request('sort_by') == 'total_weight' ? 'selected' : '' }}>Total Combined Weight</option>
+                                <option value="wa_total_weight" {{ request('sort_by') == 'wa_total_weight' ? 'selected' : '' }}>WO Weight</option>
+                                <option value="po_total_weight" {{ request('sort_by') == 'po_total_weight' ? 'selected' : '' }}>PO Weight</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label text-muted small fw-bold">Order</label>
-                            <select name="sort_order" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="desc" {{ $sortOrder == 'desc' ? 'selected' : '' }}>Descending</option>
-                                <option value="asc" {{ $sortOrder == 'asc' ? 'selected' : '' }}>Ascending</option>
+                            <select name="sort_order" class="form-select form-select-sm">
+                                <option value="desc" {{ request('sort_order', 'desc') == 'desc' ? 'selected' : '' }}>Descending</option>
+                                <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>Ascending</option>
                             </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Apply Filters</button>
                         </div>
                     </form>
                     <div>
@@ -1260,12 +1263,15 @@
 </div>
 
 <script>
-    function hideAllOtherTables(activeContainerId) {
+    function hideAllOtherTables(activeContainerId, ignoreSession = false) {
         const tables = [
             { container: 'detailsTableContainer', icon: 'toggleIcon' },
             { container: 'clientsTableContainer', icon: 'toggleClientsIcon' },
             { container: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
-            { container: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' }
+            { container: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' },
+            { container: 'overallDesignsTableContainer', icon: 'toggleOverallDesignsIcon' },
+            { container: 'craftsmanFavoritesTableContainer', icon: 'toggleCraftsmanFavoritesIcon' },
+            { container: 'buyerFavoritesTableContainer', icon: 'toggleBuyerFavoritesIcon' }
         ];
 
         tables.forEach(t => {
@@ -1273,10 +1279,38 @@
                 const el = document.getElementById(t.container);
                 const ic = document.getElementById(t.icon);
                 if (el) el.style.display = 'none';
-                if (ic) ic.classList.replace('bi-chevron-up', 'bi-chevron-down');
+                if (ic && ic.classList.contains('bi-chevron-up')) ic.classList.replace('bi-chevron-up', 'bi-chevron-down');
             }
         });
+        
+        if (!ignoreSession && activeContainerId) {
+            sessionStorage.setItem('activeSuperAdminGrid', activeContainerId);
+        }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let activeGrid = sessionStorage.getItem('activeSuperAdminGrid');
+        if (activeGrid) {
+            const el = document.getElementById(activeGrid);
+            if (el) {
+                el.style.display = 'block';
+                hideAllOtherTables(activeGrid, true);
+                const tables = [
+                    { container: 'detailsTableContainer', icon: 'toggleIcon' },
+                    { container: 'clientsTableContainer', icon: 'toggleClientsIcon' },
+                    { container: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
+                    { container: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' },
+                    { container: 'overallDesignsTableContainer', icon: 'toggleOverallDesignsIcon' },
+                    { container: 'craftsmanFavoritesTableContainer', icon: 'toggleCraftsmanFavoritesIcon' },
+                    { container: 'buyerFavoritesTableContainer', icon: 'toggleBuyerFavoritesIcon' }
+                ];
+                const t = tables.find(x => x.container === activeGrid);
+                if (t && document.getElementById(t.icon)) {
+                    document.getElementById(t.icon).classList.replace('bi-chevron-down', 'bi-chevron-up');
+                }
+            }
+        }
+    });
 
     // --- Craftsman Collapse Toggle ---
     function toggleDetailsTable() {
@@ -2008,5 +2042,100 @@
 
         openReportPrintWindow(title, theadHtml, tbodyHtml);
     }
+
+    // --- Custom Pagination for Main Grids ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Target all tables except modals
+        const tables = document.querySelectorAll('.table:not(#modalFavoritesTable):not(#modalOrdersTable):not(#modalDesignsTable)');
+        
+        tables.forEach(table => {
+            const tbody = table.querySelector('tbody');
+            if(!tbody) return;
+            
+            // Only count rows that are not empty messages (colspan)
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => {
+                const td = tr.querySelector('td');
+                return !(td && td.getAttribute('colspan'));
+            });
+            
+            if(rows.length === 0) return;
+
+            let currentPage = 1;
+            let perPage = 10; // Default items per page
+
+            const controls = document.createElement('div');
+            controls.className = 'd-flex justify-content-between align-items-center p-3 border-top bg-light';
+            
+            // Left side: Per Page Selector
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'd-flex align-items-center gap-2';
+            leftDiv.innerHTML = `
+                <select class="form-select form-select-sm w-auto per-page-select">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span class="text-muted small fw-semibold pagination-info"></span>
+            `;
+            const perPageSelect = leftDiv.querySelector('.per-page-select');
+            const info = leftDiv.querySelector('.pagination-info');
+            
+            // Right side: Pagination Buttons
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'btn-group btn-group-sm';
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'btn btn-outline-secondary';
+            prevBtn.innerHTML = '&laquo; Prev';
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'btn btn-outline-secondary';
+            nextBtn.innerHTML = 'Next &raquo;';
+
+            btnGroup.appendChild(prevBtn);
+            btnGroup.appendChild(nextBtn);
+            
+            controls.appendChild(leftDiv);
+            controls.appendChild(btnGroup);
+            
+            const wrapper = table.closest('.table-responsive') || table;
+            wrapper.parentNode.insertBefore(controls, wrapper.nextSibling);
+
+            function render() {
+                const totalPages = Math.ceil(rows.length / perPage) || 1;
+                if (currentPage > totalPages) currentPage = totalPages;
+                
+                const start = (currentPage - 1) * perPage;
+                const end = start + perPage;
+                
+                rows.forEach((row, index) => {
+                    row.style.display = (index >= start && index < end) ? '' : 'none';
+                });
+
+                info.innerText = `Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length} entries`;
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === totalPages;
+            }
+
+            perPageSelect.addEventListener('change', (e) => {
+                perPage = parseInt(e.target.value);
+                currentPage = 1; // reset to first page
+                render();
+            });
+
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if(currentPage > 1) { currentPage--; render(); }
+            });
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const totalPages = Math.ceil(rows.length / perPage) || 1;
+                if(currentPage < totalPages) { currentPage++; render(); }
+            });
+
+            render(); // Initialize first view
+        });
+    });
 </script>
 @endsection

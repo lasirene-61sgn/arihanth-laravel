@@ -89,17 +89,27 @@ class GlobalSearchController extends Controller
                         elseif (isset($item->product_image)) $image = $item->product_image;
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
+                        elseif (isset($item->image_proof)) $image = $item->image_proof;
                         elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
 
                         if ($image && !filter_var($image, FILTER_VALIDATE_URL)) {
                             if (str_starts_with($image, 'http')) {
                                 // already full url
-                            } elseif (str_starts_with($image, 'images/') || str_starts_with($image, 'assets/') || str_starts_with($image, 'public/')) {
+                            } elseif (str_starts_with($image, 'public/')) {
+                                $image = asset(substr($image, 7)); // strip 'public/'
+                            } elseif (str_starts_with($image, 'images/') || str_starts_with($image, 'assets/') || str_starts_with($image, 'uploads/')) {
                                 $image = asset($image);
                             } elseif (str_starts_with($image, 'storage/')) {
                                 $image = asset($image);
                             } else {
                                 $image = asset('storage/' . $image);
+                            }
+                        }
+
+                        if ($image) {
+                            $pathOnly = parse_url($image, PHP_URL_PATH) ?? $image;
+                            if (str_ends_with(strtolower($pathOnly), '.pdf')) {
+                                $image = null;
                             }
                         }
 
@@ -163,7 +173,7 @@ class GlobalSearchController extends Controller
                         }
                     }
 
-                    if ($distance <= 10) {
+                    if ($distance <= 2) {
                         $type = $dbHash->hashable_type;
                         if (!isset($matchedItems[$type])) {
                             $matchedItems[$type] = [];
