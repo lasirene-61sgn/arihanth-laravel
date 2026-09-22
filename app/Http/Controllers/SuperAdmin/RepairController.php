@@ -59,12 +59,13 @@ class RepairController extends Controller
 
         $activeTab = $request->get('tab', 'new');
         $statusMap = [
-            'new'          => ['Pending', 'Accepted'],
-            'allocated'    => ['Allocated'],
-            'in_process'   => ['In_Process'],
-            'for_approval' => ['Craftsman_Completed'],
-            'completed'    => ['Completed', 'Buyer_Accepted'],
-            'rejected'     => ['Rejected_by_Admin', 'Craftsman_Rejected', 'Buyer_Rejected'],
+            'new'            => ['Pending', 'Accepted'],
+            'allocated'      => ['Allocated'],
+            'in_process'     => ['In_Process'],
+            'for_approval'   => ['Craftsman_Completed'],
+            'buyer_approval' => ['Completed'],
+            'completed'      => ['Buyer_Accepted'],
+            'rejected'       => ['Rejected_by_Admin', 'Craftsman_Rejected', 'Buyer_Rejected'],
         ];
 
         if ($activeTab !== 'all' && isset($statusMap[$activeTab])) {
@@ -104,13 +105,14 @@ class RepairController extends Controller
         }
 
         $counts = [
-            'all'          => (clone $baseCountQuery)->count(),
-            'new'          => (clone $baseCountQuery)->whereIn('status', $statusMap['new'])->count(),
-            'allocated'    => (clone $baseCountQuery)->whereIn('status', $statusMap['allocated'])->count(),
-            'in_process'   => (clone $baseCountQuery)->whereIn('status', $statusMap['in_process'])->count(),
-            'for_approval' => (clone $baseCountQuery)->whereIn('status', $statusMap['for_approval'])->count(),
-            'completed'    => (clone $baseCountQuery)->whereIn('status', $statusMap['completed'])->count(),
-            'rejected'     => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
+            'all'            => (clone $baseCountQuery)->count(),
+            'new'            => (clone $baseCountQuery)->whereIn('status', $statusMap['new'])->count(),
+            'allocated'      => (clone $baseCountQuery)->whereIn('status', $statusMap['allocated'])->count(),
+            'in_process'     => (clone $baseCountQuery)->whereIn('status', $statusMap['in_process'])->count(),
+            'for_approval'   => (clone $baseCountQuery)->whereIn('status', $statusMap['for_approval'])->count(),
+            'buyer_approval' => (clone $baseCountQuery)->whereIn('status', $statusMap['buyer_approval'])->count(),
+            'completed'      => (clone $baseCountQuery)->whereIn('status', $statusMap['completed'])->count(),
+            'rejected'       => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
         ];
 
         $repairs = $query->orderBy('updated_at', 'desc')->paginate(10)->withQueryString();
@@ -315,64 +317,45 @@ class RepairController extends Controller
     {
         $repair = Repair::findOrFail($id);
 
-        $request->validate([
-            'weight' => 'nullable|numeric|min:0',
-            'completion_proof' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-        ]);
-
         $receivedThrough = $request->item_received_through === '__custom__' 
             ? $request->item_received_through_custom 
             : $request->item_received_through;
 
-        $deliveredBy = $request->item_delivered_by === '__custom__' 
-            ? $request->item_delivered_by_custom 
-            : $request->item_delivered_by;
-
-        $completionProofPath = $repair->completion_proof;
-        if ($request->hasFile('completion_proof')) {
-            $image = $request->file('completion_proof');
-            $imageName = time() . '_completion_' . $image->getClientOriginalName();
-            $image->move(public_path('images/repairs'), $imageName);
-            $completionProofPath = 'images/repairs/' . $imageName;
-        }
-
-        $completedName = null;
-        $completedCode = null;
-        $completedMobile = null;
-
-        if ($request->craftsman === '__custom__') {
-            $completedName = $request->completed_craftsman_name;
-            $completedCode = $request->completed_craftsman_code;
-            $completedMobile = $request->completed_craftsman_mobile;
-        } else {
-            $completedCode = $request->craftsman;
-            $craftsman = \App\Models\Craftman::where('craftman_code', $completedCode)->first();
-            if ($craftsman) {
-                $completedName = $craftsman->name;
-            }
-        }
-
         $repair->update([
-            'status' => 'Buyer_Accepted',
+            'status' => 'Completed',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
-            'buyer_accepted_at' => now(),
-            'weight' => $request->weight ?: $repair->weight,
-            'completion_proof' => $completionProofPath,
-            'completed_craftsman_name' => $completedName,
-            'completed_craftsman_code' => $completedCode,
-            'completed_craftsman_mobile' => $completedMobile,
             'item_received_through' => $receivedThrough ?: $repair->item_received_through,
-            'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
-            'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
-            'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
         ]);
         
         if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
             $repair->buyer->notify(new RepairCompleted($repair));
         }
 
-        return redirect()->route('super-admin.repairs.index')->with('success', 'Repair marked as completed.');
+        return redirect()->route('super-admin.repairs.index', ['tab' => 'buyer_approval'])->with('success', 'Craftsman approval completed. Repair is now pending Buyer Approval.');
+    }
+
+    public function buyerComplete(Request $request, $id)
+    {
+        $repair = Repair::findOrFail($id);
+
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
+        $deliveredTo = $request->item_delivered_to === '__custom__'
+            ? $request->item_delivered_to_custom
+            : $request->item_delivered_to;
+
+        $repair->update([
+            'status' => 'Buyer_Accepted',
+            'buyer_accepted_at' => now(),
+            'item_delivered_by_type' => $request->item_delivered_by_type,
+            'item_delivered_by' => $deliveredBy,
+            'item_delivered_to' => $deliveredTo,
+        ]);
+
+        return redirect()->route('super-admin.repairs.index', ['tab' => 'completed'])->with('success', 'Repair marked as fully completed and delivered.');
     }
 
     public function bulkComplete(Request $request)
@@ -382,68 +365,55 @@ class RepairController extends Controller
             return redirect()->back()->with('error', 'No repair orders selected.');
         }
 
-        $request->validate([
-            'weight' => 'nullable|numeric|min:0',
-            'completion_proof' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-        ]);
-
         $receivedThrough = $request->item_received_through === '__custom__' 
             ? $request->item_received_through_custom 
             : $request->item_received_through;
+
+        $repairs = Repair::whereIn('id', $repairIds)->get();
+            
+        foreach ($repairs as $repair) {
+            $repair->update([
+                'status' => 'Completed',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+                'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+            ]);
+            if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
+                $repair->buyer->notify(new RepairCompleted($repair));
+            }
+        }
+
+        return redirect()->route('super-admin.repairs.index', ['tab' => 'buyer_approval'])->with('success', count($repairs) . ' repair orders marked as pending Buyer Approval.');
+    }
+
+    public function bulkBuyerComplete(Request $request)
+    {
+        $repairIds = $request->input('repair_ids', []);
+        if (empty($repairIds)) {
+            return redirect()->back()->with('error', 'No repair orders selected.');
+        }
 
         $deliveredBy = $request->item_delivered_by === '__custom__' 
             ? $request->item_delivered_by_custom 
             : $request->item_delivered_by;
 
-        $completionProofPath = null;
-        if ($request->hasFile('completion_proof')) {
-            $image = $request->file('completion_proof');
-            $imageName = time() . '_bulk_completion_' . $image->getClientOriginalName();
-            $image->move(public_path('images/repairs'), $imageName);
-            $completionProofPath = 'images/repairs/' . $imageName;
-        }
-
-        $completedName = null;
-        $completedCode = null;
-        $completedMobile = null;
-
-        if ($request->craftsman === '__custom__') {
-            $completedName = $request->completed_craftsman_name;
-            $completedCode = $request->completed_craftsman_code;
-            $completedMobile = $request->completed_craftsman_mobile;
-        } else {
-            $completedCode = $request->craftsman;
-            $craftsman = \App\Models\Craftman::where('craftman_code', $completedCode)->first();
-            if ($craftsman) {
-                $completedName = $craftsman->name;
-            }
-        }
+        $deliveredTo = $request->item_delivered_to === '__custom__'
+            ? $request->item_delivered_to_custom
+            : $request->item_delivered_to;
 
         $repairs = Repair::whereIn('id', $repairIds)->get();
             
         foreach ($repairs as $repair) {
             $repair->update([
                 'status' => 'Buyer_Accepted',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
                 'buyer_accepted_at' => now(),
-                'weight' => $request->weight ?: $repair->weight,
-                'completion_proof' => $completionProofPath ?: $repair->completion_proof,
-                'completed_craftsman_name' => $completedName,
-                'completed_craftsman_code' => $completedCode,
-                'completed_craftsman_mobile' => $completedMobile,
-                'item_received_through' => $receivedThrough ?: $repair->item_received_through,
-                'item_delivered_by_type' => $request->item_delivered_by_type ?: $repair->item_delivered_by_type,
-                'item_delivered_by' => $deliveredBy ?: $repair->item_delivered_by,
-                'item_delivered_to' => $request->item_delivered_to ?: $repair->item_delivered_to,
+                'item_delivered_by_type' => $request->item_delivered_by_type,
+                'item_delivered_by' => $deliveredBy,
+                'item_delivered_to' => $deliveredTo,
             ]);
-
-            if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
-                $repair->buyer->notify(new RepairCompleted($repair));
-            }
         }
 
-        return redirect()->back()->with('success', count($repairs) . ' repair orders marked as completed.');
+        return redirect()->route('super-admin.repairs.index', ['tab' => 'completed'])->with('success', count($repairs) . ' repair orders marked as fully completed and delivered.');
     }
 
     public function show($id)

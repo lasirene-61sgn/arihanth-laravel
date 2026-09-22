@@ -43,6 +43,7 @@ class Repair extends Model
         'item_received_through',
         'item_delivered_by_type',
         'item_delivered_by',
+        'item_delivered_to',
         'completion_proof',
         'completed_craftsman_name',
         'completed_craftsman_code',

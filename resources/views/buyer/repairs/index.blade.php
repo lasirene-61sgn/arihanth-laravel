@@ -179,12 +179,9 @@
                                             </a>
 
                                             @if($repair->status == 'Completed')
-                                                <form action="{{ route('buyer.repairs.accept-completed', $repair->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-action btn-success" title="Accept">
-                                                        <i class="bi bi-check-lg"></i> Accept
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-action btn-success" title="Accept" data-bs-toggle="modal" data-bs-target="#buyerAcceptModal{{ $repair->id }}">
+                                                    <i class="bi bi-check-lg"></i> Accept
+                                                </button>
                                                 <button type="button" class="btn btn-action btn-outline-danger" title="Reject" data-bs-toggle="modal" data-bs-target="#buyerRejectModal{{ $repair->id }}">
                                                     <i class="bi bi-x-lg"></i> Reject
                                                 </button>
@@ -275,12 +272,9 @@
                                     <i class="bi bi-eye"></i> View
                                 </a>
                                 @if($repair->status == 'Completed')
-                                    <form action="{{ route('buyer.repairs.accept-completed', $repair->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-action btn-success">
-                                            <i class="bi bi-check-lg"></i> Accept
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-action btn-success" data-bs-toggle="modal" data-bs-target="#buyerAcceptModal{{ $repair->id }}">
+                                        <i class="bi bi-check-lg"></i> Accept
+                                    </button>
                                     <button type="button" class="btn btn-action btn-outline-danger" data-bs-toggle="modal" data-bs-target="#buyerRejectModal{{ $repair->id }}">
                                         <i class="bi bi-x-lg"></i> Reject
                                     </button>
@@ -299,6 +293,43 @@
             <!-- Modals Block -->
             @foreach($repairs as $repair)
                 @if($repair->status == 'Completed')
+                    <!-- Accept Modal -->
+                    <div class="modal fade" id="buyerAcceptModal{{ $repair->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow rounded-3">
+                                <form action="{{ route('buyer.repairs.accept-completed', $repair->id) }}" method="POST">
+                                    @csrf
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-slate-900">Accept Repair #{{ $repair->id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-3">
+                                        <p class="text-muted small mb-3">Please confirm who is receiving this completed repair.</p>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small text-slate-700">Item Received By <span class="text-danger">*</span></label>
+                                            <select name="item_received_by" id="receivedBySelect{{ $repair->id }}" class="form-select" required onchange="checkCustomInput('receivedBySelect{{ $repair->id }}', 'receivedByCustom{{ $repair->id }}')">
+                                                <option value="">-- Select Person --</option>
+                                                @php
+                                                    $receivedByOptions = \App\Models\Repair::whereNotNull('item_received_by')->distinct()->pluck('item_received_by');
+                                                @endphp
+                                                @foreach($receivedByOptions as $opt)
+                                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                                @endforeach
+                                                <option value="__custom__">+ Add New...</option>
+                                            </select>
+                                            <input type="text" name="item_received_by_custom" id="receivedByCustom{{ $repair->id }}" placeholder="Enter receiver name..." class="form-control mt-2 d-none">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0">
+                                        <button type="button" class="btn btn-light btn-sm fw-medium px-3" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success btn-sm fw-medium px-3">Confirm Acceptance</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reject Modal -->
                     <div class="modal fade" id="buyerRejectModal{{ $repair->id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content border-0 shadow rounded-3">
@@ -336,4 +367,22 @@
         </div>
     </div>
 </div>
+@endsection 
+
+@section('scripts')
+<script>
+    function checkCustomInput(selectId, inputId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        if (select.value === '__custom__') {
+            input.classList.remove('d-none');
+            input.required = true;
+            input.focus();
+        } else {
+            input.classList.add('d-none');
+            input.required = false;
+            input.value = '';
+        }
+    }
+</script>
 @endsection 

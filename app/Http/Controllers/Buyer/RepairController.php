@@ -74,12 +74,18 @@ class RepairController extends Controller
         return redirect()->route('buyer.repairs.index')->with('success', 'Repair order created successfully.');
     }
 
-    public function acceptCompleted($id)
+    public function acceptCompleted(Request $request, $id)
     {
         $repair = Repair::where('buyer_id', Auth::guard('buyer')->id())->findOrFail($id);
+        
+        $itemReceivedBy = $request->item_received_by === '__custom__' 
+            ? $request->item_received_by_custom 
+            : $request->item_received_by;
+
         $repair->update([
             'status' => 'Buyer_Accepted',
             'buyer_accepted_at' => now(),
+            'item_received_by' => $itemReceivedBy,
         ]);
         return redirect()->route('buyer.repairs.index')->with('success', 'Repair accepted successfully.');
     }

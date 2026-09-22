@@ -101,6 +101,10 @@ class RepairController extends Controller
             'completion_proof' => $completionProofPath,
         ];
         
+        if ($request->filled('item_received_through')) {
+            $updateData['item_received_through'] = $request->item_received_through;
+        }
+        
         if ($staff = $this->currentStaff()) {
             $updateData['staff_completed_at'] = now();
         }

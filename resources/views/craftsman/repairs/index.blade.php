@@ -205,6 +205,18 @@
                                                     <input type="number" step="0.01" name="weight" class="form-control" placeholder="Enter weight after repair" value="{{ $repair->weight }}" required>
                                                 </div>
                                                 <div class="mb-3">
+                                                    @php
+                                                        $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+                                                    @endphp
+                                                    <label class="form-label">Item Given To</label>
+                                                    <input class="form-control" list="receivedThroughDatalist{{ $repair->id }}" name="item_received_through" placeholder="Type or select (Optional)" value="{{ $repair->item_received_through }}">
+                                                    <datalist id="receivedThroughDatalist{{ $repair->id }}">
+                                                        @foreach($receivedThroughOptions as $opt)
+                                                            <option value="{{ $opt }}"></option>
+                                                        @endforeach
+                                                    </datalist>
+                                                </div>
+                                                <div class="mb-3">
                                                     <label class="form-label">Completion Proof <span class="text-danger">*</span></label>
                                                     <input type="file" name="completion_proof" class="form-control" accept="image/*" required>
                                                     <div class="form-text text-muted">Upload an image as proof of repair completion (JPEG, PNG, GIF, WebP, max 4MB)</div>

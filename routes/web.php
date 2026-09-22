@@ -597,7 +597,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{repair}/reject', [App\Http\Controllers\Admin\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/allocate', [App\Http\Controllers\Admin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\Admin\RepairController::class, 'complete'])->name('complete');
+            Route::post('/{repair}/buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
             Route::post('/bulk-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
+            Route::post('/bulk-buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
         });
         // Finance Routes (Dummy for now)
         Route::prefix('finance')->group(function () {
@@ -900,6 +902,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::prefix('repairs')->name('repairs.')->group(function () {
             // 1. Place static/action routes BEFORE dynamic /{repair} parameters
             Route::post('bulk-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
+            Route::post('bulk-buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
             Route::get('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'index'])->name('index');
             Route::get('/create', [App\Http\Controllers\SuperAdmin\RepairController::class, 'create'])->name('create');
             Route::post('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'store'])->name('store');
@@ -913,6 +916,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('/{repair}/reject', [App\Http\Controllers\SuperAdmin\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/allocate', [App\Http\Controllers\SuperAdmin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'complete'])->name('complete');
+            Route::post('/{repair}/buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
         });
 
         // Finance Routes (Dummy for now)

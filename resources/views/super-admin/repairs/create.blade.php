@@ -209,7 +209,7 @@
                                 @enderror
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <!-- <div class="col-md-6 mb-3">
                                 <label for="item_received_through" class="form-label">Item Received Through</label>
                                 <select class="form-select" id="item_received_through" name="item_received_through" onchange="checkCustomInput('item_received_through', 'item_received_through_custom')">
                                     <option value="">-- Select Source --</option>
@@ -222,9 +222,9 @@
                                 @error('item_received_through')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
-                            </div>
+                            </div> -->
 
-                            <div class="col-md-6 mb-3">
+                            <!-- <div class="col-md-6 mb-3">
                                 <label class="form-label">Item Delivered By Type</label>
                                 <div class="mt-2">
                                     <div class="form-check form-check-inline">
@@ -239,9 +239,9 @@
                                 @error('item_delivered_by_type')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
-                            </div>
+                            </div> -->
 
-                            <div class="col-md-6 mb-3" id="delivered_by_container" style="display: none;">
+                            <!-- <div class="col-md-6 mb-3" id="delivered_by_container" style="display: none;">
                                 <label for="item_delivered_by" class="form-label" id="delivered_by_label">Item Delivered By Name</label>
                                 <select name="item_delivered_by" id="item_delivered_by_select" class="form-select" onchange="checkCustomInput('item_delivered_by_select', 'item_delivered_by_custom')">
                                     <option value="">-- Select Person --</option>
@@ -254,7 +254,7 @@
                                 @error('item_delivered_by')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
-                            </div>
+                            </div> -->
 
                         </div>
                         

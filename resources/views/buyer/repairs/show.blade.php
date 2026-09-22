@@ -194,6 +194,49 @@
                 </div>
             </div>
 
+            <!-- Delivery & Completion Info -->
+            <div class="card-modern mb-4">
+                <div class="card-header-clean">
+                    <h5 class="fw-bold mb-0 text-slate-800 fs-6">
+                        <i class="bi bi-truck text-primary me-2"></i>Delivery & Completion Info
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="info-label">Item Delivered By</div>
+                            <div class="info-value">
+                                @if($repair->item_delivered_by)
+                                    {{ $repair->item_delivered_by }} <span class="text-muted small">({{ $repair->item_delivered_by_type }})</span>
+                                @else
+                                    N/A
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Item Delivered To</div>
+                            <div class="info-value">{{ $repair->item_delivered_to ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Item Received By (You)</div>
+                            <div class="info-value">{{ $repair->item_received_by ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Completion Proof Image</div>
+                            <div class="info-value">
+                                @if($repair->completion_proof)
+                                    <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-image"></i> View Image
+                                    </a>
+                                @else
+                                    N/A
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- History Log Timeline -->
             <div class="card-modern">
                 <div class="card-header-clean">

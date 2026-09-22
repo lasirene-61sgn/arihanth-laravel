@@ -129,7 +129,7 @@
         <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity duration-300"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 flex flex-col w-[260px] bg-magenta-800 text-white z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+        <!-- <aside id="sidebar" class="fixed inset-y-0 left-0 flex flex-col w-[260px] bg-magenta-800 text-white z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
             <div class="p-4 border-b border-white/10 text-center">
                 <img src="{{ asset('images/tara.png') }}" alt="AJ Logo" class="mx-auto" style="height: 65px; width: 65px; object-fit: contain;">
             </div>
@@ -236,7 +236,7 @@
                                 <i class="bi bi-person-badge text-lg"></i>
                                 <span class="text-sm font-medium">Craftsman Staff</span>
                             </div>
-                            <!-- <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['usersCount'] }}</span> -->
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['usersCount'] }}</span> 
                         </a>
                     </li>
                     @endif
@@ -331,7 +331,7 @@
                         <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.purchase-order.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
                             href="{{ route('admin.purchase-order.index') }}">
                             <div class="flex items-center gap-3">
-                                <i class="bi bi-receipt text-lg"></i> <!-- Updated: bi-receipt instead of bi-cart -->
+                                <i class="bi bi-receipt text-lg"></i>
                                 <span class="text-sm font-medium">Purchase Order</span>
                             </div>
                             <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['purchaseOrdersCount'] }}</span>
@@ -368,7 +368,7 @@
                     <li class="px-3">
                         <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.kyc-pending.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
                             href="{{ route('admin.kyc-pending.index') }}">
-                            <i class="bi bi-person-check text-lg"></i> <!-- Updated: bi-person-check instead of earmark -->
+                            <i class="bi bi-person-check text-lg"></i>
                             <span class="text-sm font-medium">KYC Pending</span>
                         </a>
                     </li>
@@ -378,7 +378,7 @@
                     <li class="px-3">
                         <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.freeze-account.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
                             href="{{ route('admin.freeze-account.index') }}">
-                            <i class="bi bi-shield-lock text-lg"></i> <!-- Updated: bi-shield-lock for security -->
+                            <i class="bi bi-shield-lock text-lg"></i>
                             <span class="text-sm font-medium">Freeze Accounts</span>
                         </a>
                     </li>
@@ -394,7 +394,7 @@
                     </li>
                     @endif
 
-                    <!-- Support Section -->
+                    
                     <li class="px-3 pt-4 pb-2">
                         <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Support</span>
                     </li>
@@ -408,10 +408,312 @@
                     <li class="px-3">
                         <a href="{{ route('admin.stock-order.index') }}"
                             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.stock-order.*') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}">
-                            <i class="bi bi-graph-up-arrow text-lg"></i> <!-- Updated: bi-graph-up-arrow instead of chat-dots -->
+                            <i class="bi bi-graph-up-arrow text-lg"></i> 
                             <span class="text-sm font-medium">Live Stock</span>
                         </a>
                     </li>
+                </ul>
+            </nav>
+        </aside> -->
+
+        <aside id="sidebar" class="fixed inset-y-0 left-0 flex flex-col w-[260px] bg-magenta-800 text-white z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+            <div class="p-4 border-b border-white/10 text-center">
+                <img src="{{ asset('images/tara.png') }}" alt="AJ Logo" class="mx-auto" style="height: 65px; width: 65px; object-fit: contain;">
+            </div>
+
+            <nav class="py-2 overflow-x-hidden">
+                <ul class="space-y-1">
+                    <!-- General Links -->
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.dashboard') }}">
+                            <i class="bi bi-speedometer2 text-lg"></i>
+                            <span class="text-sm font-medium">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.global-search') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.global-search') }}">
+                            <i class="bi bi-search text-lg"></i>
+                            <span class="text-sm font-medium">Global Search</span>
+                        </a>
+                    </li>
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.details-all') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.details-all') }}">
+                            <i class="bi bi-list-columns-reverse text-lg"></i>
+                            <span class="text-sm font-medium">Reports</span>
+                        </a>
+                    </li>
+                    @if(Auth::guard('admin')->user()->hasPermission('meetings'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.meetings.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.meetings.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-camera-video text-lg"></i>
+                                <span class="text-sm font-medium">Meetings</span>
+                            </div>
+                        </a>
+                    </li>
+                    @endif
+                    <li class="px-3">
+                        <a href="{{ route('admin.chat.index') }}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.chat.*') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}">
+                            <i class="bi bi-chat-dots text-lg"></i>
+                            <span class="text-sm font-medium">Messages</span>
+                        </a>
+                    </li>
+
+                    <!-- Operations Section -->
+                    <li class="px-3 pt-4 pb-2">
+                        <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Operations</span>
+                    </li>
+
+                    @if(Auth::guard('admin')->user()->hasPermission('work_order'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.work-order.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.work-order.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-journal-text text-lg"></i>
+                                <span class="text-sm font-medium">Work Order</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['workOrdersCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('repair'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.repairs.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.repairs.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-tools text-lg"></i>
+                                <span class="text-sm font-medium">Repair/Sample</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['repairsCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('purchase_order'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.purchase-order.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.purchase-order.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-receipt text-lg"></i>
+                                <span class="text-sm font-medium">Purchase Order</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['purchaseOrdersCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('stock_order'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.stock-order.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.stock-order.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-qr-code-scan text-lg"></i>
+                                <span class="text-sm font-medium">Live Stock Order</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['stockOrdersCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+                    <li class="px-3 pt-4 pb-2">
+                        <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Product Management</span>
+                    </li>
+
+                    @if(Auth::guard('admin')->user()->hasPermission('product'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.product.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.product.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-box-seam text-lg"></i>
+                                <span class="text-sm font-medium">Product</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['productsCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('design'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.design.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.design.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-palette text-lg"></i>
+                                <span class="text-sm font-medium">Design</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['designsCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('catalogue'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.catalogue.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.catalogue.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-book text-lg"></i>
+                                <span class="text-sm font-medium">Catalogue</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['cataloguesCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('finance'))
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.finance.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.finance.index') }}">
+                            <i class="bi bi-currency-dollar text-lg"></i>
+                            <span class="text-sm font-medium">Finance</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    <!-- User Management Section -->
+                    <li class="px-3 pt-4 pb-2">
+                        <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Management</span>
+                    </li>
+                    @if(Auth::guard('admin')->user()->hasPermission('business_partner'))
+                    <li class="px-3 pt-2">
+                        <button class="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.business-partner.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:text-white' }}"
+                            data-bs-toggle="collapse" data-bs-target="#businessPartnerSubmenu" aria-expanded="{{ request()->routeIs('admin.business-partner.*') ? 'true' : 'false' }}" aria-controls="businessPartnerSubmenu">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-people text-lg"></i>
+                                <span class="text-sm font-medium">Business Partner</span>
+                            </div>
+                            <i class="bi bi-chevron-down text-[0.7rem] transition-transform duration-300 {{ request()->routeIs('admin.business-partner.*') ? 'rotate-180' : '' }}"></i>
+                        </button>
+                        <div class="collapse {{ request()->routeIs('admin.business-partner.*') ? 'show' : '' }}" id="businessPartnerSubmenu">
+                            <ul class="mt-2 ml-4 border-l border-white/20 pl-2 space-y-1 overflow-visible">
+                                <li>
+                                    <a class="submenu-item {{ request()->routeIs('admin.business-partner.index') ? 'submenu-active' : '' }}"
+                                        href="{{ route('admin.business-partner.index') }}">
+                                        <i class="bi bi-circle text-[0.4rem]"></i>
+                                        <span>Overview</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="submenu-item justify-between {{ request()->routeIs('admin.business-partner.buyer') ? 'submenu-active' : '' }}"
+                                        href="{{ route('admin.business-partner.buyer') }}">
+                                        <div class="flex items-center gap-3">
+                                            <i class="bi bi-circle text-[0.4rem]"></i>
+                                            <span>Buyer</span>
+                                        </div>
+                                        <span class="px-2 py-0.5 bg-white/20 text-white rounded-full text-[0.6rem] font-bold">{{ $sidebarCounts['buyersCount'] ?? 0 }}</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="submenu-item justify-between {{ request()->routeIs('admin.business-partner.craftman') ? 'submenu-active' : '' }}"
+                                        href="{{ route('admin.business-partner.craftman') }}">
+                                        <div class="flex items-center gap-3">
+                                            <i class="bi bi-circle text-[0.4rem]"></i>
+                                            <span>Craftman</span>
+                                        </div>
+                                        <span class="px-2 py-0.5 bg-white/20 text-white rounded-full text-[0.6rem] font-bold">{{ $sidebarCounts['craftsmenCount'] ?? 0 }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('key_user_management'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.key-user.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.key-user.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-key text-lg"></i>
+                                <span class="text-sm font-medium">Key User</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['keyUsersCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('user_management'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.user.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.user.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-person-badge text-lg"></i>
+                                <span class="text-sm font-medium">User</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['usersCount'] }}</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('can_create_staff'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.business-partner.craftsman-staff*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.business-partner.craftsman-staff') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-person-badge text-lg"></i>
+                                <span class="text-sm font-medium">Craftsman Staff</span>
+                            </div>
+                        </a>
+                    </li>
+                    @endif
+                    @if(Auth::guard('admin')->user()->hasPermission('freeze_account'))
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.freeze-account.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.freeze-account.index') }}">
+                            <i class="bi bi-shield-lock text-lg"></i>
+                            <span class="text-sm font-medium">Freeze Accounts</span>
+                        </a>
+                    </li>
+                    @endif
+                    @if(Auth::guard('admin')->user()->hasPermission('craftsman_production'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.craftsman-production.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.craftsman-production.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-person-gear text-lg"></i>
+                                <span class="text-sm font-medium">Craftsman Production</span>
+                            </div>
+                        </a>
+                    </li>
+                    @endif
+
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.favorites.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.favorites.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-heart text-lg"></i>
+                                <span class="text-sm font-medium">Favorites</span>
+                            </div>
+                        </a>
+                    </li>
+
+                    @if(Auth::guard('admin')->user()->hasPermission('kyc_pending'))
+                    <li class="px-3">
+                        <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.kyc-pending.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.kyc-pending.index') }}">
+                            <i class="bi bi-person-check text-lg"></i>
+                            <span class="text-sm font-medium">KYC Pending</span>
+                        </a>
+                    </li>
+                    @endif
+
+                    <!-- Finance & Control Section -->
+                    <li class="px-3 pt-4 pb-2">
+                        <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Finance & Control</span>
+                    </li>
+
+                    
+
+                    
+
+                    <!-- Support Section -->
+                    <li class="px-3 pt-4 pb-2">
+                        <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Support</span>
+                    </li>
+                    
+                    
                 </ul>
             </nav>
         </aside>

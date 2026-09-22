@@ -219,7 +219,7 @@
                                 @enderror
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <!-- <div class="col-md-6 mb-3">
                                 <label for="item_received_through" class="form-label">Item Received Through</label>
                                 <input class="form-control" list="receivedThroughDatalist" id="item_received_through" name="item_received_through" value="{{ old('item_received_through') }}" placeholder="Type or select...">
                                 <datalist id="receivedThroughDatalist">
@@ -230,9 +230,9 @@
                                 @error('item_received_through')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
-                            </div>
+                            </div> -->
 
-                            <div class="col-md-6 mb-3">
+                            <!-- <div class="col-md-6 mb-3">
                                 <label class="form-label">Item Delivered By Type</label>
                                 <div class="mt-2">
                                     <div class="form-check form-check-inline">
@@ -247,7 +247,7 @@
                                 @error('item_delivered_by_type')
                                     <span class="text-danger small">{{ $message }}</span>
                                 @enderror
-                            </div>
+                            </div> -->
 
                             <div class="col-md-6 mb-3" id="delivered_by_container" style="display: none;">
                                 <label for="item_delivered_by" class="form-label" id="delivered_by_label">Item Delivered By</label>

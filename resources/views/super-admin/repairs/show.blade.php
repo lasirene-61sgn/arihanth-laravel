@@ -160,6 +160,10 @@
                             <div class="text-slate-700 fw-medium small">{{ $repair->item_given_to ?? 'N/A' }}</div>
                         </div>
                         <div class="col-md-6">
+                            <div class="info-label">Item Received By</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_received_by ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="info-label">Notes</div>
                             <div class="text-slate-700 fw-medium small">{{ $repair->notes ?? 'No notes' }}</div>
                         </div>
@@ -233,6 +237,57 @@
                                     Not yet allocated
                                 </div>
                             @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery & Completion Info -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="card-modern h-100">
+                        <div class="card-header-clean">
+                            <h5 class="fw-bold mb-0 text-slate-800 fs-6">
+                                <i class="bi bi-box-seam text-primary me-2"></i>Delivery & Completion Info
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="info-label">Item Received Through (Craftsman)</div>
+                                    <div class="info-value">{{ $repair->item_received_through ?? 'N/A' }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Item Delivered By</div>
+                                    <div class="info-value">
+                                        @if($repair->item_delivered_by)
+                                            {{ $repair->item_delivered_by }} <span class="text-muted small">({{ $repair->item_delivered_by_type }})</span>
+                                        @else
+                                            N/A
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Item Delivered To</div>
+                                    <div class="info-value">{{ $repair->item_delivered_to ?? 'N/A' }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Item Received By (Buyer)</div>
+                                    <div class="info-value">{{ $repair->item_received_by ?? 'N/A' }}</div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="info-label">Completion Proof Image</div>
+                                    <div class="info-value">
+                                        @if($repair->completion_proof)
+                                            <a href="{{ asset($repair->completion_proof) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-image"></i> View Image
+                                            </a>
+                                        @else
+                                            N/A
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
