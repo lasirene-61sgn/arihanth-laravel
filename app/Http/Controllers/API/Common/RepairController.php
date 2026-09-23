@@ -30,7 +30,29 @@ class RepairController extends Controller
 
     private function isCraftsman($user): bool
     {
-        return ($user->role ?? '') === 'craftsman' || $user instanceof \App\Models\Craftman;
+        return ($user->role ?? '') === 'craftsman' 
+            || $user instanceof \App\Models\Craftman
+            || $user instanceof \App\Models\CraftsmanStaff;
+    }
+
+    private function checkPermission($user, $specificPermission = 'repair_view'): bool
+    {
+        if ($this->isAdmin($user)) return true;
+        if ($user instanceof \App\Models\Buyer) return true; 
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true;
+        }
+
+        if (method_exists($user, 'hasPermission')) {
+            return $user->hasPermission('repairs');
+        }
+
+        return true;
     }
 
     private function isBuyerSide($user): bool
@@ -64,6 +86,9 @@ class RepairController extends Controller
     public function index(Request $request)
     {
         $user  = $request->user();
+        if (!$this->checkPermission($user, 'repair_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
+        }
         $admin = $this->isAdmin($user);
 
         // ── Scope helper: applies buyer/craftman filter ──
@@ -204,6 +229,9 @@ class RepairController extends Controller
     public function show(Request $request, $id)
     {
         $user   = $request->user();
+        if (!$this->checkPermission($user, 'repair_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
+        }
         $admin  = $this->isAdmin($user);
         $repair = Repair::with(['buyer', 'craftsman'])->find($id);
 
@@ -398,8 +426,12 @@ class RepairController extends Controller
     // ACTIONS
     // =========================================================================
 
-    public function accept($id)
+    public function accept(Request $request, $id)
     {
+        $user = $request->user();
+        if ($this->isCraftsman($user) && !$this->checkPermission($user, 'repair_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair accept permission'], 403);
+        }
         $repair = Repair::findOrFail($id);
         $repair->update(['status' => 'Accepted']);
         return response()->json(['success' => true, 'message' => 'Repair accepted']);
@@ -408,6 +440,9 @@ class RepairController extends Controller
     public function reject(Request $request, $id)
     {
         $user = $request->user();
+        if ($this->isCraftsman($user) && !$this->checkPermission($user, 'repair_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair reject permission'], 403);
+        }
         $isAdmin = $this->isAdmin($user);
         $repair = Repair::findOrFail($id);
 
@@ -516,6 +551,9 @@ class RepairController extends Controller
     public function generatePdf(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'repair_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
+        }
         $admin = $this->isAdmin($user);
 
         $query = Repair::with(['buyer', 'craftsman']);

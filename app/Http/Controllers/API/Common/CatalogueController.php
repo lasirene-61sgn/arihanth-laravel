@@ -11,6 +11,38 @@ use Illuminate\Support\Facades\Log;
 
 class CatalogueController extends Controller
 {
+    private function isAdmin($user): bool
+    {
+        return in_array($user->role ?? '', ['super_admin', 'admin']);
+    }
+
+    private function isCraftsman($user): bool
+    {
+        return ($user->role ?? '') === 'craftsman' 
+            || $user instanceof \App\Models\Craftman
+            || $user instanceof \App\Models\CraftsmanStaff;
+    }
+
+    private function checkPermission($user, $specificPermission = 'catalogue_view'): bool
+    {
+        if ($this->isAdmin($user)) return true;
+        if ($user instanceof \App\Models\Buyer) return true;
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true;
+        }
+
+        if (method_exists($user, 'hasPermission')) {
+            return $user->hasPermission('catalogue');
+        }
+
+        return true;
+    }
+
     /**
      * List catalogue products.
      *
@@ -27,6 +59,9 @@ class CatalogueController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'catalogue_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no catalogue permission'], 403);
+        }
 
         $sortBy = $request->get('sort_by', 'id');
 
@@ -241,6 +276,9 @@ class CatalogueController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'catalogue_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no catalogue permission'], 403);
+        }
 
         $query = Product::with(['category', 'subcategory', 'images'])
             ->whereNotNull('design_code')
@@ -271,6 +309,9 @@ class CatalogueController extends Controller
     public function generatePdf(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'catalogue_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no catalogue permission'], 403);
+        }
         $query = Product::with(['category', 'subcategory', 'images'])
             ->whereNotNull('design_code')
             ->where('design_status', 'Accepted')

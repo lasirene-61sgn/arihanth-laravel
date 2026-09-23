@@ -24,6 +24,7 @@ use App\Models\KeyUser;
 
 use App\Models\User;
 use App\Models\RegistrationRequest;
+use App\Models\CraftsmanStaff;
 
 
 
@@ -262,6 +263,54 @@ class UniversalAuthController extends Controller
                 'token' => $token,
 
                 'user' => $craftsman
+
+            ]);
+
+        }
+
+
+
+        // 3.5 Check Craftsman Staff
+
+        $craftsmanStaff = CraftsmanStaff::where('email', $loginId)
+
+            ->orWhere('mobile', $loginId)
+
+            ->orWhere('staff_code', $loginId)
+
+            ->first();
+
+
+
+        if ($craftsmanStaff && Hash::check($password, $craftsmanStaff->password)) {
+
+            // Assuming craftsman staff might have fcm_token later, wrap in try/catch or skip. We will skip for now.
+
+            $token = $craftsmanStaff->createToken('craftsman_staff_token')->plainTextToken;
+
+
+
+            // Merge permissions
+            $existingPermissions = $craftsmanStaff->permissions ?? [];
+            if (is_string($existingPermissions)) {
+                $existingPermissions = json_decode($existingPermissions, true) ?? [];
+            }
+            // If the requirement is "only what superadmin gave", we could skip merging defaultPermissions.
+            // "once superadmin are given permssion only". We will just use their existing permissions.
+            $craftsmanStaff->permissions = $existingPermissions;
+
+
+            return response()->json([
+
+                'success' => true,
+
+                'message' => 'Login successful',
+
+                'role' => 'craftsman_staff',
+
+                'token' => $token,
+
+                'user' => $craftsmanStaff
 
             ]);
 

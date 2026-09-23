@@ -35,7 +35,24 @@ class PurchaseOrderController extends Controller
 
     private function isCraftsman($user): bool
     {
-        return ($user->role ?? '') === 'craftsman' || $user instanceof \App\Models\Craftman;
+        return ($user->role ?? '') === 'craftsman' 
+            || $user instanceof \App\Models\Craftman
+            || $user instanceof \App\Models\CraftsmanStaff;
+    }
+
+    private function checkPermission($user, $specificPermission = 'po_view'): bool
+    {
+        if ($this->isAdmin($user)) return true;
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true;
+        }
+
+        return false;
     }
 
     // =========================================================================
@@ -45,6 +62,9 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $user    = $request->user();
+        if (!$this->checkPermission($user, 'po_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order permission'], 403);
+        }
         $admin   = $this->isAdmin($user);
         $tab     = $request->get('tab', 'created');
         $perPage = $request->get('per_page', 10);
@@ -371,7 +391,10 @@ class PurchaseOrderController extends Controller
 
     public function show(Request $request, $id)
     {
-        $user          = $request->user();
+        $user = $request->user();
+        if (!$this->checkPermission($user, 'po_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order permission'], 403);
+        }
         $purchaseOrder = PurchaseOrder::find($id);
 
         if (!$purchaseOrder) {
@@ -1128,8 +1151,8 @@ class PurchaseOrderController extends Controller
     public function acceptItem(Request $request, $id, $index)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only Craftsmen can accept items.'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'po_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order accept permission'], 403);
         }
 
         $purchaseOrder = PurchaseOrder::findOrFail($id);
@@ -1168,8 +1191,8 @@ class PurchaseOrderController extends Controller
     public function rejectItem(Request $request, $id, $index)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only Craftsmen can reject items.'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'po_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order reject permission'], 403);
         }
 
         $purchaseOrder = PurchaseOrder::findOrFail($id);
@@ -1214,8 +1237,8 @@ class PurchaseOrderController extends Controller
     public function bulkAccept(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'po_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order accept permission'], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -1246,8 +1269,8 @@ class PurchaseOrderController extends Controller
     public function bulkReject(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'po_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order reject permission'], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -1788,6 +1811,9 @@ class PurchaseOrderController extends Controller
     public function generatePdf(Request $request, $id = null)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'po_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no purchase_order permission'], 403);
+        }
 
         // ── Handle multiple IDs (query param or array) ──
         $ids = $request->get('ids') ?? $request->get('purchase_order_ids');

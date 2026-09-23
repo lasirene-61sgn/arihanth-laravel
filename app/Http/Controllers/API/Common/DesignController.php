@@ -30,7 +30,29 @@ class DesignController extends Controller
 
     private function isCraftsman($user): bool
     {
-        return ($user->role ?? '') === 'craftsman' || $user instanceof \App\Models\Craftman;
+        return ($user->role ?? '') === 'craftsman' 
+            || $user instanceof \App\Models\Craftman
+            || $user instanceof \App\Models\CraftsmanStaff;
+    }
+
+    private function checkPermission($user, $specificPermission = 'design_view'): bool
+    {
+        if ($this->isAdmin($user)) return true;
+        if ($user instanceof \App\Models\Buyer) return true;
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true;
+        }
+
+        if (method_exists($user, 'hasPermission')) {
+            return $user->hasPermission('design');
+        }
+
+        return true;
     }
 
     private function isKeyUser($user): bool
@@ -49,6 +71,9 @@ class DesignController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'design_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no design permission'], 403);
+        }
         $admin = $this->isAdmin($user);
         $tab     = $request->get('tab');
         $perPage = $request->get('per_page', 15);
@@ -353,6 +378,9 @@ class DesignController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'design_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no design permission'], 403);
+        }
 
         $productQuery = Product::with(['category', 'subcategory', 'images']);
 
@@ -459,8 +487,8 @@ class DesignController extends Controller
     {
         $user = $request->user();
 
-        if (!($user instanceof \App\Models\Craftman)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can submit designs'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'design_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no design permission'], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -515,6 +543,10 @@ class DesignController extends Controller
 
         if ($user->role !== 'super_admin' && $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (!$this->checkPermission($user, 'design_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no design permission'], 403);
         }
 
         $product = Product::find($id);
@@ -881,6 +913,9 @@ class DesignController extends Controller
     public function generatePdf(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'design_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no design permission'], 403);
+        }
         $query = Product::with(['category', 'subcategory', 'images']);
 
         // ── Scoping (mirrors index logic) ──

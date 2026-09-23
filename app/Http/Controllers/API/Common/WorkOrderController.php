@@ -36,7 +36,9 @@ class WorkOrderController extends Controller
 
     private function isCraftsman($user): bool
     {
-        return ($user->role ?? '') === 'craftsman' || $user instanceof \App\Models\Craftman;
+        return ($user->role ?? '') === 'craftsman' 
+            || $user instanceof \App\Models\Craftman 
+            || $user instanceof \App\Models\CraftsmanStaff;
     }
 
     private function isBuyerSide($user): bool
@@ -222,15 +224,26 @@ class WorkOrderController extends Controller
     }
 
     /**
-     * Check work_order permission for roles that have permission system.
-     * Returns true if allowed, false if denied.
+     * Check permissions for roles that have a permission system.
+     * $specificPermission allows checking granular access (e.g. 'wo_view', 'wo_accept').
      */
-    private function checkPermission($user): bool
+    private function checkPermission($user, $specificPermission = 'wo_view'): bool
     {
         if ($this->isAdmin($user)) return true;
         if ($user instanceof \App\Models\Buyer) return true; // Buyers always have WO access
-        // KeyUser, User, Craftsman have granular permissions
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            // Check granular craftsman staff permissions
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true; // Main craftsmen have full access
+        }
+
+        // KeyUser, User have granular permissions
         if (method_exists($user, 'hasPermission')) {
+            // For KeyUser/User, they usually just have a general 'work_order' permission
             return $user->hasPermission('work_order');
         }
         return true;
@@ -1560,8 +1573,8 @@ class WorkOrderController extends Controller
     public function acceptWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
         }
 
         $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
@@ -1583,8 +1596,8 @@ class WorkOrderController extends Controller
     public function rejectWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
         }
 
         $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
@@ -1616,8 +1629,8 @@ class WorkOrderController extends Controller
     public function completeWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
         }
 
         $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
@@ -1663,8 +1676,8 @@ class WorkOrderController extends Controller
     public function bulkAcceptWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
         }
 
         $request->validate(['ids' => 'required|array', 'ids.*' => 'exists:work_orders,id']);
@@ -1680,8 +1693,8 @@ class WorkOrderController extends Controller
     public function bulkRejectWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
         }
 
         $request->validate([
@@ -1704,8 +1717,8 @@ class WorkOrderController extends Controller
     public function bulkCompleteWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user)) {
-            return response()->json(['success' => false, 'message' => 'Only craftsmen can perform this action'], 403);
+        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
         }
 
         $request->validate([

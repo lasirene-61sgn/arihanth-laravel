@@ -33,6 +33,9 @@ class ProductController extends Controller
         if ($user instanceof \App\Models\Craftman) {
             return $user->craftman_code ?? null;
         }
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->craftsman->craftman_code ?? null; // Fetch parent craftsman code
+        }
         if (isset($user->role) && ($user->role === 'buyer')) {
             return $user->bp_code ?? null;
         }
@@ -42,12 +45,40 @@ class ProductController extends Controller
         return null; // SuperAdmin / Admin
     }
 
+    private function isAdmin($user): bool
+    {
+        return in_array($user->role ?? '', ['super_admin', 'admin']);
+    }
+
+    private function checkPermission($user, $specificPermission = 'product_view'): bool
+    {
+        if ($this->isAdmin($user)) return true;
+        if ($user instanceof \App\Models\Buyer) return true; 
+
+        if ($user instanceof \App\Models\CraftsmanStaff) {
+            return $user->hasPermission($specificPermission);
+        }
+
+        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+            return true;
+        }
+
+        if (method_exists($user, 'hasPermission')) {
+            return $user->hasPermission('product');
+        }
+
+        return true;
+    }
+
     /**
      * List products for the authenticated user.
      */
     public function index(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'product_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no product permission'], 403);
+        }
 
        $sortBy = $request->get('sort_by', 'id');
 
@@ -243,6 +274,9 @@ class ProductController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'product_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no product permission'], 403);
+        }
         $query = Product::with(['category', 'subcategory', 'images']);
         // If we strictly want to hide them from show as well, uncomment the whereNotNull below:
         // ->whereNotNull('bp_code');
@@ -271,6 +305,9 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'product_create')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no product create permission'], 403);
+        }
 
         $validator = Validator::make($request->all(), [
             'product_code'        => 'nullable|string|max:255',
@@ -395,6 +432,9 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'product_edit')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no product edit permission'], 403);
+        }
         $query = Product::query();
 
         $code = $this->ownerCode($user);
@@ -523,6 +563,9 @@ class ProductController extends Controller
     public function generatePdf(Request $request)
     {
         $user = $request->user();
+        if (!$this->checkPermission($user, 'product_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no product permission'], 403);
+        }
         $query = Product::with(['category', 'subcategory', 'images']);
 
         $code = $this->ownerCode($user);
@@ -580,8 +623,12 @@ class ProductController extends Controller
     // HELPERS
     // =========================================================================
 
-    public function categories()
+    public function categories(Request $request)
     {
+        $user = $request->user() ?? auth('sanctum')->user();
+        if ($user && !$this->checkPermission($user, 'product_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
         $categories = ProductCategory::orderBy('name')->get();
         return response()->json(['success' => true, 'data' => $categories]);
     }
@@ -622,6 +669,10 @@ class ProductController extends Controller
 
     public function subcategories(Request $request)
     {
+        $user = $request->user();
+        if ($user && !$this->checkPermission($user, 'product_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
         $categoryId = $request->get('category_id');
 
         $query = ProductSubcategory::with('category')->orderBy('name');

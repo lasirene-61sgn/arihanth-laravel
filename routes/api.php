@@ -343,6 +343,10 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     // Dashboard Stats- Role-based statistics for all panels
    Route::get('/dashboard/stats', [\App\Http\Controllers\API\Common\DashboardController::class, 'getDashboardStats'])->name('dashboard.stats');
 
+    // Global Search (Text & Image)
+    Route::get('/global-search', [\App\Http\Controllers\API\Common\GlobalSearchController::class, 'search'])->name('global-search');
+    Route::post('/global-search', [\App\Http\Controllers\API\Common\GlobalSearchController::class, 'search']);
+
     // --- Work Orders ---
    Route::get('/work-orders', [\App\Http\Controllers\API\Common\WorkOrderController::class, 'index'])->name('work-orders.index');
     Route::post('/work-orders', [\App\Http\Controllers\API\Common\WorkOrderController::class, 'store'])->name('work-orders.store');
@@ -477,6 +481,13 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::get('/key-users/{id}', [\App\Http\Controllers\API\Common\KeyUserController::class, 'show'])->name('key-users.show')->where('id', '[0-9]+');
     Route::post('/key-users/{id}', [\App\Http\Controllers\API\Common\KeyUserController::class, 'update'])->name('key-users.update')->where('id', '[0-9]+');
     Route::delete('/key-users/{id}', [\App\Http\Controllers\API\Common\KeyUserController::class, 'destroy'])->name('key-users.destroy')->where('id', '[0-9]+');
+
+    // --- Craftsman Staff ---
+    Route::get('/craftsman-staff', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'index'])->name('craftsman-staff.index');
+    Route::post('/craftsman-staff', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'store'])->name('craftsman-staff.store');
+    Route::get('/craftsman-staff/{id}', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'show'])->name('craftsman-staff.show')->where('id', '[0-9]+');
+    Route::post('/craftsman-staff/{id}', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'update'])->name('craftsman-staff.update')->where('id', '[0-9]+');
+    Route::delete('/craftsman-staff/{id}', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'destroy'])->name('craftsman-staff.destroy')->where('id', '[0-9]+');
 
     // --- Users (End Users) ---
     Route::get('/users', [\App\Http\Controllers\API\Common\UserController::class, 'index'])->name('users.index');
