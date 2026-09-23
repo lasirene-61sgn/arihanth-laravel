@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasImageHash;
 
 class Repair extends Model
 {
+    use HasImageHash;
+
     protected $fillable = [
         'buyer_id',
         'repair_date',

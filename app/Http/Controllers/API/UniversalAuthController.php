@@ -81,23 +81,9 @@ class UniversalAuthController extends Controller
 
 
         // Default permissions as requested by user
-
         $defaultPermissions = [
-
-            'products',
-
-            'product',
-
-            'design',
-
-            'catalogue',
-
-            'catelogur',
-
             'work_order',
-
-            'workorders',
-
+            'global_search',
         ];
 
 
@@ -127,16 +113,7 @@ class UniversalAuthController extends Controller
 
 
             // Merge permissions
-
-            $existingPermissions = $superAdmin->permissions ?? [];
-
-            if (is_string($existingPermissions)) {
-
-                $existingPermissions = json_decode($existingPermissions, true) ?? [];
-
-            }
-
-            $superAdmin->permissions = array_merge($defaultPermissions, $existingPermissions);
+            $superAdmin->permissions = $superAdmin->getPermissionsArray();
 
 
 
@@ -183,16 +160,11 @@ class UniversalAuthController extends Controller
 
 
             // Merge permissions
-
             $existingPermissions = $buyer->permissions ?? [];
-
             if (is_string($existingPermissions)) {
-
                 $existingPermissions = json_decode($existingPermissions, true) ?? [];
-
             }
-
-            $buyer->permissions = array_merge($defaultPermissions, $existingPermissions);
+            $buyer->permissions = array_values(array_unique(array_merge($defaultPermissions, $existingPermissions)));
 
 
 
@@ -239,16 +211,11 @@ class UniversalAuthController extends Controller
 
 
             // Merge permissions
-
             $existingPermissions = $craftsman->permissions ?? [];
-
             if (is_string($existingPermissions)) {
-
                 $existingPermissions = json_decode($existingPermissions, true) ?? [];
-
             }
-
-            $craftsman->permissions = array_merge($defaultPermissions, $existingPermissions);
+            $craftsman->permissions = array_values(array_unique(array_merge($defaultPermissions, $existingPermissions)));
 
 
 
@@ -272,7 +239,7 @@ class UniversalAuthController extends Controller
 
         // 3.5 Check Craftsman Staff
 
-        $craftsmanStaff = CraftsmanStaff::where('email', $loginId)
+        $craftsmanStaff = CraftsmanStaff::where('staff_code', $loginId)
 
             ->orWhere('mobile', $loginId)
 
@@ -290,14 +257,8 @@ class UniversalAuthController extends Controller
 
 
 
-            // Merge permissions
-            $existingPermissions = $craftsmanStaff->permissions ?? [];
-            if (is_string($existingPermissions)) {
-                $existingPermissions = json_decode($existingPermissions, true) ?? [];
-            }
-            // If the requirement is "only what superadmin gave", we could skip merging defaultPermissions.
-            // "once superadmin are given permssion only". We will just use their existing permissions.
-            $craftsmanStaff->permissions = $existingPermissions;
+            // Process and map granular permissions to generic modules for the frontend
+            $craftsmanStaff->permissions = $craftsmanStaff->getMappedPermissionsArray();
 
 
             return response()->json([
@@ -343,16 +304,11 @@ class UniversalAuthController extends Controller
 
 
             // Merge permissions
-
             $existingPermissions = $keyUser->permissions ?? [];
-
             if (is_string($existingPermissions)) {
-
                 $existingPermissions = json_decode($existingPermissions, true) ?? [];
-
             }
-
-            $keyUser->permissions = array_merge($defaultPermissions, $existingPermissions);
+            $keyUser->permissions = array_values(array_unique(array_merge($defaultPermissions, $existingPermissions)));
 
 
 
@@ -399,16 +355,11 @@ class UniversalAuthController extends Controller
 
 
             // Merge permissions
-
             $existingPermissions = $user->permissions ?? [];
-
             if (is_string($existingPermissions)) {
-
                 $existingPermissions = json_decode($existingPermissions, true) ?? [];
-
             }
-
-            $user->permissions = array_merge($defaultPermissions, $existingPermissions);
+            $user->permissions = array_values(array_unique(array_merge($defaultPermissions, $existingPermissions)));
 
 
 

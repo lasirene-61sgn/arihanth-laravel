@@ -49,6 +49,14 @@ class WorkOrderController extends Controller
             || ($user->role ?? '') === 'buyer';
     }
 
+    private function getCraftsmanCode($user)
+    {
+        return $user instanceof \App\Models\CraftsmanStaff 
+            ? ($user->craftsman->craftman_code ?? null) 
+            : ($user->craftman_code ?? null);
+    }
+
+
     /**
      * Transform work order data to ensure category/subcategory are simple strings
      */
@@ -218,7 +226,7 @@ class WorkOrderController extends Controller
             return ['creator_type' => 'user', 'creator_user_code' => $user->user_code];
         }
         if ($user instanceof \App\Models\Craftman) {
-            return ['creator_type' => 'craftsman', 'creator_user_code' => $user->craftman_code];
+            return ['creator_type' => 'craftsman', 'creator_user_code' => $this->getCraftsmanCode($user)];
         }
         return ['creator_type' => 'super_admin', 'creator_user_code' => null];
     }
@@ -266,7 +274,7 @@ class WorkOrderController extends Controller
         $scopeFilter = function ($query) use ($user, $admin) {
             if ($admin) return $query;
             if ($this->isCraftsman($user)) {
-                return $query->where('allocated_craftsman_bp_code', $user->craftman_code);
+                return $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
             }
             return $query->where('bp_code', $user->bp_code);
         };
@@ -482,7 +490,7 @@ class WorkOrderController extends Controller
         }
 
         if (!$this->isAdmin($user)) {
-            if ($this->isCraftsman($user) && $workOrder->allocated_craftsman_bp_code !== $user->craftman_code) {
+            if ($this->isCraftsman($user) && $workOrder->allocated_craftsman_bp_code !== $this->getCraftsmanCode($user)) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
             if ($this->isBuyerSide($user) && $workOrder->bp_code !== $user->bp_code) {
@@ -625,7 +633,7 @@ class WorkOrderController extends Controller
         // Role-based scope (similar to index)
         if (!$this->isAdmin($user)) {
             if ($this->isCraftsman($user)) {
-                $query->where('allocated_craftsman_bp_code', $user->craftman_code);
+                $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
             } else {
                 $query->where('bp_code', $user->bp_code);
             }
@@ -1577,7 +1585,7 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
+        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found or not allocated'], 404);
 
         if ($workOrder->craftsman_status !== 'allocated') {
@@ -1600,7 +1608,7 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
+        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found'], 404);
 
         if ($workOrder->craftsman_status !== 'allocated') {
@@ -1633,7 +1641,7 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)->find($id);
+        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found'], 404);
 
         if ($workOrder->craftsman_status !== 'in_process') {
@@ -1683,7 +1691,7 @@ class WorkOrderController extends Controller
         $request->validate(['ids' => 'required|array', 'ids.*' => 'exists:work_orders,id']);
 
         $count = WorkOrder::whereIn('id', $request->ids)
-            ->where('allocated_craftsman_bp_code', $user->craftman_code)
+            ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
             ->where('craftsman_status', 'allocated')
             ->update(['craftsman_status' => 'in_process']);
 
@@ -1704,7 +1712,7 @@ class WorkOrderController extends Controller
         ]);
 
         $count = WorkOrder::whereIn('id', $request->ids)
-            ->where('allocated_craftsman_bp_code', $user->craftman_code)
+            ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
             ->where('craftsman_status', 'allocated')
             ->update([
                 'craftsman_status' => 'rejected',
@@ -1732,7 +1740,7 @@ class WorkOrderController extends Controller
 
         $count = 0;
         foreach ($request->ids as $id) {
-            $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $user->craftman_code)
+            $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
                 ->where('id', $id)
                 ->where('craftsman_status', 'in_process')
                 ->first();
@@ -1760,7 +1768,7 @@ class WorkOrderController extends Controller
         if ($count > 0 && isset($lastOrder)) {
             try {
                 $admins = ProcessOwner::whereNotNull('fcm_token')->get();
-                $message = "{$count} Work Orders have been completed by craftsman {$user->craftman_code}.";
+                $message = "{$count} Work Orders have been completed by craftsman " . $this->getCraftsmanCode($user) . ".";
                 foreach ($admins as $admin) {
                     $admin->notify(new WorkOrderCompleted($lastOrder, $message));
                 }
@@ -1823,7 +1831,7 @@ class WorkOrderController extends Controller
         }
 
         if ($this->isCraftsman($user)) {
-            $craftsman = \App\Models\Craftman::where('craftman_code', $user->craftman_code)
+            $craftsman = \App\Models\Craftman::where('craftman_code', $this->getCraftsmanCode($user))
                 ->select('craftman_code', 'business_name', 'name')
                 ->first();
             return response()->json(['success' => true, 'data' => $craftsman ? [$craftsman] : []]);
@@ -1915,7 +1923,7 @@ class WorkOrderController extends Controller
      */
     private function getCraftsmanDashboardStats($user)
     {
-        $craftsmanCode = $user->craftman_code;
+        $craftsmanCode = $this->getCraftsmanCode($user);
 
         // Scope queries to craftsman's allocated work orders
         $scopeFilter = function ($query) use ($craftsmanCode) {

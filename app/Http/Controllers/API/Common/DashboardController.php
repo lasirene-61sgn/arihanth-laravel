@@ -13,6 +13,7 @@ use App\Models\KeyUser;
 use App\Models\User;
 use App\Models\Repair;
 use App\Models\StockOrder;
+use App\Models\CraftsmanStaff;
 
 class DashboardController extends Controller
 {
@@ -28,14 +29,40 @@ class DashboardController extends Controller
             return $this->getSuperAdminStats();
         }
 
-        // Check if user has dashboard permission
-        if (method_exists($user, 'hasPermission') && !$user->hasPermission('dashboard')) {
-            // Check for specific dashboard permissions if 'dashboard' is not present
-            // Some roles might have specific dashboard access implicitly
+        // Check if user has dashboard permission or at least one relevant module permission
+        $hasAccess = false;
+        
+        if ($user instanceof Buyer || $user instanceof Craftman || in_array($user->role ?? '', ['buyer', 'craftsman'])) {
+            $hasAccess = true; // These roles intrinsically have access to work orders/products
+        } elseif (method_exists($user, 'hasPermission')) {
+            if ($user->hasPermission('dashboard')) {
+                $hasAccess = true;
+            } else {
+                $allowedModules = [
+                    'work_order', 'wo_view',
+                    'purchase_order', 'po_view',
+                    'design', 'design_view',
+                    'catalogue', 'catalogue_view',
+                    'product', 'product_view'
+                ];
+                foreach ($allowedModules as $module) {
+                    if ($user->hasPermission($module)) {
+                        $hasAccess = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!$hasAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden - You do not have permission to view the dashboard'
+            ], 403);
         }
 
         // Craftsman statistics
-        if ($user instanceof Craftman || ($user->role ?? '') === 'craftsman') {
+        if ($user instanceof Craftman || $user instanceof CraftsmanStaff || in_array($user->role ?? '', ['craftsman', 'craftsman_staff'])) {
             return $this->getCraftsmanStats($user);
         }
 
@@ -116,13 +143,13 @@ class DashboardController extends Controller
      */
     private function getCraftsmanStats($user)
     {
-        $craftsmanCode = $user->craftman_code;
+        $craftsmanCode = $user instanceof CraftsmanStaff ? ($user->craftsman->craftman_code ?? null) : $user->craftman_code;
 
         return response()->json([
             'success' => true,
             'data' => [
-                'role' => 'craftsman',
-                'permissions' => $user->permissions ?? [],
+                'role' => $user instanceof CraftsmanStaff ? 'craftsman_staff' : 'craftsman',
+                'permissions' => array_values(array_unique(array_merge(['work_order', 'global_search'], is_array($p = ($user instanceof CraftsmanStaff ? $user->getMappedPermissionsArray() : ($user->permissions ?? []))) ? $p : (is_string($p) ? (json_decode($p, true) ?? []) : [])))),
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
                 'totalWorkOrders' => WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->count(),
                 'totalPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->count(),
@@ -157,11 +184,15 @@ class DashboardController extends Controller
     {
         $bpCode = $user->bp_code;
 
+        $rawPerms = $user->permissions ?? [];
+        $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
+        $permissions = array_values(array_unique(array_merge(['work_order', 'global_search'], $perms)));
+
         return response()->json([
             'success' => true,
             'data' => [
                 'role' => 'buyer',
-                'permissions' => $user->permissions ?? [],
+                'permissions' => $permissions,
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
                 'totalProducts' => Product::where('bp_code', $bpCode)->count(),
                 'totalDesigns' => Product::where('bp_code', $bpCode)->where('design_status', 'Accepted')->count(),
@@ -191,11 +222,15 @@ class DashboardController extends Controller
     {
         $userCode = $user->user_code;
 
+        $rawPerms = $user->permissions ?? [];
+        $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
+        $permissions = array_values(array_unique(array_merge(['work_order', 'global_search'], $perms)));
+
         return response()->json([
             'success' => true,
             'data' => [
                 'role' => 'key_user',
-                'permissions' => $user->permissions ?? [],
+                'permissions' => $permissions,
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
                 'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->count(),
                 'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
@@ -219,11 +254,15 @@ class DashboardController extends Controller
     {
         $userCode = $user->user_code;
 
+        $rawPerms = $user->permissions ?? [];
+        $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
+        $permissions = array_values(array_unique(array_merge(['work_order', 'global_search'], $perms)));
+
         return response()->json([
             'success' => true,
             'data' => [
                 'role' => 'user',
-                'permissions' => $user->permissions ?? [],
+                'permissions' => $permissions,
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
                 'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->count(),
                 'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),

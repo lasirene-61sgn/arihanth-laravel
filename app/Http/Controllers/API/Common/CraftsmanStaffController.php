@@ -154,9 +154,20 @@ class CraftsmanStaffController extends Controller
         }
 
         // ── Paginated list ──
+        $paginator = $query->paginate($request->get('per_page', 10));
+        $paginator->getCollection()->transform(function ($staff) {
+            if (!empty($staff->image) && !filter_var($staff->image, FILTER_VALIDATE_URL)) {
+                $staff->image = asset('storage/' . $staff->image);
+            }
+            if (!empty($staff->aadhar_image) && !filter_var($staff->aadhar_image, FILTER_VALIDATE_URL)) {
+                $staff->aadhar_image = asset('storage/' . $staff->aadhar_image);
+            }
+            return $staff;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $query->paginate($request->get('per_page', 10))
+            'data' => $paginator
         ]);
     }
 
@@ -242,6 +253,13 @@ class CraftsmanStaffController extends Controller
         $staff = $query->find($id);
         if (!$staff) {
             return response()->json(['message' => 'Craftsman Staff not found'], 404);
+        }
+
+        if (!empty($staff->image) && !filter_var($staff->image, FILTER_VALIDATE_URL)) {
+            $staff->image = asset('storage/' . $staff->image);
+        }
+        if (!empty($staff->aadhar_image) && !filter_var($staff->aadhar_image, FILTER_VALIDATE_URL)) {
+            $staff->aadhar_image = asset('storage/' . $staff->aadhar_image);
         }
 
         return response()->json([

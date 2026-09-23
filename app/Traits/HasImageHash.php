@@ -71,6 +71,11 @@ trait HasImageHash
                 foreach ($poItems as $poItem) {
                     if (!empty($poItem['image'])) {
                         $hashImage($poItem['image']);
+                    } else if (!empty($poItem['product_id'])) {
+                        $product = \App\Models\Product::find($poItem['product_id']);
+                        if ($product && !empty($product->product_image)) {
+                            $hashImage($product->product_image);
+                        }
                     }
                 }
             }
@@ -83,6 +88,8 @@ trait HasImageHash
             }
         } elseif ($class === \App\Models\Catalogue::class) {
             if (!empty($this->add_image)) $hashImage($this->add_image);
+        } elseif ($class === \App\Models\Repair::class) {
+            if (!empty($this->image_proof)) $hashImage($this->image_proof);
         } else {
             if (!empty($this->image)) $hashImage($this->image);
         }

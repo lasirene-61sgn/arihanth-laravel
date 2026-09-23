@@ -41,12 +41,12 @@ class GlobalSearchController extends Controller
     private function getCraftsmanCode($user)
     {
         if ($user instanceof \App\Models\Craftman) {
-            return $user->craftman_code;
+            return $user->craftsman_code;
         }
         if ($user instanceof \App\Models\CraftsmanStaff && $user->craftsman) {
             return $user->craftsman->craftman_code;
         }
-        return $user->craftman_code ?? null;
+        return $user->craftsman_code ?? null;
     }
 
     private function getBuyerCode($user)
@@ -57,10 +57,21 @@ class GlobalSearchController extends Controller
         return $user->bp_code ?? null;
     }
 
+    private function getFullImageUrl($path)
+    {
+        if (empty($path)) return null;
+        if (filter_var($path, FILTER_VALIDATE_URL)) return $path;
+        if (str_starts_with($path, 'images/') || str_starts_with($path, 'uploads/')) {
+            return asset($path);
+        }
+        return asset('storage/' . $path);
+    }
+
     public function search(Request $request)
     {
         $query = $request->input('search');
         $hasImage = $request->hasFile('image_search');
+        $perPage = $request->input('per_page', 10);
 
         $user = $request->user();
         $isAdmin = $this->isAdmin($user);
@@ -75,7 +86,6 @@ class GlobalSearchController extends Controller
             'purchase_orders' => [],
             'products' => [],
             'designs' => [],
-            'catalogues' => [],
             'repairs' => [],
         ];
 
@@ -123,21 +133,21 @@ class GlobalSearchController extends Controller
                 }
 
                 if (isset($matchedItems[WorkOrder::class])) {
-                    $woQuery = WorkOrder::whereIn('id', $matchedItems[WorkOrder::class]);
+                    $woQuery = WorkOrder::select('id', 'work_order_number', 'product_name', 'design_code', 'product_image', 'status')->whereIn('id', $matchedItems[WorkOrder::class]);
                     if (!$isAdmin) {
                         if ($isCraftsman) {
                             $woQuery->where('allocated_craftsman_bp_code', $craftsmanCode);
                         } elseif ($isBuyer) {
-                            $woQuery->where('buyer_bp_code', $buyerCode);
+                            $woQuery->where('bp_code', $buyerCode);
                         } else {
                             $woQuery->where('id', 0);
                         }
                     }
-                    $results['work_orders'] = $woQuery->get();
+                    $results['work_orders'] = $woQuery->paginate($perPage, ['*'], 'work_orders_page')->withQueryString();
                 }
 
                 if (isset($matchedItems[PurchaseOrder::class])) {
-                    $poQuery = PurchaseOrder::whereIn('id', $matchedItems[PurchaseOrder::class]);
+                    $poQuery = PurchaseOrder::select('id', 'purchase_order_code', 'notes', 'status', 'items')->whereIn('id', $matchedItems[PurchaseOrder::class]);
                     if (!$isAdmin) {
                         if ($isCraftsman) {
                             $poQuery->where('allocated_craftsman_code', $craftsmanCode);
@@ -145,31 +155,46 @@ class GlobalSearchController extends Controller
                             $poQuery->where('id', 0); // Buyers don't see POs
                         }
                     }
-                    $results['purchase_orders'] = $poQuery->get();
+                    $results['purchase_orders'] = $poQuery->paginate($perPage, ['*'], 'purchase_orders_page')->withQueryString();
                 }
 
                 if (isset($matchedItems[Product::class])) {
-                    $prodQuery = Product::whereIn('id', $matchedItems[Product::class]);
+                    $prodQuery = Product::select('id', 'product_name', 'product_code', 'design_code', 'product_image')->whereIn('id', $matchedItems[Product::class]);
                     if (!$isAdmin) {
                         if ($isCraftsman) {
-                            $prodQuery->where('craftman_code', $craftsmanCode);
+                            $prodQuery->where('bp_code', $craftsmanCode);
                         } elseif ($isBuyer) {
                             $prodQuery->where('bp_code', $buyerCode);
                         } else {
                             $prodQuery->where('id', 0);
                         }
                     }
-                    $results['products'] = $prodQuery->get();
+                    $results['products'] = $prodQuery->paginate($perPage, ['*'], 'products_page')->withQueryString();
                 }
 
                 if (isset($matchedItems[Design::class])) {
-                    $designQuery = Design::whereIn('id', $matchedItems[Design::class]);
-                    $results['designs'] = $designQuery->get();
+                    $designQuery = Design::select('id', 'design_code', 'design_name', 'image')->whereIn('id', $matchedItems[Design::class]);
+                    $results['designs'] = $designQuery->paginate($perPage, ['*'], 'designs_page')->withQueryString();
                 }
 
-                if (isset($matchedItems[Catalogue::class])) {
-                    $catQuery = Catalogue::whereIn('id', $matchedItems[Catalogue::class]);
-                    $results['catalogues'] = $catQuery->get();
+
+
+                if (isset($matchedItems[Repair::class])) {
+                    $repQuery = Repair::select('id', 'order_no', 'product_name', 'image_proof')->whereIn('id', $matchedItems[Repair::class]);
+                    if (!$isAdmin) {
+                        if ($isCraftsman) {
+                            $repQuery->whereHas('craftsman', function($q) use ($craftsmanCode) {
+                                $q->where('craftman_code', $craftsmanCode);
+                            });
+                        } elseif ($isBuyer) {
+                            $repQuery->whereHas('buyer', function($q) use ($buyerCode) {
+                                $q->where('bp_code', $buyerCode);
+                            });
+                        } else {
+                            $repQuery->where('id', 0);
+                        }
+                    }
+                    $results['repairs'] = $repQuery->paginate($perPage, ['*'], 'repairs_page')->withQueryString();
                 }
 
             } catch (\Exception $e) {
@@ -180,7 +205,7 @@ class GlobalSearchController extends Controller
             // TEXT SEARCH
             
             // Work Orders
-            $woQuery = WorkOrder::query()
+            $woQuery = WorkOrder::query()->select('id', 'work_order_number', 'product_name', 'design_code', 'product_image', 'status')
                 ->where(function($q) use ($query) {
                     $q->where('work_order_number', 'LIKE', "%{$query}%")
                       ->orWhere('product_name', 'LIKE', "%{$query}%")
@@ -190,15 +215,15 @@ class GlobalSearchController extends Controller
                 if ($isCraftsman) {
                     $woQuery->where('allocated_craftsman_bp_code', $craftsmanCode);
                 } elseif ($isBuyer) {
-                    $woQuery->where('buyer_bp_code', $buyerCode);
+                    $woQuery->where('bp_code', $buyerCode);
                 } else {
                     $woQuery->where('id', 0);
                 }
             }
-            $results['work_orders'] = $woQuery->limit(20)->get();
+            $results['work_orders'] = $woQuery->paginate($perPage, ['*'], 'work_orders_page')->withQueryString();
 
             // Purchase Orders
-            $poQuery = PurchaseOrder::query()
+            $poQuery = PurchaseOrder::query()->select('id', 'purchase_order_code', 'notes', 'status', 'items')
                 ->where(function($q) use ($query) {
                     $q->where('purchase_order_code', 'LIKE', "%{$query}%")
                       ->orWhere('notes', 'LIKE', "%{$query}%");
@@ -210,10 +235,10 @@ class GlobalSearchController extends Controller
                     $poQuery->where('id', 0);
                 }
             }
-            $results['purchase_orders'] = $poQuery->limit(20)->get();
+            $results['purchase_orders'] = $poQuery->paginate($perPage, ['*'], 'purchase_orders_page')->withQueryString();
 
             // Products
-            $prodQuery = Product::query()
+            $prodQuery = Product::query()->select('id', 'product_name', 'product_code', 'design_code', 'product_image')
                 ->where(function($q) use ($query) {
                     $q->where('product_name', 'LIKE', "%{$query}%")
                       ->orWhere('product_code', 'LIKE', "%{$query}%")
@@ -221,25 +246,27 @@ class GlobalSearchController extends Controller
                 });
             if (!$isAdmin) {
                 if ($isCraftsman) {
-                    $prodQuery->where('craftman_code', $craftsmanCode);
+                    $prodQuery->where('bp_code', $craftsmanCode);
                 } elseif ($isBuyer) {
                     $prodQuery->where('bp_code', $buyerCode);
                 } else {
                     $prodQuery->where('id', 0);
                 }
             }
-            $results['products'] = $prodQuery->limit(20)->get();
+            $results['products'] = $prodQuery->paginate($perPage, ['*'], 'products_page')->withQueryString();
 
             // Designs
-            $designQuery = Design::query()
+            $designQuery = Design::query()->select('id', 'design_code', 'design_name', 'image')
                 ->where(function($q) use ($query) {
                     $q->where('design_code', 'LIKE', "%{$query}%")
                       ->orWhere('design_name', 'LIKE', "%{$query}%");
                 });
-            $results['designs'] = $designQuery->limit(20)->get();
+            $results['designs'] = $designQuery->paginate($perPage, ['*'], 'designs_page')->withQueryString();
+
+
 
             // Repairs
-            $repQuery = Repair::query()
+            $repQuery = Repair::query()->select('id', 'order_no', 'product_name', 'image_proof')
                 ->where(function($q) use ($query) {
                     $q->where('order_no', 'LIKE', "%{$query}%")
                       ->orWhere('product_name', 'LIKE', "%{$query}%");
@@ -257,7 +284,63 @@ class GlobalSearchController extends Controller
                     $repQuery->where('id', 0);
                 }
             }
-            $results['repairs'] = $repQuery->limit(20)->get();
+            $results['repairs'] = $repQuery->paginate($perPage, ['*'], 'repairs_page')->withQueryString();
+        }
+
+        foreach ($results as $key => $paginator) {
+            if ($paginator instanceof \Illuminate\Pagination\LengthAwarePaginator || $paginator instanceof \Illuminate\Pagination\Paginator) {
+                $paginator->getCollection()->transform(function ($item) {
+                    $item->makeHidden([
+                        'creator_details', 
+                        'approver_details', 
+                        'allocator_details', 
+                        'items_with_image_urls', 
+                        'rejected_items_with_image_urls',
+                        'gallery_images'
+                    ]);
+                    
+                    if (isset($item->product_image)) {
+                        $item->product_image = $this->getFullImageUrl($item->product_image);
+                        $item->product_image_url = $item->product_image;
+                    }
+
+                    $poImage = $item->image ?? null;
+
+                    $itemsArray = $item->items;
+                    if (is_string($itemsArray)) {
+                        $itemsArray = json_decode($itemsArray, true);
+                    }
+                    if (is_array($itemsArray)) {
+                        foreach ($itemsArray as $poItem) {
+                            if (!empty($poItem['image'])) {
+                                $poImage = $poItem['image'];
+                                break;
+                            } elseif (!empty($poItem['product_image'])) {
+                                $poImage = $poItem['product_image'];
+                                break;
+                            } elseif (!empty($poItem['product_id'])) {
+                                $product = \App\Models\Product::find($poItem['product_id']);
+                                if ($product && !empty($product->product_image)) {
+                                    $poImage = $product->product_image;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    $item->image = $this->getFullImageUrl($poImage);
+                    $item->image_url = $item->image;
+                    if (isset($item->design_image)) {
+                        $item->design_image = $this->getFullImageUrl($item->design_image);
+                        $item->design_image_url = $item->design_image;
+                    }
+                    if (isset($item->image_proof)) {
+                        $item->image_proof = $this->getFullImageUrl($item->image_proof);
+                        $item->image_proof_url = $item->image_proof;
+                    }
+                    return $item;
+                });
+            }
         }
 
         return response()->json([
