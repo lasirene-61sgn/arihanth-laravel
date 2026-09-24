@@ -820,7 +820,8 @@
         
         fetch(`/key-user/product/get-subcategories?category_id=${categoryId}`)
             .then(response => response.json())
-            .then(list => {
+            .then(data => {
+                    let list = data.subcategories || data;
                 list.forEach(sub => {
                     const opt = document.createElement('option');
                     opt.value = sub.id;

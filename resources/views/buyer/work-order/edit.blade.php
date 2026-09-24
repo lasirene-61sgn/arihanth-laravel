@@ -350,8 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 subcategorySelect.value = subcategoryName;
                 subcategoryContainer.style.display = 'block';
-            } else {
-                subcategoryContainer.style.display = 'none';
             }
             
             typeSelect.value = selectedOption.dataset.type;

@@ -293,6 +293,10 @@ class ProductController extends Controller
 
         $data = $validated;
         $data['bp_code'] = $validated['bp_code'] ?? $validated['craftsman_code'] ?? $product->bp_code;
+        if (array_key_exists('subcategory_id', $data)) {
+            $data['product_subcategory_id'] = $data['subcategory_id'];
+            unset($data['subcategory_id']);
+        }
         unset($data['craftsman_code']);
 
         $product->update($data);

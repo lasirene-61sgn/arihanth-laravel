@@ -112,6 +112,7 @@
             fetch(`/craftsman/product/category/${categoryId}/subcategories`)
                 .then(response => response.json())
                 .then(subcategories => {
+                    subcategoryContainer.style.display = "";
                     if (subcategories.length > 0) {
                         subcategoryContainer.style.display = 'block';
                         subcategories.forEach(subcategory => {
@@ -126,8 +127,6 @@
                         if (originalValue) {
                             subcategorySelect.value = originalValue;
                         }
-                    } else {
-                        subcategoryContainer.style.display = 'none';
                     }
                 })
                 .catch(error => {

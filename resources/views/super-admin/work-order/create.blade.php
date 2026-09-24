@@ -527,7 +527,9 @@
             
             return fetch(`{{ url('/super-admin/product/get-subcategories') }}?category_id=${categoryId}`)
                 .then(response => response.ok ? response.json() : [])
-                .then(list => {
+                .then(data => {
+                    let list = data.subcategories || data;
+                    subcategoryContainer.style.display = "";
                     if (list.length > 0) {
                         subcategoryContainer.style.display = 'block';
                         list.forEach(sub => {
@@ -540,8 +542,6 @@
                             li.dataset.value = sub.id; li.textContent = sub.name;
                             listContainer.appendChild(li);
                         });
-                    } else {
-                        subcategoryContainer.style.display = 'none';
                     }
                     return list;
                 })

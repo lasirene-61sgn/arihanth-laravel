@@ -439,7 +439,9 @@
             }
             fetch(`{{ url('/admin/product/get-subcategories') }}?category_id=${categoryId}`)
                 .then(r => r.json())
-                .then(list => {
+                .then(data => {
+                    let list = data.subcategories || data;
+                    subcategoryContainer.style.display = "";
                     if (list.length > 0) {
                         subcategoryContainer.style.display = '';
                         list.forEach(s => {
@@ -448,8 +450,6 @@
                             if (s.id == '{{ old('product_subcategory_id', $product->product_subcategory_id) }}') opt.selected = true;
                             subcategorySelect.appendChild(opt);
                         });
-                    } else {
-                        subcategoryContainer.style.display = 'none';
                     }
                     subcategoryDropdown.refresh();
                 });

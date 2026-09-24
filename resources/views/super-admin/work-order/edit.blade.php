@@ -674,6 +674,7 @@
                 .then(response => response.ok ? response.json() : [])
                 .then(data => {
                     const list = Array.isArray(data) ? data : (data.subcategories || []);
+                    subcategoryContainer.style.display = "";
                     if (list.length > 0) {
                         subcategoryContainer.style.display = '';
                         list.forEach(sub => {

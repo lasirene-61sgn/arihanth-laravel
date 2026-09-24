@@ -329,7 +329,9 @@
             
             fetch(`{{ url('/user/product/get-subcategories') }}?category_id=${categoryId}`)
                 .then(r => r.json())
-                .then(list => {
+                .then(data => {
+                    let list = data.subcategories || data;
+                    subcategoryContainer.style.display = "";
                     if (list.length > 0) {
                         subcategoryContainer.style.display = 'block';
                         list.forEach(s => {
@@ -343,8 +345,6 @@
                             
                             subcategorySelect.appendChild(opt);
                         });
-                    } else {
-                        subcategoryContainer.style.display = 'none';
                     }
                 });
         }

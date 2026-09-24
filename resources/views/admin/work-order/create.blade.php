@@ -527,6 +527,7 @@
                 .then(response => response.ok ? response.json() : [])
                 .then(data => {
                     const list = Array.isArray(data) ? data : (data.subcategories || []);
+                    subcategoryContainer.style.display = "";
                     if (list.length > 0) {
                         subcategoryContainer.style.display = '';
                         list.forEach(sub => {
@@ -539,8 +540,6 @@
                             li.dataset.value = sub.id; li.textContent = sub.name;
                             listContainer.appendChild(li);
                         });
-                    } else {
-                        subcategoryContainer.style.display = 'none';
                     }
                     return list;
                 })
