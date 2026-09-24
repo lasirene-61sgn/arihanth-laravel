@@ -342,6 +342,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
 
     // Dashboard Stats- Role-based statistics for all panels
    Route::get('/dashboard/stats', [\App\Http\Controllers\API\Common\DashboardController::class, 'getDashboardStats'])->name('dashboard.stats');
+   Route::get('/dashboard/details', [\App\Http\Controllers\API\Common\DashboardDetailsController::class, 'index'])->name('dashboard.details');
 
     // Global Search (Text & Image)
     Route::get('/global-search', [\App\Http\Controllers\API\Common\GlobalSearchController::class, 'search'])->name('global-search');
@@ -467,6 +468,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::post('/designs/{id}', [\App\Http\Controllers\API\Common\DesignController::class, 'update'])->name('designs.update')->where('id', '[0-9]+');
     Route::post('/designs/{id}/accept', [\App\Http\Controllers\API\Common\DesignController::class, 'accept'])->name('designs.accept')->where('id', '[0-9]+');
     Route::post('/designs/{id}/reject', [\App\Http\Controllers\API\Common\DesignController::class, 'reject'])->name('designs.reject')->where('id', '[0-9]+');
+    Route::post('/designs/bulk-favourite', [\App\Http\Controllers\API\Common\DesignController::class, 'bulkFavourite'])->name('designs.bulk-favourite');
     Route::post('/designs/{id}/favourite', [\App\Http\Controllers\API\Common\DesignController::class, 'favourite'])->name('designs.favourite')->where('id', '[0-9]+');
 
     // --- Catalogue ---

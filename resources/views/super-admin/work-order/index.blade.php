@@ -2136,6 +2136,15 @@
                                                     <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors" title="View">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
+                                                    <form action="{{ route('super-admin.work-order.complete', $order) }}" method="POST" class="tw-inline-block">
+                                                        @csrf
+                                                        <button type="submit" class="tw-p-2 tw-text-emerald-600 hover:tw-bg-emerald-50 tw-rounded-lg tw-transition-colors" title="Complete" onclick="return confirm('Are you sure you want to complete this order?');">
+                                                            <i class="bi bi-check2-circle"></i>
+                                                        </button>
+                                                    </form>
+                                                    <a href="{{ route('super-admin.work-order.reallocate.form', $order) }}" class="tw-p-2 tw-text-orange-600 hover:tw-bg-orange-50 tw-rounded-lg tw-transition-colors" title="Reallocate">
+                                                        <i class="bi bi-arrow-repeat"></i>
+                                                    </a>
                                                 </div>
                                             </td>
                                             </tr>

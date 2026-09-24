@@ -88,9 +88,11 @@
             </nav>
         </div>
         <div>
+            @if(auth('buyer')->user()->hasPermission('wo_create'))
             <a href="{{ route('buyer.work-order.create') }}" class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-all duration-200">
                 <i class="bi bi-plus-lg mr-2"></i> Create Work Order
             </a>
+            @endif
         </div>
     </div>
 
@@ -332,11 +334,13 @@
                                                         <i class="bi bi-eye text-lg"></i>
                                                     </a> -->
 
-                                                @if($id === 'new-orders' || $id === 'rejected-orders')
-                                                <a href="{{ route('buyer.work-order.edit', $workOrder) }}"
-                                                    class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-colors" title="Edit">
-                                                    <i class="bi bi-pencil-square text-lg"></i>
-                                                </a>
+                                                @if(auth('buyer')->user()->hasPermission('wo_edit'))
+                                                    @if($id === 'new-orders' || $id === 'rejected-orders')
+                                                    <a href="{{ route('buyer.work-order.edit', $workOrder) }}"
+                                                        class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-colors" title="Edit">
+                                                        <i class="bi bi-pencil-square text-lg"></i>
+                                                    </a>
+                                                    @endif
                                                 @endif
 
                                                 <!-- <a href="{{ route('buyer.work-order.print', $workOrder) }}"
@@ -349,17 +353,19 @@
                                                     <i class="bi bi-eye text-lg"></i>
                                                 </a>
 
-                                                @if($id === 'new-orders')
-                                                <form action="{{ route('buyer.work-order.destroy', $workOrder) }}"
-                                                    method="POST"
-                                                    class="inline"
-                                                    onsubmit="return confirm('Are you sure you want to delete this work order?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
-                                                        <i class="bi bi-trash text-lg"></i>
-                                                    </button>
-                                                </form>
+                                                @if(auth('buyer')->user()->hasPermission('wo_edit'))
+                                                    @if($id === 'new-orders')
+                                                    <form action="{{ route('buyer.work-order.destroy', $workOrder) }}"
+                                                        method="POST"
+                                                        class="inline"
+                                                        onsubmit="return confirm('Are you sure you want to delete this work order?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
+                                                            <i class="bi bi-trash text-lg"></i>
+                                                        </button>
+                                                    </form>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </td>

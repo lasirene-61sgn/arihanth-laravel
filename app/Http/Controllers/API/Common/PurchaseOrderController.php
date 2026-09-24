@@ -336,6 +336,11 @@ class PurchaseOrderController extends Controller
                 $po->setAttribute('color_key', $colorData['color_key']);
                 $po->setAttribute('color_hex', $colorData['color_hex']);
 
+                if ($this->isCraftsman($user)) {
+                    $po->setAttribute('can_accept', $this->checkPermission($user, 'po_accept'));
+                    $po->setAttribute('can_reject', $this->checkPermission($user, 'po_reject'));
+                }
+
                 return $po;
             });
 
@@ -350,7 +355,7 @@ class PurchaseOrderController extends Controller
         $purchaseOrders = $query->paginate($perPage)->withQueryString();
 
         // Process items to include full image URLs and additional fields for all purchase orders
-        $purchaseOrders->getCollection()->transform(function ($po) use ($tab) {
+        $purchaseOrders->getCollection()->transform(function ($po) use ($tab, $user) {
             $po->items = $this->resolvePurchaseOrderItems($po->items ?? [], null, $po->notes);
             if (!empty($po->rejected_items)) {
                 $po->rejected_items = $this->resolvePurchaseOrderItems($po->rejected_items, null, $po->notes);
@@ -374,6 +379,11 @@ class PurchaseOrderController extends Controller
             $colorData = $this->calculatePurchaseOrderColors($po);
             $po->setAttribute('color_key', $colorData['color_key']);
             $po->setAttribute('color_hex', $colorData['color_hex']);
+
+            if ($this->isCraftsman($user)) {
+                $po->setAttribute('can_accept', $this->checkPermission($user, 'po_accept'));
+                $po->setAttribute('can_reject', $this->checkPermission($user, 'po_reject'));
+            }
 
             return $po;
         });
@@ -429,6 +439,11 @@ class PurchaseOrderController extends Controller
 
         // Add dynamic status colors for Admin & Craftsman roles
         $colorData = $this->calculatePurchaseOrderColors($purchaseOrder);
+
+        if ($this->isCraftsman($user)) {
+            $data['can_accept'] = $this->checkPermission($user, 'po_accept');
+            $data['can_reject'] = $this->checkPermission($user, 'po_reject');
+        }
 
         return response()->json([
             'success' => true,

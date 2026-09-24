@@ -446,10 +446,14 @@ class DesignController extends Controller
             $userType = 'buyer';
         } elseif ($this->isCraftsman($user)) {
             $userType = 'craftsman';
+        } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+            $userType = 'craftsman_staff';
+        } elseif ($this->isKeyUser($user)) {
+            $userType = 'key_user';
         }
 
         if (!$userType) {
-            return response()->json(['success' => false, 'message' => 'Only buyers and craftsmen can favourite designs'], 403);
+            return response()->json(['success' => false, 'message' => 'Only buyers, craftsmen, craftsman staff, and key users can favourite designs'], 403);
         }
 
         $product = Product::find($id);
@@ -475,14 +479,20 @@ class DesignController extends Controller
         if ($product->isDesignLocked($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'This design is currently locked and cannot be added to favorites.'
+                'message' => 'This design is currently locked and cannot be added to favorites Contact Arihanth'
             ], 403);
+        }
+
+        $designName = $request->input('design_name');
+        if (empty($designName)) {
+            return response()->json(['success' => false, 'message' => 'Collection name (design_name) is required'], 400);
         }
 
         $favorite = \App\Models\Favorite::create([
             'user_id'    => $user->id,
             'user_type'  => $userType,
             'product_id' => $id,
+            'design_name'=> $request->input('design_name'),
         ]);
 
         return response()->json([
@@ -490,6 +500,91 @@ class DesignController extends Controller
             'is_favorite' => true,
             'message'     => 'Design added to favourites',
             'data'        => $favorite,
+        ]);
+    }
+
+    /**
+     * Bulk add designs to favourites.
+     */
+    public function bulkFavourite(Request $request)
+    {
+        $user = $request->user();
+
+        $userType = null;
+        if ($user instanceof Buyer) {
+            $userType = 'buyer';
+        } elseif ($this->isCraftsman($user)) {
+            $userType = 'craftsman';
+        } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+            $userType = 'craftsman_staff';
+        } elseif ($this->isKeyUser($user)) {
+            $userType = 'key_user';
+        }
+
+        if (!$userType) {
+            return response()->json(['success' => false, 'message' => 'Only buyers, craftsmen, craftsman staff, and key users can favourite designs'], 403);
+        }
+
+        $ids = $request->input('ids');
+        if (!is_array($ids) || empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'No design IDs provided'], 400);
+        }
+
+        $designName = $request->input('design_name');
+        if (empty($designName)) {
+            return response()->json(['success' => false, 'message' => 'Collection name (design_name) is required'], 400);
+        }
+        foreach ($ids as $productId) {
+            $product = Product::find($productId);
+            if ($product && method_exists($product, 'isDesignLocked') && $product->isDesignLocked($user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You selected locked design to favorite unselecte the locked design'
+                ], 403);
+            }
+        }
+
+        $designName = $request->input('design_name');
+        
+        $added = 0;
+        $failedIds = [];
+
+        foreach ($ids as $productId) {
+            $product = Product::find($productId);
+
+            if (!$product) {
+                $failedIds[] = $productId;
+                continue;
+            }
+
+            $existing = \App\Models\Favorite::where('user_id', $user->id)
+                ->where('user_type', $userType)
+                ->where('product_id', $productId)
+                ->first();
+
+            if (!$existing) {
+                \App\Models\Favorite::create([
+                    'user_id'    => $user->id,
+                    'user_type'  => $userType,
+                    'product_id' => $productId,
+                    'design_name'=> $designName,
+                ]);
+                $added++;
+            } else if ($designName) {
+                $existing->update(['design_name' => $designName]);
+                $added++;
+            }
+        }
+
+        $message = "Successfully added {$added} designs to favourites";
+        if ($designName) {
+            $message .= " under the Collections name '{$designName}'";
+        }
+
+        return response()->json([
+            'success'     => true,
+            'message'     => $message,
+            'failed_ids'  => $failedIds
         ]);
     }
 

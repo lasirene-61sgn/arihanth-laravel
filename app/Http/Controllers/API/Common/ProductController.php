@@ -254,6 +254,13 @@ class ProductController extends Controller
         // ── Print (full data, no pagination) ──
         if ($request->has('print')) {
             $products = $query->get();
+            $products->transform(function ($product) use ($user) {
+                if ($this->isCraftsman($user)) {
+                    $product->can_create = $this->checkPermission($user, 'product_create');
+                    $product->can_edit = $this->checkPermission($user, 'product_edit');
+                }
+                return $product;
+            });
 
             return response()->json([
                 'success' => true,
@@ -262,9 +269,19 @@ class ProductController extends Controller
         }
 
         // ── Paginated list ──
+        $products = $query->paginate($request->get('per_page', 15));
+        
+        $products->getCollection()->transform(function ($product) use ($user) {
+            if ($this->isCraftsman($user)) {
+                $product->can_create = $this->checkPermission($user, 'product_create');
+                $product->can_edit = $this->checkPermission($user, 'product_edit');
+            }
+            return $product;
+        });
+
         return response()->json([
             'success' => true,
-            'data'    => $query->paginate($request->get('per_page', 15))
+            'data'    => $products
         ]);
     }
 
@@ -294,6 +311,11 @@ class ProductController extends Controller
 
         if (!$product) {
             return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        }
+
+        if ($this->isCraftsman($user)) {
+            $product->can_create = $this->checkPermission($user, 'product_create');
+            $product->can_edit = $this->checkPermission($user, 'product_edit');
         }
 
         return response()->json(['success' => true, 'data' => $product]);

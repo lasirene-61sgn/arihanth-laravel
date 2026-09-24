@@ -194,6 +194,8 @@ class Buyer extends Authenticatable
             'design',
             'catalogue',
             'work_order',
+            'wo_create',
+            'wo_edit',
             'stock_order',
             'repairs',
             'favorites',

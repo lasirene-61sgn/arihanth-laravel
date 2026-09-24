@@ -199,9 +199,13 @@ class RepairController extends Controller
         if ($request->has('print')) {
             $repairs = $query->get();
             // Resolve full image URLs
-            $repairs->transform(function ($repair) {
+            $repairs->transform(function ($repair) use ($user) {
                 if ($repair->image_proof) {
                     $repair->image_proof_url = asset($repair->image_proof);
+                }
+                if ($this->isCraftsman($user)) {
+                    $repair->can_accept = $this->checkPermission($user, 'repair_accept');
+                    $repair->can_reject = $this->checkPermission($user, 'repair_reject');
                 }
                 return $repair;
             });
@@ -213,9 +217,13 @@ class RepairController extends Controller
 
         // ── Paginated Response ──
         $repairs = $query->paginate($perPage);
-        $repairs->getCollection()->transform(function ($repair) {
+        $repairs->getCollection()->transform(function ($repair) use ($user) {
             if ($repair->image_proof) {
                 $repair->image_proof_url = asset($repair->image_proof);
+            }
+            if ($this->isCraftsman($user)) {
+                $repair->can_accept = $this->checkPermission($user, 'repair_accept');
+                $repair->can_reject = $this->checkPermission($user, 'repair_reject');
             }
             return $repair;
         });
@@ -251,6 +259,11 @@ class RepairController extends Controller
 
         if ($repair->image_proof) {
             $repair->image_proof_url = asset($repair->image_proof);
+        }
+
+        if ($this->isCraftsman($user)) {
+            $repair->can_accept = $this->checkPermission($user, 'repair_accept');
+            $repair->can_reject = $this->checkPermission($user, 'repair_reject');
         }
 
         return response()->json(['success' => true, 'data' => $repair]);

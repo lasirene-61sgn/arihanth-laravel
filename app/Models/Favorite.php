@@ -40,6 +40,8 @@ class Favorite extends Model
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
             'buyer' => \App\Models\Buyer::class,
             'craftsman' => \App\Models\Craftman::class,
+            'craftsman_staff' => \App\Models\CraftsmanStaff::class,
+            'key_user' => \App\Models\KeyUser::class,
         ]);
     }
 }

@@ -133,7 +133,7 @@
                                     </div>
                                 </div>
                                 <!-- Permissions Section -->
-                                <div class="row">
+                                <!-- <div class="row">
                                     <div class="col-md-12">
                                         <div class="mb-3">
                                             <label class="form-label">{{ __('messages.permissions') }}</label>
@@ -152,7 +152,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                             
                             <!-- Address Information Tab -->
@@ -733,6 +733,36 @@
                                                     <hr>
                                                 </div>
                                             @endforelse
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Permissions Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border border-info">
+                                    <div class="card-header bg-light">
+                                        <h4 class="mb-0">Craftsman Permissions</h4>
+                                        <small class="text-muted">Select modules access</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            @foreach(App\Models\Craftman::getAllPermissions() as $permission)
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" 
+                                                               type="checkbox" 
+                                                               name="permissions[]" 
+                                                               value="{{ $permission }}" 
+                                                               id="permission_{{ $permission }}"
+                                                               {{ in_array($permission, old('permissions', $craftman->getPermissionsArray())) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="permission_{{ $permission }}">
+                                                            {{ ucfirst(str_replace('_', ' ', $permission)) }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 </div>

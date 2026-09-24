@@ -164,6 +164,12 @@ class WorkOrderController extends Controller
         $workOrderData['gallery_images'] = array_values(array_unique($allImages));
         $workOrderData['images'] = array_values(array_unique($allImages));
 
+        // ── Attach permissions for Craftsman/Staff ──
+        if ($user && $this->isCraftsman($user)) {
+            $workOrderData['can_accept'] = $this->checkPermission($user, 'wo_accept');
+            $workOrderData['can_reject'] = $this->checkPermission($user, 'wo_reject');
+        }
+
         return $workOrderData;
     }
 
@@ -466,11 +472,42 @@ class WorkOrderController extends Controller
         $workOrders = $query->paginate($perPage, ['*'], 'page')->withQueryString();
         $workOrders->getCollection()->transform(fn($wo) => $this->transformWorkOrderResponse($wo));
 
-        return response()->json([
+        $globalPermissions = [
+            'can_create' => $this->checkPermission($user, 'wo_create') && !$this->isCraftsman($user),
+            'can_edit' => $this->checkPermission($user, 'wo_edit') && !$this->isCraftsman($user),
+            'can_bulk_allocate' => $this->isAdmin($user) || $this->checkPermission($user, 'wo_allocate'),
+            'can_bulk_accept' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_accept'),
+            'can_bulk_reject' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_reject'),
+            'can_bulk_complete' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete'),
+            'can_approve' => $this->isAdmin($user),
+            'can_reallocate' => $this->isAdmin($user),
+            'can_complete' => $this->isAdmin($user) || ($this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete')),
+        ];
+        
+        $availableTabs = [];
+        if ($this->isAdmin($user) || $this->isBuyerSide($user)) {
+             $availableTabs = ['new-orders', 'allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders', 'all-orders'];
+        } else if ($this->isCraftsman($user)) {
+             $availableTabs = ['allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders'];
+        }
+
+        $paginatedData = $workOrders->toArray();
+
+        // Only include metadata if not specifically requesting a tab (e.g. initial load)
+        if (!$request->has('tab')) {
+            $paginatedData = array_merge([
+                'counts' => $counts,
+                'global_permissions' => $globalPermissions,
+                'available_tabs' => $availableTabs,
+            ], $paginatedData);
+        }
+
+        $response = [
             'success' => true,
-            'counts'  => $counts,
-            'data'    => $workOrders
-        ]);
+            'data'    => $paginatedData
+        ];
+
+        return response()->json($response);
     }
 
     // =========================================================================

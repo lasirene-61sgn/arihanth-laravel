@@ -48,6 +48,9 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="bank-tab" data-bs-toggle="tab" data-bs-target="#bank" type="button" role="tab">Bank Details</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions" type="button" role="tab">Permissions</button>
+                    </li>
                 </ul>
 
                 <div class="tab-content" id="buyerTabsContent">
@@ -420,15 +423,39 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Permissions Tab -->
+                        <div class="tab-pane fade" id="permissions" role="tabpanel">
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <h5>{{ __('messages.buyer_permissions') }}</h5>
+                                    <div class="row">
+                                        @foreach(App\Models\Buyer::getAllPermissions() as $permission)
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" 
+                                                           type="checkbox" 
+                                                           name="permissions[]" 
+                                                           value="{{ $permission }}" 
+                                                           id="permission_{{ $permission }}"
+                                                           checked>
+                                                    <label class="form-check-label" for="permission_{{ $permission }}">
+                                                        {{ ucfirst(str_replace('_', ' ', $permission)) }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ route('admin.business-partner.buyer') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Create Buyer</button>
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ route('admin.business-partner.buyer') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Buyer</button>
+                        </div>
                     </div>
-                </div>
             </form>
         </div>
     </div>

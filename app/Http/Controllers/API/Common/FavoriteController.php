@@ -21,7 +21,7 @@ class FavoriteController extends Controller
         $userType = $this->getUserType($user);
 
         if (!$userType) {
-            return response()->json(['success' => false, 'message' => 'Only buyers and craftsmen can have favorites'], 403);
+            return response()->json(['success' => false, 'message' => 'Only buyers, craftsmen, craftsman staff, and key users can have favorites'], 403);
         }
 
         $favorites = Favorite::where('user_id', $user->id)
@@ -62,7 +62,7 @@ class FavoriteController extends Controller
         $userType = $this->getUserType($user);
 
         if (!$userType) {
-            return response()->json(['success' => false, 'message' => 'Only buyers and craftsmen can add favorites'], 403);
+            return response()->json(['success' => false, 'message' => 'Only buyers, craftsmen, craftsman staff, and key users can add favorites'], 403);
         }
 
         $product = Product::findOrFail($request->product_id);
@@ -84,6 +84,7 @@ class FavoriteController extends Controller
         if ($favorite) {
             if ($designName && $favorite->design_name !== $designName) {
                 $favorite->update(['design_name' => $designName]);
+                return response()->json(['success' => true, 'message' => 'Design name updated in favorites', 'data' => $favorite]);
             }
             return response()->json(['success' => false, 'message' => 'Design is already in your favorites', 'data' => $favorite]);
         }
@@ -118,7 +119,7 @@ class FavoriteController extends Controller
         $userType = $this->getUserType($user);
 
         if (!$userType) {
-            return response()->json(['success' => false, 'message' => 'Only buyers and craftsmen can favourite designs'], 403);
+            return response()->json(['success' => false, 'message' => 'Only buyers, craftsmen, craftsman staff, and key users can favourite designs'], 403);
         }
 
         $existing = Favorite::where('user_id', $user->id)
@@ -253,6 +254,10 @@ class FavoriteController extends Controller
             return 'buyer';
         } elseif ($user instanceof Craftman || ($user->role ?? '') === 'craftsman') {
             return 'craftsman';
+        } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+            return 'craftsman_staff';
+        } elseif (($user->role ?? '') === 'key_user' || $user instanceof \App\Models\KeyUser) {
+            return 'key_user';
         }
 
         return null;
