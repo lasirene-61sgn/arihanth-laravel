@@ -30,9 +30,21 @@ class FavoriteController extends Controller
             ->latest()
             ->paginate($request->get('per_page', 15));
 
+        $favoritesArray = $favorites->toArray();
+
+        // Override the locked status since favorited products should be viewable
+        foreach ($favoritesArray['data'] as &$favorite) {
+            if (isset($favorite['product'])) {
+                $favorite['product']['is_design_locked'] = false;
+                $favorite['product']['is_locked'] = 0;
+                $favorite['product']['design_name'] = $favorite['design_name'] ?? null;
+            }
+            unset($favorite['design_name']);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $favorites
+            'data' => $favoritesArray
         ]);
     }
 
@@ -43,6 +55,7 @@ class FavoriteController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
+            'design_name' => 'nullable|string|max:255',
         ]);
 
         $user = $request->user();
@@ -52,20 +65,34 @@ class FavoriteController extends Controller
             return response()->json(['success' => false, 'message' => 'Only buyers and craftsmen can add favorites'], 403);
         }
 
+        $product = Product::findOrFail($request->product_id);
+        if ($product->isDesignLocked($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This design is currently locked and cannot be added to favorites.'
+            ], 403);
+        }
+
         // Check if already favorited
         $favorite = Favorite::where('user_id', $user->id)
             ->where('user_type', $userType)
             ->where('product_id', $request->product_id)
             ->first();
 
+        $designName = filled($request->design_name) ? trim($request->design_name) : null;
+
         if ($favorite) {
-            return response()->json(['success' => false, 'message' => 'Design is already in your favorites']);
+            if ($designName && $favorite->design_name !== $designName) {
+                $favorite->update(['design_name' => $designName]);
+            }
+            return response()->json(['success' => false, 'message' => 'Design is already in your favorites', 'data' => $favorite]);
         }
 
         $favorite = Favorite::create([
             'user_id' => $user->id,
             'user_type' => $userType,
             'product_id' => $request->product_id,
+            'design_name' => $designName,
         ]);
 
         return response()->json([
@@ -84,6 +111,7 @@ class FavoriteController extends Controller
         $request->merge(['product_id' => $productId]);
         $request->validate([
             'product_id' => 'required|exists:products,id',
+            'design_name' => 'nullable|string|max:255',
         ]);
 
         $user     = $request->user();
@@ -107,10 +135,21 @@ class FavoriteController extends Controller
             ]);
         }
 
+        $product = Product::findOrFail($productId);
+        if ($product->isDesignLocked($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This design is currently locked and cannot be added to favorites.'
+            ], 403);
+        }
+
+        $designName = filled($request->design_name) ? trim($request->design_name) : null;
+
         $favorite = Favorite::create([
             'user_id'    => $user->id,
             'user_type'  => $userType,
             'product_id' => $productId,
+            'design_name' => $designName,
         ]);
 
         return response()->json([

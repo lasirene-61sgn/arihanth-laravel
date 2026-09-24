@@ -484,6 +484,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
 
     // --- Craftsman Staff ---
     Route::get('/craftsman-staff', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'index'])->name('craftsman-staff.index');
+    Route::get('/craftsman-staff/generate-pdf', [App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'generatePdf']);
     Route::post('/craftsman-staff', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'store'])->name('craftsman-staff.store');
     Route::get('/craftsman-staff/{id}', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'show'])->name('craftsman-staff.show')->where('id', '[0-9]+');
     Route::post('/craftsman-staff/{id}', [\App\Http\Controllers\API\Common\CraftsmanStaffController::class, 'update'])->name('craftsman-staff.update')->where('id', '[0-9]+');

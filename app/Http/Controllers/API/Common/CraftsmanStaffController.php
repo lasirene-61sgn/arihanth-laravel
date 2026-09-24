@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use App\Models\CraftsmanStaff;
 use App\Models\Craftman;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CraftsmanStaffController extends Controller
 {
@@ -183,27 +184,60 @@ class CraftsmanStaffController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        // If Admin is creating, they must provide a craftsman_id
-        if (is_null($craftsmanId) && !$request->filled('craftsman_id')) {
-            return response()->json(['message' => 'Craftsman ID is required for admin'], 422);
+        // If Admin is creating, they must provide a craftsman_id or code
+        $finalCraftsmanId = $craftsmanId;
+        if (is_null($craftsmanId)) {
+            if (!$request->filled('craftsman_id')) {
+                return response()->json(['message' => 'Craftsman ID or Code is required for admin'], 422);
+            }
+            $input = $request->craftsman_id;
+            $craftsman = \App\Models\Craftman::where('id', $input)->orWhere('craftman_code', $input)->first();
+            if (!$craftsman) {
+                return response()->json(['message' => 'Invalid Craftsman ID or Code'], 422);
+            }
+            $finalCraftsmanId = $craftsman->id;
         }
 
-        $finalCraftsmanId = $craftsmanId ?? $request->craftsman_id;
-
         $validator = Validator::make($request->all(), [
-            'staff_code' => 'required|string|unique:craftsman_staff,staff_code',
+            'staff_code' => 'nullable|string|unique:craftsman_staff,staff_code',
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:craftsman_staff,email',
             'mobile' => 'required|string|unique:craftsman_staff,mobile',
             'password' => 'required|string|min:8',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'aadhar_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'permissions' => 'array',
+            'permissions' => 'nullable',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $permissions = $request->input('permissions', $request->input('permission', []));
+        if (is_string($permissions)) {
+            $decoded = json_decode($permissions, true);
+            $permissions = json_last_error() === JSON_ERROR_NONE ? $decoded : array_filter(array_map('trim', explode(',', $permissions)));
+        }
+        $rawPerms = is_array($permissions) ? array_values($permissions) : [];
+        $mappedPerms = [];
+        foreach ($rawPerms as $perm) {
+            if ($perm === 'work_order') {
+                $mappedPerms = array_merge($mappedPerms, ['wo_view', 'wo_accept', 'wo_reject']);
+            } elseif ($perm === 'purchase_order') {
+                $mappedPerms = array_merge($mappedPerms, ['po_view', 'po_accept', 'po_reject']);
+            } elseif ($perm === 'product') {
+                $mappedPerms = array_merge($mappedPerms, ['product_view', 'product_create', 'product_edit']);
+            } elseif ($perm === 'design') {
+                $mappedPerms[] = 'design_view';
+            } elseif ($perm === 'catalogue') {
+                $mappedPerms[] = 'catalogue_view';
+            } elseif ($perm === 'repairs') {
+                $mappedPerms = array_merge($mappedPerms, ['repair_view', 'repair_accept', 'repair_reject']);
+            } else {
+                $mappedPerms[] = $perm;
+            }
+        }
+        $permissions = array_values(array_unique($mappedPerms));
 
         $data = [
             'craftsman_id' => $finalCraftsmanId,
@@ -214,7 +248,7 @@ class CraftsmanStaffController extends Controller
             'password' => bcrypt($request->password),
             'password_plain' => $request->password,
             'aadhar_number' => $request->aadhar_number,
-            'permissions' => $request->input('permissions', []),
+            'permissions' => $permissions,
             'is_active' => $request->input('is_active', 1),
         ];
 
@@ -291,14 +325,14 @@ class CraftsmanStaffController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'staff_code' => 'required|string|unique:craftsman_staff,staff_code,' . $staff->id,
+            'staff_code' => 'nullable|string|unique:craftsman_staff,staff_code,' . $staff->id,
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:craftsman_staff,email,' . $staff->id,
             'mobile' => 'required|string|unique:craftsman_staff,mobile,' . $staff->id,
             'password' => 'nullable|string|min:8',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'aadhar_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'permissions' => 'array',
+            'permissions' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -313,13 +347,47 @@ class CraftsmanStaffController extends Controller
             'aadhar_number' => $request->aadhar_number,
         ];
 
+        // If Admin is updating and provides craftsman_id or code
+        if (is_null($craftsmanId) && $request->filled('craftsman_id')) {
+            $input = $request->craftsman_id;
+            $craftsman = \App\Models\Craftman::where('id', $input)->orWhere('craftman_code', $input)->first();
+            if (!$craftsman) {
+                return response()->json(['message' => 'Invalid Craftsman ID or Code'], 422);
+            }
+            $updateData['craftsman_id'] = $craftsman->id;
+        }
+
         if ($request->has('password') && !empty($request->password)) {
             $updateData['password'] = bcrypt($request->password);
             $updateData['password_plain'] = $request->password;
         }
 
-        if ($request->has('permissions')) {
-            $updateData['permissions'] = $request->permissions;
+        if ($request->has('permissions') || $request->has('permission') || $request->has('name')) {
+            $permissions = $request->input('permissions', $request->input('permission', []));
+            if (is_string($permissions)) {
+                $decoded = json_decode($permissions, true);
+                $permissions = json_last_error() === JSON_ERROR_NONE ? $decoded : array_filter(array_map('trim', explode(',', $permissions)));
+            }
+            $rawPerms = is_array($permissions) ? array_values($permissions) : [];
+            $mappedPerms = [];
+            foreach ($rawPerms as $perm) {
+                if ($perm === 'work_order') {
+                    $mappedPerms = array_merge($mappedPerms, ['wo_view', 'wo_accept', 'wo_reject']);
+                } elseif ($perm === 'purchase_order') {
+                    $mappedPerms = array_merge($mappedPerms, ['po_view', 'po_accept', 'po_reject']);
+                } elseif ($perm === 'product') {
+                    $mappedPerms = array_merge($mappedPerms, ['product_view', 'product_create', 'product_edit']);
+                } elseif ($perm === 'design') {
+                    $mappedPerms[] = 'design_view';
+                } elseif ($perm === 'catalogue') {
+                    $mappedPerms[] = 'catalogue_view';
+                } elseif ($perm === 'repairs') {
+                    $mappedPerms = array_merge($mappedPerms, ['repair_view', 'repair_accept', 'repair_reject']);
+                } else {
+                    $mappedPerms[] = $perm;
+                }
+            }
+            $updateData['permissions'] = array_values(array_unique($mappedPerms));
         }
 
         if ($request->has('is_active')) {
@@ -367,5 +435,76 @@ class CraftsmanStaffController extends Controller
 
         $staff->delete();
         return response()->json(['success' => true, 'message' => 'Craftsman Staff deleted successfully']);
+    }
+
+    /**
+     * Generate PDF for selected or filtered craftsman staff
+     */
+    public function generatePdf(Request $request)
+    {
+        $user = $request->user();
+        $craftsmanId = $this->getScopeCraftsmanId($user);
+
+        if ($craftsmanId === -1) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $query = CraftsmanStaff::with('craftsman');
+
+        if ($craftsmanId) {
+            $query->where('craftsman_id', $craftsmanId);
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('staff_code', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->is_active);
+        }
+        if ($request->filled('craftsman_id')) {
+            $query->where('craftsman_id', $request->craftsman_id);
+        }
+        if ($request->filled('staff_code')) {
+            $query->where('staff_code', $request->staff_code);
+        }
+        if ($request->filled('mobile')) {
+            $query->where('mobile', $request->mobile);
+        }
+        if ($request->filled('email')) {
+            $query->where('email', $request->email);
+        }
+        if ($request->filled('name')) {
+            $query->where('name', $request->name);
+        }
+        
+        if ($request->filled('ids')) {
+            $ids = $request->ids;
+            if (is_string($ids)) {
+                $ids = explode(',', $ids);
+            }
+            if (is_array($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
+        $staffs = $query->orderBy('id', 'desc')->get();
+
+        // Using the correct Pdf facade import
+        $pdf = Pdf::loadView('pdf.craftsman-staff', compact('staffs'));
+
+        $filename = 'craftsman_staff_' . now()->format('Y-m-d_H-i-s') . '.pdf';
+        
+        if ($request->has('download')) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
     }
 }

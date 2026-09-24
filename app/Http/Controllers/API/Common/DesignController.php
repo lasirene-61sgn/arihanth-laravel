@@ -425,7 +425,13 @@ class DesignController extends Controller
 
         $product->qr_image_url = $product->qr_code ? asset('storage/' . $product->qr_code) : null;
 
-        return response()->json(['success' => true, 'data' => $product]);
+        $productArray = $product->toArray();
+        if (!empty($productArray['is_favorite'])) {
+            $productArray['is_design_locked'] = false;
+            $productArray['is_locked'] = 0;
+        }
+
+        return response()->json(['success' => true, 'data' => $productArray]);
     }
 
     /**
@@ -464,6 +470,13 @@ class DesignController extends Controller
                 'is_favorite' => false,
                 'message'     => 'Design removed from favourites',
             ]);
+        }
+
+        if ($product->isDesignLocked($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This design is currently locked and cannot be added to favorites.'
+            ], 403);
         }
 
         $favorite = \App\Models\Favorite::create([
