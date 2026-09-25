@@ -519,14 +519,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::get('/meetings/{room_id}/token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'getAgoraToken'])->name('meetings.token');
     Route::post('/meetings/{room_id}/notify-join', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'notifyJoin'])->name('meetings.notify-join');
 
-    // --- Chat ---
-    Route::get('/chat', [\App\Http\Controllers\API\Common\ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/search', [\App\Http\Controllers\API\Common\ChatController::class, 'search'])->name('chat.search');
-    Route::post('/chat/start', [\App\Http\Controllers\API\Common\ChatController::class, 'start'])->name('chat.start');
-    Route::get('/chat/{conversation}', [\App\Http\Controllers\API\Common\ChatController::class, 'show'])->name('chat.show');
-    Route::post('/chat', [\App\Http\Controllers\API\Common\ChatController::class, 'store'])->name('chat.store');
-    Route::delete('/chat/message/{id}', [\App\Http\Controllers\API\Common\ChatController::class, 'destroy'])->name('chat.message.destroy');
-    Route::delete('/chat/conversation/{id}', [\App\Http\Controllers\API\Common\ChatController::class, 'destroyConversation'])->name('chat.conversation.destroy');
+
 
     // --- Profile Unified (Optional redirection or direct) ---
     Route::get('/buyer/profile', [\App\Http\Controllers\API\Common\BuyerController::class, 'getProfile'])->name('buyer.profile');

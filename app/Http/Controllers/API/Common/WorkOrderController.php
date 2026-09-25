@@ -244,7 +244,12 @@ class WorkOrderController extends Controller
     private function checkPermission($user, $specificPermission = 'wo_view'): bool
     {
         if ($this->isAdmin($user)) return true;
-        if ($user instanceof \App\Models\Buyer) return true; // Buyers always have WO access
+        
+        // Buyers have general WO access for viewing, but for specific actions we check granular permissions
+        if ($user instanceof \App\Models\Buyer) {
+            if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
+            return $user->hasPermission($specificPermission);
+        }
 
         if ($user instanceof \App\Models\CraftsmanStaff) {
             // Check granular craftsman staff permissions
@@ -252,13 +257,18 @@ class WorkOrderController extends Controller
         }
 
         if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
-            return true; // Main craftsmen have full access
+            if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
+            // Check granular craftsman permissions
+            return $user->hasPermission($specificPermission);
         }
 
         // KeyUser, User have granular permissions
         if (method_exists($user, 'hasPermission')) {
             // For KeyUser/User, they usually just have a general 'work_order' permission
-            return $user->hasPermission('work_order');
+            if ($specificPermission === 'wo_view') {
+                return $user->hasPermission('work_order');
+            }
+            return $user->hasPermission($specificPermission);
         }
         return true;
     }
@@ -475,13 +485,13 @@ class WorkOrderController extends Controller
         $globalPermissions = [
             'can_create' => $this->checkPermission($user, 'wo_create') && !$this->isCraftsman($user),
             'can_edit' => $this->checkPermission($user, 'wo_edit') && !$this->isCraftsman($user),
-            'can_bulk_allocate' => $this->isAdmin($user) || $this->checkPermission($user, 'wo_allocate'),
+            'can_bulk_allocate' => $this->isAdmin($user),
             'can_bulk_accept' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_accept'),
             'can_bulk_reject' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_reject'),
-            'can_bulk_complete' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete'),
-            'can_approve' => $this->isAdmin($user),
+            'can_bulk_complete' => $this->isAdmin($user),
+            'can_approve' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete'),
             'can_reallocate' => $this->isAdmin($user),
-            'can_complete' => $this->isAdmin($user) || ($this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete')),
+            'can_complete' => $this->isAdmin($user),
         ];
         
         $availableTabs = [];

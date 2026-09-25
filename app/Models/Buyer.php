@@ -105,6 +105,19 @@ class Buyer extends Authenticatable
     }
 
     /**
+     * Check if the buyer has a specific permission
+     */
+    public function hasPermission($permission)
+    {
+        $permissions = $this->permissions ?? [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true) ?? [];
+        }
+
+        return in_array($permission, $permissions);
+    }
+
+    /**
      * Generate BP code automatically
      */
     /**
@@ -162,15 +175,15 @@ class Buyer extends Authenticatable
     /**
      * Check if the buyer has a specific permission
      */
-    public function hasPermission($permission)
-    {
-        $permissions = $this->permissions ?? [];
-        if (is_string($permissions)) {
-            $permissions = json_decode($permissions, true) ?? [];
-        }
+    // public function hasPermission($permission)
+    // {
+    //     $permissions = $this->permissions ?? [];
+    //     if (is_string($permissions)) {
+    //         $permissions = json_decode($permissions, true) ?? [];
+    //     }
 
-        return in_array($permission, $permissions);
-    }
+    //     return in_array($permission, $permissions);
+    // }
 
     /**
      * Get permissions as array
