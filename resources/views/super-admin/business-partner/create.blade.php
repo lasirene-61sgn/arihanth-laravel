@@ -408,30 +408,41 @@
                             </div>
                         </div>
                         
-                        <!-- Permissions Section -->
+                                                                        <!-- Permissions Section -->
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="card border border-info">
                                     <div class="card-header bg-light">
-                                        <h4 class="mb-0">{{ __('messages.buyer_permissions') }}</h4>
-                                        <small class="text-muted">{{ __('messages.select_modules_access') }}</small>
+                                        <h4 class="mb-0">{{ __('messages.permissions') ?? 'Permissions' }}</h4>
+                                        <small class="text-muted">Configure access for Web Panel and Mobile App</small>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            @foreach(App\Models\Buyer::getAllPermissions() as $permission)
+                                            <div class="col-12"><h6 class="mb-2 fw-bold text-secondary">Web Panel Permissions</h6></div>
+                                            @foreach(\App\Models\Buyer::getWebPermissions() as $permission)
                                                 <div class="col-md-6 mb-3">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" 
-                                                               type="checkbox" 
-                                                               name="permissions[]" 
-                                                               value="{{ $permission }}" 
-                                                               id="permission_{{ $permission }}"
-                                                               {{ in_array($permission, old('permissions', [])) ? 'checked' : '' }}>
+                                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission }}" id="permission_{{ $permission }}" {{ in_array($permission, old('permissions', [])) ? 'checked' : '' }}>
                                                         <label class="form-check-label" for="permission_{{ $permission }}">
                                                             {{ ucfirst(str_replace('_', ' ', $permission)) }}
                                                         </label>
                                                     </div>
                                                 </div>
+                                            @endforeach
+
+                                            <div class="col-12 mt-3"><h6 class="mb-2 fw-bold text-secondary">API Permissions (Mobile App)</h6></div>
+                                            @foreach(\App\Models\Buyer::getGroupedApiPermissions() as $tabName => $permissions)
+                                                <div class="col-12 mt-2"><strong class="text-primary">{{ $tabName }}</strong></div>
+                                                @foreach($permissions as $permission)
+                                                    <div class="col-md-6 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission }}" id="permission_{{ $permission }}" {{ in_array($permission, old('permissions', \App\Models\Buyer::getDefaultApiPermissions())) ? 'checked' : '' }}>
+                                                            <label class="form-check-label" for="permission_{{ $permission }}">
+                                                                {{ ucfirst(str_replace('_', ' ', $permission)) }} <small class="text-muted">(API)</small>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
                                             @endforeach
                                         </div>
                                     </div>

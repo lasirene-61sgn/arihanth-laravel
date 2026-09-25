@@ -191,14 +191,7 @@
                         <span>My Profile</span>
                     </a>
 
-                    {{-- Messages --}}
-                    @if($authUser && $authUser->hasPermission('messages'))
-                    <a href="{{ route('buyer.chat.index') }}"
-                        class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.chat.*') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.chat.*') ? 'background:rgba(255,255,255,0.15)' : '' }}">
-                        <i class="bi bi-chat-dots text-lg mr-3"></i>
-                        <span>Messages</span>
-                    </a>
-                    @endif
+                    
 
                     {{-- Meetings --}}
                     @if($authUser && $authUser->hasPermission('meetings'))
@@ -236,9 +229,7 @@
                         <a href="{{ route('buyer.global-search') }}" class="text-purple-600 hover:text-purple-800 transition-colors" title="Global Search">
                             <i class="bi bi-search text-xl"></i>
                         </a>
-                        <a href="{{ route('buyer.chat.index') }}" class="text-purple-600 hover:text-purple-800 transition-colors">
-                            <i class="bi bi-chat-dots text-xl"></i>
-                        </a>
+                        
                         <div class="dropdown">
                             <button class="text-purple-600 hover:text-purple-800 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
                                 <i class="bi bi-calendar-check text-xl"></i>
@@ -317,9 +308,7 @@
                 <a href="{{ route('buyer.meetings.index') }}" title="Meetings" class="w-12 h-12 bg-white text-purple-700 rounded-full shadow-lg flex items-center justify-center border border-purple-100 hover:bg-purple-50 transition-all">
                     <i class="bi bi-calendar-check text-xl"></i>
                 </a>
-                <a href="{{ route('buyer.chat.index') }}" title="Messages" class="w-12 h-12 bg-white text-purple-700 rounded-full shadow-lg flex items-center justify-center border border-purple-100 hover:bg-purple-50 transition-all">
-                    <i class="bi bi-chat-dots text-xl"></i>
-                </a>
+                
             </div>
         </div>
     </div>

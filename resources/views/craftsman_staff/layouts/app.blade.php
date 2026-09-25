@@ -151,11 +151,6 @@
                         </a>
                     </li>
 
-                    <li>
-                        <a href="#" class="nav-link flex items-center p-2.5 rounded-lg hover:bg-slate-800 hover:text-white">
-                            <i class="bi bi-chat-dots text-lg mr-3"></i> Messages
-                        </a>
-                    </li>
 
                     <li>
                         <a href="#" class="nav-link flex items-center p-2.5 rounded-lg hover:bg-slate-800 hover:text-white">
@@ -286,10 +281,7 @@
                         <i id="lightIcon" class="bi bi-sun text-sm hidden"></i>
                     </button>
 
-                    <!-- Quick Messages -->
-                    <a href="#" class="hidden md:flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Messages">
-                        <i class="bi bi-chat-dots text-sm"></i>
-                    </a>
+                   
 
                     <!-- Mobile Dropdown -->
                     <div class="dropdown md:hidden">

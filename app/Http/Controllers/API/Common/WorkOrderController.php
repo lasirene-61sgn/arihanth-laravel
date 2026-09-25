@@ -166,8 +166,22 @@ class WorkOrderController extends Controller
 
         // ── Attach permissions for Craftsman/Staff ──
         if ($user && $this->isCraftsman($user)) {
-            $workOrderData['can_accept'] = $this->checkPermission($user, 'wo_accept');
-            $workOrderData['can_reject'] = $this->checkPermission($user, 'wo_reject');
+            $workOrderData['can_accept'] = ($this->checkPermission($user, 'wo_accept') || $this->checkPermission($user, 'wo_bulk_accept'));
+            $workOrderData['can_reject'] = ($this->checkPermission($user, 'wo_reject') || $this->checkPermission($user, 'wo_bulk_reject'));
+        }
+
+        // ── Hide specific details based on role ──
+        if ($user) {
+            if ($this->isBuyerSide($user)) {
+                $workOrderData['craftsman'] = null;
+                $workOrderData['allocated_craftsman_bp_code'] = null;
+            }
+            if ($this->isCraftsman($user)) {
+                $workOrderData['buyer'] = null;
+                $workOrderData['bp_code'] = null;
+                $workOrderData['customer_name'] = null; // Hide the customer's name as well
+                $workOrderData['customer_details'] = null;
+            }
         }
 
         return $workOrderData;
@@ -241,36 +255,41 @@ class WorkOrderController extends Controller
      * Check permissions for roles that have a permission system.
      * $specificPermission allows checking granular access (e.g. 'wo_view', 'wo_accept').
      */
-    private function checkPermission($user, $specificPermission = 'wo_view'): bool
+        private function checkPermission($user, $specificPermission = 'wo_view'): bool
     {
         if ($this->isAdmin($user)) return true;
         
-        // Buyers have general WO access for viewing, but for specific actions we check granular permissions
+        $hasGlobalOrTabPerm = function($u, $perm) {
+            if (method_exists($u, 'hasPermission') && $u->hasPermission($perm)) return true;
+            $userPerms = is_string($u->permissions) ? json_decode($u->permissions, true) : ($u->permissions ?? []);
+            if (!is_array($userPerms)) return false;
+            foreach ($userPerms as $p) {
+                if (str_ends_with($p, '_' . $perm)) return true;
+            }
+            return false;
+        };
+
         if ($user instanceof \App\Models\Buyer) {
             if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
-            return $user->hasPermission($specificPermission);
+            return $hasGlobalOrTabPerm($user, $specificPermission);
         }
 
         if ($user instanceof \App\Models\CraftsmanStaff) {
-            // Check granular craftsman staff permissions
-            return $user->hasPermission($specificPermission);
+            if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
+            return $hasGlobalOrTabPerm($user, $specificPermission);
         }
 
         if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
             if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
-            // Check granular craftsman permissions
-            return $user->hasPermission($specificPermission);
+            return $hasGlobalOrTabPerm($user, $specificPermission);
+        }
+        
+        if (method_exists($user, 'hasPermission')) {
+            if ($specificPermission === 'wo_view') return $user->hasPermission('work_order');
+            return $hasGlobalOrTabPerm($user, $specificPermission);
         }
 
-        // KeyUser, User have granular permissions
-        if (method_exists($user, 'hasPermission')) {
-            // For KeyUser/User, they usually just have a general 'work_order' permission
-            if ($specificPermission === 'wo_view') {
-                return $user->hasPermission('work_order');
-            }
-            return $user->hasPermission($specificPermission);
-        }
-        return true;
+        return false;
     }
 
     // =========================================================================
@@ -281,7 +300,7 @@ class WorkOrderController extends Controller
     {
         $user  = $request->user();
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
         $admin = $this->isAdmin($user);
         $search = $request->get('search');
@@ -482,35 +501,80 @@ class WorkOrderController extends Controller
         $workOrders = $query->paginate($perPage, ['*'], 'page')->withQueryString();
         $workOrders->getCollection()->transform(fn($wo) => $this->transformWorkOrderResponse($wo));
 
-        $globalPermissions = [
-            'can_create' => $this->checkPermission($user, 'wo_create') && !$this->isCraftsman($user),
-            'can_edit' => $this->checkPermission($user, 'wo_edit') && !$this->isCraftsman($user),
-            'can_bulk_allocate' => $this->isAdmin($user),
-            'can_bulk_accept' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_accept'),
-            'can_bulk_reject' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_reject'),
-            'can_bulk_complete' => $this->isAdmin($user),
-            'can_approve' => $this->isCraftsman($user) && $this->checkPermission($user, 'wo_complete'),
-            'can_reallocate' => $this->isAdmin($user),
-            'can_complete' => $this->isAdmin($user),
+        $basePermissions = [
+            'can_create' => false,
+            'can_edit' => false,
+            'can_bulk_allocate' => false,
+            'can_bulk_accept' => false,
+            'can_bulk_reject' => false,
+            'can_bulk_complete' => false,
+            'can_approve' => false,
+            'can_reallocate' => false,
+            'can_complete' => false
         ];
-        
+
+        $p_create = $this->checkPermission($user, 'wo_create') && !$this->isCraftsman($user);
+        $p_edit = $this->checkPermission($user, 'wo_edit') && !$this->isCraftsman($user);
+        $p_allocate = $this->isAdmin($user) || $this->checkPermission($user, 'wo_bulk_allocate');
+        $p_accept = $this->isCraftsman($user) && (($this->checkPermission($user, 'wo_accept') || $this->checkPermission($user, 'wo_bulk_accept')) || $this->checkPermission($user, 'wo_bulk_accept'));
+        $p_reject = $this->isCraftsman($user) && (($this->checkPermission($user, 'wo_reject') || $this->checkPermission($user, 'wo_bulk_reject')) || $this->checkPermission($user, 'wo_bulk_reject'));
+        $p_bulk_complete = $this->isAdmin($user);
+        $p_approve = $this->isCraftsman($user) && (($this->checkPermission($user, 'wo_complete') || $this->checkPermission($user, 'wo_bulk_complete')) || $this->checkPermission($user, 'wo_bulk_complete'));
+        $p_reallocate = $this->isAdmin($user) || $this->checkPermission($user, 'wo_reallocate');
+        $p_complete = $this->isAdmin($user) || ($this->checkPermission($user, 'wo_complete') || $this->checkPermission($user, 'wo_bulk_complete'));
+        $getTabPerms = function($tabName) use ($user, $basePermissions) {
+            $prefix = strtolower(str_replace(' ', '_', $tabName)) . '_';
+            $perms = $basePermissions;
+            $actions = [
+                'wo_create' => 'can_create', 
+                'wo_edit' => 'can_edit', 
+                'wo_allocate' => 'can_allocate', 
+                'wo_bulk_allocate' => 'can_bulk_allocate', 
+                'wo_accept' => 'can_accept', 
+                'wo_bulk_accept' => 'can_bulk_accept', 
+                'wo_reject' => 'can_reject', 
+                'wo_bulk_reject' => 'can_bulk_reject', 
+                'wo_complete' => 'can_complete', 
+                'wo_bulk_complete' => 'can_bulk_complete', 
+                'wo_approve' => 'can_approve', 
+                'wo_bulk_approve' => 'can_bulk_approve', 
+                'wo_reallocate' => 'can_reallocate'
+            ];
+            foreach ($actions as $action => $canKey) {
+                $perms[$canKey] = $this->isAdmin($user) || $this->checkPermission($user, "{$prefix}{$action}");
+            }
+            return $perms;
+        };
+
         $availableTabs = [];
         if ($this->isAdmin($user) || $this->isBuyerSide($user)) {
-             $availableTabs = ['new-orders', 'allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders', 'all-orders'];
+             $availableTabs = [
+                 ['id' => 'new-orders', 'label' => 'New', 'count' => $counts['new'], 'global_permissions' => $getTabPerms('New Tab')],
+                 ['id' => 'allocated-orders', 'label' => 'Allocated', 'count' => $counts['allocated'], 'global_permissions' => $getTabPerms('Allocated Tab')],
+                 ['id' => 'in-process-orders', 'label' => 'In Process', 'count' => $counts['in_process'], 'global_permissions' => $getTabPerms('In Process Tab')],
+                 ['id' => 'for-approval-orders', 'label' => 'For Approval', 'count' => $counts['for_approval'], 'global_permissions' => $getTabPerms('For Approval Tab')],
+                 ['id' => 'completed-orders', 'label' => 'Completed', 'count' => $counts['completed'], 'global_permissions' => $getTabPerms('Completed Tab')],
+                 ['id' => 'overdue-orders', 'label' => 'Overdue', 'count' => $counts['overdue'], 'global_permissions' => $getTabPerms('Overdue Tab')],
+                 ['id' => 'rejected-orders', 'label' => 'Rejected', 'count' => $counts['rejected'], 'global_permissions' => $getTabPerms('Rejected Tab')],
+                 ['id' => 'all-orders', 'label' => 'All', 'count' => $counts['all'], 'global_permissions' => $getTabPerms('All Orders Tab')],
+             ];
         } else if ($this->isCraftsman($user)) {
-             $availableTabs = ['allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders'];
+             $availableTabs = [
+                 ['id' => 'allocated-orders', 'label' => 'Allocated', 'count' => $counts['allocated'], 'global_permissions' => $getTabPerms('Allocated Tab')],
+                 ['id' => 'in-process-orders', 'label' => 'In Process', 'count' => $counts['in_process'], 'global_permissions' => $getTabPerms('In Process Tab')],
+                 ['id' => 'for-approval-orders', 'label' => 'For Approval', 'count' => $counts['for_approval'], 'global_permissions' => $getTabPerms('For Approval Tab')],
+                 ['id' => 'completed-orders', 'label' => 'Completed', 'count' => $counts['completed'], 'global_permissions' => $getTabPerms('Completed Tab')],
+                 ['id' => 'overdue-orders', 'label' => 'Overdue', 'count' => $counts['overdue'], 'global_permissions' => $getTabPerms('Overdue Tab')],
+                 ['id' => 'rejected-orders', 'label' => 'Rejected', 'count' => $counts['rejected'], 'global_permissions' => $getTabPerms('Rejected Tab')],
+             ];
         }
 
         $paginatedData = $workOrders->toArray();
 
-        // Only include metadata if not specifically requesting a tab (e.g. initial load)
-        if (!$request->has('tab')) {
-            $paginatedData = array_merge([
-                'counts' => $counts,
-                'global_permissions' => $globalPermissions,
-                'available_tabs' => $availableTabs,
-            ], $paginatedData);
-        }
+        // Include metadata
+        $paginatedData = array_merge([
+            'available_tabs' => $availableTabs,
+        ], $paginatedData);
 
         $response = [
             'success' => true,
@@ -528,7 +592,7 @@ class WorkOrderController extends Controller
     {
         $user = $request->user();
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
         $workOrder = WorkOrder::with(['productCategory', 'subcategoryRelation', 'buyer', 'craftsman', 'images', 'product.images'])->find($id);
 
@@ -657,7 +721,7 @@ class WorkOrderController extends Controller
     {
         $user = $request->user();
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
 
         $ids = [];
@@ -740,7 +804,7 @@ class WorkOrderController extends Controller
 
         // Permission check
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
 
         // Craftsmen cannot create work orders
@@ -1084,7 +1148,7 @@ class WorkOrderController extends Controller
     {
         $user = $request->user();
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
         $workOrder = WorkOrder::find($id);
 
@@ -1387,7 +1451,7 @@ class WorkOrderController extends Controller
     {
         $user = $request->user();
         if (!$this->checkPermission($user)) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work_order permission'], 403);
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work_order permission'], 403);
         }
         $workOrder = WorkOrder::find($id);
 
@@ -1547,6 +1611,9 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        $workOrderIds = $request->input('work_order_ids', $request->input('ids'));
+        $request->merge(['work_order_ids' => $workOrderIds]);
+        
         $validator = Validator::make($request->all(), [
             'work_order_ids'   => 'required|array',
             'work_order_ids.*' => 'exists:work_orders,id',
@@ -1628,11 +1695,15 @@ class WorkOrderController extends Controller
     public function acceptWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_accept') || $this->checkPermission($user, 'wo_bulk_accept')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order accept permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
+        $query = WorkOrder::query();
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $workOrder = $query->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found or not allocated'], 404);
 
         if ($workOrder->craftsman_status !== 'allocated') {
@@ -1651,11 +1722,15 @@ class WorkOrderController extends Controller
     public function rejectWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_reject') || $this->checkPermission($user, 'wo_bulk_reject')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order reject permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
+        $query = WorkOrder::query();
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $workOrder = $query->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found'], 404);
 
         if ($workOrder->craftsman_status !== 'allocated') {
@@ -1684,14 +1759,18 @@ class WorkOrderController extends Controller
     public function completeWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_complete') || $this->checkPermission($user, 'wo_bulk_complete')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order complete permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
+        $query = WorkOrder::query();
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $workOrder = $query->find($id);
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found'], 404);
 
-        if ($workOrder->craftsman_status !== 'in_process') {
+        if (!in_array($workOrder->craftsman_status, ['in_process', 'allocated', 'completed'])) {
             return response()->json(['success' => false, 'message' => 'Work order cannot be completed in current status'], 400);
         }
 
@@ -1702,7 +1781,12 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
-        $data = ['craftsman_status' => 'completed', 'status' => 'for_approval'];
+        $data = [
+                    'craftsman_status' => 'completed',
+                    'status' => 'for_approval'
+                ];
+                
+        
         if ($request->has('weight')) $data['weight'] = $request->weight;
 
         $workOrder->update($data);
@@ -1731,16 +1815,17 @@ class WorkOrderController extends Controller
     public function bulkAcceptWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_accept') || $this->checkPermission($user, 'wo_bulk_accept')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order accept permission'], 403);
         }
 
         $request->validate(['ids' => 'required|array', 'ids.*' => 'exists:work_orders,id']);
 
-        $count = WorkOrder::whereIn('id', $request->ids)
-            ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
-            ->where('craftsman_status', 'allocated')
-            ->update(['craftsman_status' => 'in_process']);
+        $query = WorkOrder::whereIn('id', $request->ids)->where('craftsman_status', 'allocated');
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $count = $query->update(['craftsman_status' => 'in_process']);
 
         return response()->json(['success' => true, 'message' => "$count work orders accepted"]);
     }
@@ -1748,8 +1833,8 @@ class WorkOrderController extends Controller
     public function bulkRejectWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_reject') || $this->checkPermission($user, 'wo_bulk_reject')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order reject permission'], 403);
         }
 
         $request->validate([
@@ -1758,10 +1843,11 @@ class WorkOrderController extends Controller
             'rejection_reason' => 'required|string'
         ]);
 
-        $count = WorkOrder::whereIn('id', $request->ids)
-            ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
-            ->where('craftsman_status', 'allocated')
-            ->update([
+        $query = WorkOrder::whereIn('id', $request->ids)->where('craftsman_status', 'allocated');
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $count = $query->update([
                 'craftsman_status' => 'rejected',
                 'rejection_reason' => $request->rejection_reason,
             ]);
@@ -1772,8 +1858,8 @@ class WorkOrderController extends Controller
     public function bulkCompleteWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_accept')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
+        if (!$this->isAdmin($user) && (!$this->isCraftsman($user) || !($this->checkPermission($user, 'wo_complete') || $this->checkPermission($user, 'wo_bulk_complete')))) {
+            return response()->json(['success' => false, 'message' => 'Forbidden - no work order complete permission'], 403);
         }
 
         $request->validate([
@@ -1787,16 +1873,18 @@ class WorkOrderController extends Controller
 
         $count = 0;
         foreach ($request->ids as $id) {
-            $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
-                ->where('id', $id)
-                ->where('craftsman_status', 'in_process')
-                ->first();
+            $query = WorkOrder::where('id', $id)->whereIn('craftsman_status', ['in_process', 'allocated', 'completed']);
+            if (!$this->isAdmin($user)) {
+                $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+            }
+            $workOrder = $query->first();
 
             if ($workOrder) {
                 $data = [
                     'craftsman_status' => 'completed',
                     'status' => 'for_approval'
                 ];
+                
 
                 // Add weight if provided (either common or specific to this work order)
                 if (isset($weights[$id])) {
@@ -1900,7 +1988,7 @@ class WorkOrderController extends Controller
             if (method_exists($user, 'hasPermission') && !$user->hasPermission('dashboard')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Forbidden – no dashboard permission'
+                    'message' => 'Forbidden - no dashboard permission'
                 ], 403);
             }
         }

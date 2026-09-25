@@ -136,18 +136,14 @@
     <!-- Navigation Tabs -->
     <div class="border-b border-emerald-100 mb-4">
         <div class="flex overflow-x-auto no-scrollbar -mb-px gap-1" id="workOrderTabs" role="tablist">
-            @if(auth('craftsman')->user()->hasPermission('wo_accept') || auth('craftsman')->user()->hasPermission('wo_reject'))
             <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab', 'allocated') == 'allocated' ? 'active' : '' }}"
                 id="allocated-tab" data-bs-toggle="tab" data-bs-target="#allocated" type="button" role="tab">
                 Allocated ({{ $allocatedOrders->total() }})
             </button>
-            @endif
-            @if(auth('craftsman')->user()->hasPermission('wo_complete'))
             <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'in-process' ? 'active' : '' }}"
                 id="in-process-tab" data-bs-toggle="tab" data-bs-target="#in-process" type="button" role="tab">
                 In Process ({{ $inProcessOrders->total() }})
             </button>
-            @endif
              <button class="whitespace-nowrap px-6 py-3 font-bold text-sm border-b-2 transition-all {{ request('tab') == 'overdue' ? 'active' : '' }}"
                 id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
                 Overdue ({{ $overdueOrders->total() }})
@@ -201,7 +197,7 @@
     <div class="tab-content" id="workOrderTabsContent">
 
         <!-- Allocated Orders Tab -->
-        @if(auth('craftsman')->user()->hasPermission('wo_accept') || auth('craftsman')->user()->hasPermission('wo_reject'))
+        
         <div class="tab-pane fade {{ request('tab', 'allocated') == 'allocated' ? 'show active' : '' }}" id="allocated" role="tabpanel">
             <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mt-4">
                 <div class="p-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -433,10 +429,10 @@
                 </div>
             </div>
         </div>
-        @endif
+        
 
         <!-- In Process Orders Tab -->
-        @if(auth('craftsman')->user()->hasPermission('wo_complete'))
+       
         <div class="tab-pane fade {{ request('tab') == 'in-process' ? 'show active' : '' }}" id="in-process" role="tabpanel">
             <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden mt-4">
                 <div class="p-4 bg-emerald-50/50 border-b border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -996,7 +992,7 @@
                 </div>
             </div>
         </div>
-        @endif
+        
 
         <!-- Overdue Orders Tab -->
         <!-- Tab Content Wrapper -->

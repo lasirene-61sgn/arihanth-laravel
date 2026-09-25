@@ -208,12 +208,20 @@
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_accept" id="perm_wo_accept" {{ in_array('wo_accept', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_wo_accept">Accept</label>
+                                            <label class="form-check-label" for="perm_wo_accept">Accept <small class="text-muted">(API)</small></label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_reject" id="perm_wo_reject" {{ in_array('wo_reject', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_wo_reject">Reject</label>
+                                            <label class="form-check-label" for="perm_wo_reject">Reject <small class="text-muted">(API)</small></label>
                                         </div>
+                                          <div class="form-check">
+                                              <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_complete" id="perm_wo_complete" {{ (is_array(old('permissions')) && in_array('wo_complete', old('permissions'))) || (isset($staff) && $staff->hasPermission('wo_complete')) ? 'checked' : '' }}>
+                                              <label class="form-check-label" for="perm_wo_complete">Complete <small class="text-muted">(API)</small></label>
+                                          </div>
+                                          <div class="form-check">
+                                              <input class="form-check-input" type="checkbox" name="permissions[]" value="edit_workorder" id="perm_edit_workorder" {{ (is_array(old('permissions')) && in_array('edit_workorder', old('permissions'))) || (isset($staff) && $staff->hasPermission('edit_workorder')) ? 'checked' : '' }}>
+                                              <label class="form-check-label" for="perm_edit_workorder">Edit <small class="text-muted">(API)</small></label>
+                                          </div>
                                     </div>
                                 </div>
                             </div>
@@ -231,11 +239,11 @@
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="po_accept" id="perm_po_accept" {{ in_array('po_accept', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_po_accept">Accept</label>
+                                            <label class="form-check-label" for="perm_po_accept">Accept <small class="text-muted">(API)</small></label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="po_reject" id="perm_po_reject" {{ in_array('po_reject', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_po_reject">Reject</label>
+                                            <label class="form-check-label" for="perm_po_reject">Reject <small class="text-muted">(API)</small></label>
                                         </div>
                                     </div>
                                 </div>
@@ -254,11 +262,11 @@
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="repair_accept" id="perm_repair_accept" {{ in_array('repair_accept', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_repair_accept">Accept</label>
+                                            <label class="form-check-label" for="perm_repair_accept">Accept <small class="text-muted">(API)</small></label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="repair_reject" id="perm_repair_reject" {{ in_array('repair_reject', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_repair_reject">Reject</label>
+                                            <label class="form-check-label" for="perm_repair_reject">Reject <small class="text-muted">(API)</small></label>
                                         </div>
                                     </div>
                                 </div>

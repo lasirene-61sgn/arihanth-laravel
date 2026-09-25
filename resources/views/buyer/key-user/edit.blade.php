@@ -106,7 +106,8 @@
                         </div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                            @foreach(App\Models\KeyUser::getAllPermissions() as $permission)
+                            <div class="col-12"><h6 class="mt-2 mb-2 fw-bold text-secondary">Web Permissions</h6></div>
+@foreach(\App\Models\KeyUser::getWebPermissions() as $permission)
                                 <label for="permission_{{ $permission }}" class="flex items-center group cursor-pointer p-3 bg-white rounded-xl border border-transparent hover:border-blue-200 hover:shadow-sm transition-all">
                                     <div class="relative flex items-center">
                                         <input class="w-5 h-5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer" 
@@ -121,6 +122,23 @@
                                     </span>
                                 </label>
                             @endforeach
+<div class="col-12 mt-3"><h6 class="mb-2 fw-bold text-secondary">API Permissions</h6></div>
+@foreach(\App\Models\KeyUser::getApiPermissions() as $permission)
+                                <label for="permission_{{ $permission }}" class="flex items-center group cursor-pointer p-3 bg-white rounded-xl border border-transparent hover:border-blue-200 hover:shadow-sm transition-all">
+                                    <div class="relative flex items-center">
+                                        <input class="w-5 h-5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer" 
+                                               type="checkbox" 
+                                               name="permissions[]" 
+                                               value="{{ $permission }}" 
+                                               id="permission_{{ $permission }}"
+                                               {{ in_array($permission, old('permissions', $keyUser->getPermissionsArray())) ? 'checked' : '' }}>
+                                    </div>
+                                    <span class="ml-3 text-sm font-semibold text-slate-600 group-hover:text-blue-700 transition-colors">
+                                        {{ ucfirst(str_replace('_', ' ', $permission)) }} <small class="text-muted">(API)</small>
+                                    </span>
+                                </label>
+                            @endforeach
+
                         </div>
                     </div>
                 </div>

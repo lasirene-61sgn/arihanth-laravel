@@ -200,13 +200,7 @@
                         <span>Craftsman Production</span>
                     </a>
                 </li>
-                <li>
-                    <a href="{{ route('super-admin.chat.index') }}"
-                        class="tw-flex tw-items-center tw-gap-3 tw-px-4 tw-py-2.5 tw-rounded-lg tw-font-medium tw-text-sm tw-transition-all tw-duration-200 tw-no-underline hover:tw-text-white hover:tw-bg-white/15 {{ request()->routeIs('super-admin.chat.*') ? 'tw-bg-white/20 tw-text-white tw-font-semibold' : 'tw-text-white/80' }}">
-                        <i class="bi bi-chat-dots tw-text-lg"></i>
-                        <span>Messages</span>
-                    </a>
-                </li>
+                
             </ul>
         </div>
 
@@ -265,13 +259,7 @@
                 </div>
                 <div class="tw-flex tw-items-center tw-gap-4">
 
-                    <div class="tw-relative">
-                        <a href="{{ route('super-admin.chat.index') }}" class="tw-text-white/80 hover:tw-text-white tw-transition-all tw-duration-200">
-                            <i class="bi bi-chat-left-text tw-text-xl"></i>
-                            <!-- Message Count Badge -->
-
-                        </a>
-                    </div>
+                   
                     <!-- Meetings Icon Dropdown -->
                     <div class="tw-relative dropdown">
                         <button class="tw-text-white/80 hover:tw-text-white tw-transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">

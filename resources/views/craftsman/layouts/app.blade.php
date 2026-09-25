@@ -156,15 +156,7 @@
                 </a>
             </li>
 
-            {{-- Messages --}}
-            @if($craftsmanUser && $craftsmanUser->hasPermission('messages'))
-            <li>
-                <a href="{{ route('craftsman.chat.index') }}"
-                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.chat.*') ? 'active bg-emerald-800' : '' }}">
-                    <i class="bi bi-chat-dots mr-3"></i> Messages
-                </a>
-            </li>
-            @endif
+            
 
             {{-- Meetings --}}
             @if($craftsmanUser && $craftsmanUser->hasPermission('meetings'))
@@ -322,10 +314,7 @@
                         <i id="lightIcon" class="bi bi-sun hidden"></i>
                     </button>
 
-                    <!-- Desktop Icons -->
-                    <a href="{{ route('craftsman.chat.index') }}" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Messages">
-                        <i class="bi bi-chat-dots"></i>
-                    </a>
+                    
                     <div class="dropdown hidden md:block">
                         <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
                             <i class="bi bi-camera-video"></i>
@@ -368,11 +357,7 @@
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-xl" aria-labelledby="moreMenuButton">
-                            <li>
-                                <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.chat.index') }}">
-                                    <i class="bi bi-chat-dots text-emerald-600"></i> Messages
-                                </a>
-                            </li>
+                            
                             <li>
                                 <a class="dropdown-item flex items-center gap-2" href="{{ route('craftsman.meetings.index') }}">
                                     <i class="bi bi-camera-video text-emerald-600"></i> Meetings

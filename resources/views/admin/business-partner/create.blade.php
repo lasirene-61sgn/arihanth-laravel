@@ -429,7 +429,8 @@
                                 <div class="col-md-12">
                                     <h5>{{ __('messages.buyer_permissions') }}</h5>
                                     <div class="row">
-                                        @foreach(App\Models\Buyer::getAllPermissions() as $permission)
+                                        <div class="col-12"><h6 class="mt-2 mb-2 fw-bold text-secondary">Web Permissions</h6></div>
+@foreach(\App\Models\Buyer::getWebPermissions() as $permission)
                                             <div class="col-md-4 mb-3">
                                                 <div class="form-check">
                                                     <input class="form-check-input" 
@@ -444,6 +445,21 @@
                                                 </div>
                                             </div>
                                         @endforeach
+<div class="col-12 mt-3"><h6 class="mb-2 fw-bold text-secondary">API Permissions</h6></div>
+@foreach(\App\Models\Buyer::getGroupedApiPermissions() as $tabName => $permissions)
+                                                <div class="col-12 mt-2"><strong class="text-primary">{{ $tabName }}</strong></div>
+                                                @foreach($permissions as $permission)
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission }}" id="permission_{{ $permission }}" {{ in_array($permission, old('permissions', \App\Models\Buyer::getDefaultApiPermissions())) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="permission_{{ $permission }}">
+                                                        {{ ucfirst(str_replace('_', ' ', $permission)) }} <small class="text-muted">(API)</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                            @endforeach
+
                                     </div>
                                 </div>
                             </div>
