@@ -193,6 +193,7 @@ class ProcessOwner extends Authenticatable
             'messages',
             'can_create_craftsman',
             'can_create_staff',
+            'dashboard_details',
         ];
     }
 

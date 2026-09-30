@@ -574,6 +574,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{repair}/allocate', [App\Http\Controllers\Admin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\Admin\RepairController::class, 'complete'])->name('complete');
             Route::post('/{repair}/buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
+            Route::post('/bulk-mark-craftsman-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkMarkCraftsmanComplete'])->name('bulk-mark-craftsman-complete');
             Route::post('/bulk-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
             Route::post('/bulk-buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
         });
@@ -863,6 +864,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         // Repairs Routes inside your admin/super-admin prefix group
         Route::prefix('repairs')->name('repairs.')->group(function () {
             // 1. Place static/action routes BEFORE dynamic /{repair} parameters
+            Route::post('bulk-mark-craftsman-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkMarkCraftsmanComplete'])->name('bulk-mark-craftsman-complete');
             Route::post('bulk-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
             Route::post('bulk-buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
             Route::get('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'index'])->name('index');

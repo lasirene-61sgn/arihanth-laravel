@@ -482,25 +482,11 @@ class WorkOrderController extends Controller
         $workOrders = $query->paginate($perPage, ['*'], 'page')->withQueryString();
         $workOrders->getCollection()->transform(fn($wo) => $this->transformWorkOrderResponse($wo));
 
-        $availableTabs = [];
-        if ($this->isAdmin($user) || $this->isBuyerSide($user)) {
-             $availableTabs = ['new-orders', 'allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders', 'all-orders'];
-        } else if ($this->isCraftsman($user)) {
-             $availableTabs = ['allocated-orders', 'in-process-orders', 'for-approval-orders', 'completed-orders', 'rejected-orders', 'overdue-orders'];
-        }
-
         $paginatedData = $workOrders->toArray();
-
-        // Only include metadata if not specifically requesting a tab (e.g. initial load)
-        if (!$request->has('tab')) {
-            $paginatedData = array_merge([
-                'counts' => $counts,
-                'available_tabs' => $availableTabs,
-            ], $paginatedData);
-        }
 
         $response = [
             'success' => true,
+            'counts'  => $counts,
             'data'    => $paginatedData
         ];
 

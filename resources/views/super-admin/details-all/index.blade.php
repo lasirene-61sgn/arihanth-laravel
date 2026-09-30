@@ -335,6 +335,20 @@
                             </tr>
                             @endforelse
                         </tbody>
+                        <tfoot class="bg-light fw-bold border-top border-2">
+                            <tr>
+                                <td colspan="3" class="text-end border-end text-dark">TOTAL</td>
+                                <td class="text-center border-end text-dark">{{ number_format(collect($craftsmenData)->sum('total_weight'), 2) }}</td>
+                                <td class="text-center text-primary border-end">{{ collect($craftsmenData)->sum('wo.in_process.count') }} | {{ number_format(collect($craftsmenData)->sum('wo.in_process.weight'), 2) }}</td>
+                                <td class="text-center text-success border-end">{{ collect($craftsmenData)->sum('wo.completed.count') }} | {{ number_format(collect($craftsmenData)->sum('wo.completed.weight'), 2) }}</td>
+                                <td class="text-center border-end text-dark">{{ collect($craftsmenData)->sum('wo.for_approval.count') }} | {{ number_format(collect($craftsmenData)->sum('wo.for_approval.weight'), 2) }}</td>
+                                <td class="text-center text-danger border-end">{{ collect($craftsmenData)->sum('wo.overdue.count') }} | {{ number_format(collect($craftsmenData)->sum('wo.overdue.weight'), 2) }}</td>
+                                <td class="text-center text-info border-end">{{ collect($craftsmenData)->sum('po.in_process.count') }} | {{ number_format(collect($craftsmenData)->sum('po.in_process.weight'), 2) }}</td>
+                                <td class="text-center text-success border-end">{{ collect($craftsmenData)->sum('po.completed.count') }} | {{ number_format(collect($craftsmenData)->sum('po.completed.weight'), 2) }}</td>
+                                <td class="text-center border-end text-dark">{{ collect($craftsmenData)->sum('po.for_approval.count') }} | {{ number_format(collect($craftsmenData)->sum('po.for_approval.weight'), 2) }}</td>
+                                <td class="text-center text-danger">{{ collect($craftsmenData)->sum('po.overdue.count') }} | {{ number_format(collect($craftsmenData)->sum('po.overdue.weight'), 2) }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -508,6 +522,32 @@
                             <tr><td colspan="10" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
                             @endforelse
                         </tbody>
+                        <tfoot class="bg-light fw-bold border-top border-2">
+                            <tr>
+                                <td colspan="3" class="text-end border-end text-dark">TOTAL</td>
+                                <td class="text-center border-end text-primary">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['new']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['new']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center border-end text-primary">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['in_process']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['in_process']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center border-end text-info">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['for_approval']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['for_approval']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center border-end text-danger">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['overdue']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['overdue']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center border-end text-danger">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['rejected']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['rejected']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center border-end text-success">
+                                    {{ collect($topPicksClientsFull)->sum(fn($c) => $c['completed']['count'] ?? 0) }} | {{ number_format(collect($topPicksClientsFull)->sum(fn($c) => $c['completed']['weight'] ?? 0), 2) }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary-subtle text-secondary fs-6">{{ collect($topPicksClientsFull)->sum('orders') }}</span>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>

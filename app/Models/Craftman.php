@@ -245,6 +245,7 @@ class Craftman extends Authenticatable
             'favorites',
             'meetings',
             'messages',
+            'dashboard_details',
         ];
     }
 

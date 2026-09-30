@@ -501,6 +501,7 @@
                     </tbody>
                 </table>
                 </form>
+                <div id="modalWoPaginationContainer" class="p-4 border-t border-slate-100 bg-slate-50"></div>
             </div>
 
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white hidden" id="modalPoTableWrapper">
@@ -578,6 +579,7 @@
                     </tbody>
                 </table>
                 </form>
+                <div id="modalPoPaginationContainer" class="p-4 border-t border-slate-100 bg-slate-50"></div>
             </div>
         </div>
     </div>
@@ -677,19 +679,61 @@
 </div>
 
 <script>
+    // Pagination State
+    const PAGE_SIZE = 10;
+    let craftsmanDesignsCurrentPage = 1;
+    let favoritesCategoryCurrentPage = 1;
+    let ordersCurrentPage = 1;
+
+    function renderPaginationControls(totalItems, currentPage, containerId, callbackFnName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (totalItems === 0) {
+            container.innerHTML = `<span class="text-xs text-slate-500 font-medium">0 items listed</span>`;
+            return;
+        }
+
+        const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+        const startItem = ((currentPage - 1) * PAGE_SIZE) + 1;
+        const endItem = Math.min(currentPage * PAGE_SIZE, totalItems);
+
+        let html = `
+            <div class="flex items-center justify-between w-full">
+                <span class="text-xs text-slate-500 font-medium">Showing ${startItem} to ${endItem} of ${totalItems} entries</span>
+                ${totalPages > 1 ? `
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="${callbackFnName}(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+                    <span class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg">${currentPage} / ${totalPages}</span>
+                    <button type="button" onclick="${callbackFnName}(${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+
     // Craftsman Designs Category Modal
     const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
+    let currentCraftsmanDesignsFiltered = [];
 
     function openCraftsmanDesignModal(categoryName) {
         document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
         document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
 
-        const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentCraftsmanDesignsFiltered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        
+        renderCraftsmanCategoryDesignsTable(1);
+
+        const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
+        modal.show();
+    }
+
+    function renderCraftsmanCategoryDesignsTable(page) {
+        craftsmanDesignsCurrentPage = page;
         const tbody = document.getElementById('craftsmanCategoryDesignsBody');
 
-        document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
-
-        if (!filtered.length) {
+        if (!currentCraftsmanDesignsFiltered.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="p-8 text-center text-slate-400">
@@ -698,45 +742,56 @@
                     </td>
                 </tr>
             `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url ?
-                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
-                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-                html += `
-                    <tr class="hover:bg-emerald-50/30 transition-colors">
-                        <td class="p-2.5 text-center">${imgHtml}</td>
-                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
-                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+            document.getElementById('craftsmanCategoryDesignsCountLabel').innerHTML = `<span class="text-xs text-slate-500 font-medium">0 designs listed</span>`;
+            return;
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
-        modal.show();
+        const start = (page - 1) * PAGE_SIZE;
+        const paginatedData = currentCraftsmanDesignsFiltered.slice(start, start + PAGE_SIZE);
+
+        let html = '';
+        paginatedData.forEach(item => {
+            const imgHtml = item.image_url ?
+                `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
+                `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+            html += `
+                <tr class="hover:bg-emerald-50/30 transition-colors">
+                    <td class="p-2.5 text-center">${imgHtml}</td>
+                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                    <td class="p-3.5 text-slate-600">
+                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                    </td>
+                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        renderPaginationControls(currentCraftsmanDesignsFiltered.length, page, 'craftsmanCategoryDesignsCountLabel', 'renderCraftsmanCategoryDesignsTable');
     }
 
     // Craftsman Favorites Category Modal
     const allCraftsmanFavorites = @json($modalFavorites ?? ($favoritesDesignsModal ?? []));
+    let currentCraftsmanFavoritesFiltered = [];
 
     function openFavoritesCategoryModal(categoryName) {
         document.getElementById('favoritesCategoryTitle').textContent = categoryName;
 
-        const filtered = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentCraftsmanFavoritesFiltered = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        
+        renderCraftsmanFavoritesCategoryTable(1);
+
+        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
+        modal.show();
+    }
+
+    function renderCraftsmanFavoritesCategoryTable(page) {
+        favoritesCategoryCurrentPage = page;
         const tbody = document.getElementById('favoritesCategoryBody');
 
-        document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
-
-        if (!filtered.length) {
+        if (!currentCraftsmanFavoritesFiltered.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="p-8 text-center text-slate-400">
@@ -745,31 +800,34 @@
                     </td>
                 </tr>
             `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url ?
-                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
-                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-                html += `
-                    <tr class="hover:bg-rose-50/30 transition-colors">
-                        <td class="p-2.5 text-center">${imgHtml}</td>
-                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
-                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+            document.getElementById('favoritesCategoryCountLabel').innerHTML = `<span class="text-xs text-slate-500 font-medium">0 favorites listed</span>`;
+            return;
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
-        modal.show();
+        const start = (page - 1) * PAGE_SIZE;
+        const paginatedData = currentCraftsmanFavoritesFiltered.slice(start, start + PAGE_SIZE);
+
+        let html = '';
+        paginatedData.forEach(item => {
+            const imgHtml = item.image_url ?
+                `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
+                `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+            html += `
+                <tr class="hover:bg-rose-50/30 transition-colors">
+                    <td class="p-2.5 text-center">${imgHtml}</td>
+                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                    <td class="p-3.5 text-slate-600">
+                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                    </td>
+                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        renderPaginationControls(currentCraftsmanFavoritesFiltered.length, page, 'favoritesCategoryCountLabel', 'renderCraftsmanFavoritesCategoryTable');
     }
 
     // Order Status Modals & Tabs
@@ -804,6 +862,7 @@
 
     function switchModalTab(type) {
         currentModalTab = type;
+        ordersCurrentPage = 1;
         const woWrapper = document.getElementById('modalWoTableWrapper');
         const poWrapper = document.getElementById('modalPoTableWrapper');
         const tabWoBtn = document.getElementById('modalTabWoBtn');
@@ -828,10 +887,15 @@
             poPrintBtn.classList.remove('hidden');
         }
 
-        applyModalFilter();
+        applyModalFilter(1);
     }
 
-    function applyModalFilter() {
+    function applyModalFilter(page = 1) {
+        // If triggered by an event object instead of a number, reset to 1
+        if (typeof page !== 'number') {
+            page = 1;
+        }
+        ordersCurrentPage = page;
         const searchInput = document.getElementById('modalLiveSearch');
         const clearBtn = document.getElementById('clearModalSearchBtn');
         const rawTerm = searchInput ? searchInput.value.trim() : '';
@@ -843,8 +907,8 @@
 
         const regex = rawTerm !== '' ? new RegExp(`(${rawTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi') : null;
 
-        function filterTable(rows, noMatchElem, counterElemId) {
-            let count = 0;
+        function filterTable(rows, noMatchElem, counterElemId, paginatorId) {
+            let matchedRows = [];
 
             rows.forEach(row => {
                 const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
@@ -873,19 +937,31 @@
                 });
 
                 if (statusMatches && searchMatches) {
+                    matchedRows.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const start = (ordersCurrentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+
+            matchedRows.forEach((row, index) => {
+                if (index >= start && index < end) {
                     row.style.display = '';
-                    count++;
                 } else {
                     row.style.display = 'none';
                 }
             });
 
             if (noMatchElem) {
-                noMatchElem.classList.toggle('hidden', count > 0 || rows.length === 0);
+                noMatchElem.classList.toggle('hidden', matchedRows.length > 0 || rows.length === 0);
             }
 
             const counter = document.getElementById(counterElemId);
-            if (counter) counter.textContent = count;
+            if (counter) counter.textContent = matchedRows.length;
+            
+            renderPaginationControls(matchedRows.length, ordersCurrentPage, paginatorId, 'applyModalFilter');
         }
 
         const woRows = document.querySelectorAll('#modalWoTable tbody tr.modal-wo-row');
@@ -893,8 +969,11 @@
         const woNoMatch = document.getElementById('modalWoNoMatch');
         const poNoMatch = document.getElementById('modalPoNoMatch');
 
-        filterTable(woRows, woNoMatch, 'modalWoCount');
-        filterTable(poRows, poNoMatch, 'modalPoCount');
+        if (currentModalTab === 'wo') {
+            filterTable(woRows, woNoMatch, 'modalWoCount', 'modalWoPaginationContainer');
+        } else {
+            filterTable(poRows, poNoMatch, 'modalPoCount', 'modalPoPaginationContainer');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {

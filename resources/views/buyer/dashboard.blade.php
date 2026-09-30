@@ -493,19 +493,61 @@
 </div>
 
 <script>
+    // Pagination State
+    const PAGE_SIZE = 10;
+    let categoryDesignsCurrentPage = 1;
+    let favoritesCategoryCurrentPage = 1;
+    let workOrdersCurrentPage = 1;
+
+    function renderPaginationControls(totalItems, currentPage, containerId, callbackFnName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (totalItems === 0) {
+            container.innerHTML = `<span class="text-xs text-slate-500 font-medium">0 items listed</span>`;
+            return;
+        }
+
+        const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+        const startItem = ((currentPage - 1) * PAGE_SIZE) + 1;
+        const endItem = Math.min(currentPage * PAGE_SIZE, totalItems);
+
+        let html = `
+            <div class="flex items-center justify-between w-full">
+                <span class="text-xs text-slate-500 font-medium">Showing ${startItem} to ${endItem} of ${totalItems} entries</span>
+                ${totalPages > 1 ? `
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="${callbackFnName}(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+                    <span class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg">${currentPage} / ${totalPages}</span>
+                    <button type="button" onclick="${callbackFnName}(${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+
     // Buyer Designs Category Modal
     const allBuyerDesigns = @json($categoryDesignsModal ?? []);
+    let currentCategoryDesignsFiltered = [];
 
     function openDesignCategoryModal(categoryName) {
         document.getElementById('modalDesignCategoryTitle').textContent = categoryName;
         document.getElementById('modalDesignCategoryBadge').textContent = categoryName;
 
-        const filtered = allBuyerDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentCategoryDesignsFiltered = allBuyerDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        
+        renderCategoryDesignsTable(1);
+
+        const modal = new bootstrap.Modal(document.getElementById('categoryDesignsModal'));
+        modal.show();
+    }
+
+    function renderCategoryDesignsTable(page) {
+        categoryDesignsCurrentPage = page;
         const tbody = document.getElementById('categoryDesignsBody');
         
-        document.getElementById('categoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
-
-        if (!filtered.length) {
+        if (!currentCategoryDesignsFiltered.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="p-8 text-center text-slate-400">
@@ -514,45 +556,56 @@
                     </td>
                 </tr>
             `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url 
-                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
-                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+            document.getElementById('categoryDesignsCountLabel').innerHTML = `<span class="text-xs text-slate-500 font-medium">0 designs listed</span>`;
+            return;
+        } 
 
-                html += `
-                    <tr class="hover:bg-amber-50/30 transition-colors">
-                        <td class="p-2.5 text-center">${imgHtml}</td>
-                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
-                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-        }
+        const start = (page - 1) * PAGE_SIZE;
+        const paginatedData = currentCategoryDesignsFiltered.slice(start, start + PAGE_SIZE);
 
-        const modal = new bootstrap.Modal(document.getElementById('categoryDesignsModal'));
-        modal.show();
+        let html = '';
+        paginatedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+            html += `
+                <tr class="hover:bg-amber-50/30 transition-colors">
+                    <td class="p-2.5 text-center">${imgHtml}</td>
+                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                    <td class="p-3.5 text-slate-600">
+                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                    </td>
+                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        renderPaginationControls(currentCategoryDesignsFiltered.length, page, 'categoryDesignsCountLabel', 'renderCategoryDesignsTable');
     }
 
     // Buyer Favorites Category Modal
     const allBuyerFavorites = @json($modalFavorites ?? ($favoritesDesignsModal ?? []));
+    let currentFavoritesFiltered = [];
 
     function openFavoritesCategoryModal(categoryName) {
         document.getElementById('favoritesCategoryTitle').textContent = categoryName;
 
-        const filtered = allBuyerFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
-        const tbody = document.getElementById('favoritesCategoryBody');
+        currentFavoritesFiltered = allBuyerFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
         
-        document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
+        renderFavoritesCategoryTable(1);
 
-        if (!filtered.length) {
+        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
+        modal.show();
+    }
+
+    function renderFavoritesCategoryTable(page) {
+        favoritesCategoryCurrentPage = page;
+        const tbody = document.getElementById('favoritesCategoryBody');
+
+        if (!currentFavoritesFiltered.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="p-8 text-center text-slate-400">
@@ -561,31 +614,34 @@
                     </td>
                 </tr>
             `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url 
-                    ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
-                    : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-                html += `
-                    <tr class="hover:bg-rose-50/30 transition-colors">
-                        <td class="p-2.5 text-center">${imgHtml}</td>
-                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
-                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+            document.getElementById('favoritesCategoryCountLabel').innerHTML = `<span class="text-xs text-slate-500 font-medium">0 favorites listed</span>`;
+            return;
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
-        modal.show();
+        const start = (page - 1) * PAGE_SIZE;
+        const paginatedData = currentFavoritesFiltered.slice(start, start + PAGE_SIZE);
+
+        let html = '';
+        paginatedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+
+            html += `
+                <tr class="hover:bg-rose-50/30 transition-colors">
+                    <td class="p-2.5 text-center">${imgHtml}</td>
+                    <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                    <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                    <td class="p-3.5 text-slate-600">
+                        <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
+                    </td>
+                    <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                    <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        renderPaginationControls(currentFavoritesFiltered.length, page, 'favoritesCategoryCountLabel', 'renderFavoritesCategoryTable');
     }
 
     // Work Orders Script
@@ -593,6 +649,7 @@
     let filteredWorkOrders = [];
     let currentCategoryKey = '';
     let currentCategoryTitle = '';
+    let isOverdueTabGlobal = false;
 
     function openStatusDetailsModal(statusKey, title) {
         currentCategoryKey = statusKey;
@@ -603,11 +660,11 @@
 
         filteredWorkOrders = allBuyerWorkOrders.filter(wo => wo.category === statusKey);
 
-        const isOverdueTab = (statusKey === 'overdue');
+        isOverdueTabGlobal = (statusKey === 'overdue');
         const overdueDaysToggleWrapper = document.getElementById('toggleColOverdueDaysWrapper');
         const thOverdueDays = document.getElementById('thOverdueDays');
 
-        if (isOverdueTab) {
+        if (isOverdueTabGlobal) {
             overdueDaysToggleWrapper.style.display = 'inline-flex';
             thOverdueDays.style.display = '';
         } else {
@@ -615,17 +672,18 @@
             thOverdueDays.style.display = 'none';
         }
 
-        renderWorkOrderTable(filteredWorkOrders, isOverdueTab);
+        renderWorkOrderTable(1);
 
         const modal = new bootstrap.Modal(document.getElementById('statusWorkOrdersModal'));
         modal.show();
     }
 
-    function renderWorkOrderTable(data, isOverdueTab) {
+    function renderWorkOrderTable(page) {
+        workOrdersCurrentPage = page;
         const tbody = document.getElementById('statusWorkOrdersBody');
-        const totalColumns = isOverdueTab ? 8 : 7;
+        const totalColumns = isOverdueTabGlobal ? 8 : 7;
 
-        if (!data.length) {
+        if (!filteredWorkOrders.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="${totalColumns}" class="p-8 text-center text-slate-400">
@@ -634,13 +692,16 @@
                     </td>
                 </tr>
             `;
-            updateSelectionCount();
+            document.getElementById('modalSelectedCountLabel').innerHTML = `<span class="text-xs text-slate-500 font-medium">0 rows selected</span>`;
             return;
         }
 
+        const start = (page - 1) * PAGE_SIZE;
+        const paginatedData = filteredWorkOrders.slice(start, start + PAGE_SIZE);
+
         let html = '';
-        data.forEach(item => {
-            const overdueColHtml = isOverdueTab 
+        paginatedData.forEach(item => {
+            const overdueColHtml = isOverdueTabGlobal 
                 ? `<td class="p-3.5 text-center col-cell col-overdue_days">
                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-red-100 text-red-700 animate-pulse">
                          ${item.days_overdue} Days
@@ -671,7 +732,8 @@
         tbody.innerHTML = html;
         document.getElementById('modalSelectAll').checked = true;
         applyColumnVisibility();
-        updateSelectionCount();
+        
+        renderPaginationControls(filteredWorkOrders.length, page, 'modalSelectedCountLabel', 'renderWorkOrderTable');
         attachSelectionEvents();
     }
 

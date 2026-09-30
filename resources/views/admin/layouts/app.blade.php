@@ -398,13 +398,7 @@
                     <li class="px-3 pt-4 pb-2">
                         <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Support</span>
                     </li>
-                    <li class="px-3">
-                        <a href="{{ route('admin.chat.index') }}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.chat.*') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}">
-                            <i class="bi bi-chat-dots text-lg"></i>
-                            <span class="text-sm font-medium">Messages</span>
-                        </a>
-                    </li>
+                    
                     <li class="px-3">
                         <a href="{{ route('admin.stock-order.index') }}"
                             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.stock-order.*') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}">
@@ -456,13 +450,7 @@
                         </a>
                     </li>
                     @endif
-                    <li class="px-3">
-                        <a href="{{ route('admin.chat.index') }}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.chat.*') ? 'bg-white/20 font-bold' : 'text-white/70 hover:text-white' }}">
-                            <i class="bi bi-chat-dots text-lg"></i>
-                            <span class="text-sm font-medium">Messages</span>
-                        </a>
-                    </li>
+                    
 
                     <!-- Operations Section -->
                     <li class="px-3 pt-4 pb-2">
@@ -744,10 +732,7 @@
                                 <span id="realTimeClock">00:00:00</span>
                             </div>
 
-                            <!-- Chat/Messages Icon -->
-                            <a href="{{ route('admin.chat.index') }}" class="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg text-white/90 text-[0.85rem] font-bold hover:bg-white/20 transition-colors relative" title="Messages">
-                                <i class="bi bi-chat-dots"></i>
-                            </a>
+                           
 
                             <!-- Meetings Icon Dropdown -->
                             <div class="dropdown">

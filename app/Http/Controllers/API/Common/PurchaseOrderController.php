@@ -40,6 +40,13 @@ class PurchaseOrderController extends Controller
             || $user instanceof \App\Models\CraftsmanStaff;
     }
 
+    private function getCraftsmanCode($user)
+    {
+        return $user instanceof \App\Models\CraftsmanStaff 
+            ? ($user->craftsman->craftman_code ?? null) 
+            : ($user->craftman_code ?? null);
+    }
+
     private function checkPermission($user, $specificPermission = 'po_view'): bool
     {
         if ($this->isAdmin($user)) return true;
@@ -91,7 +98,7 @@ class PurchaseOrderController extends Controller
         $scopeFilter = function ($query) use ($user, $admin) {
             if ($admin) return $query;
             if ($this->isCraftsman($user)) {
-                return $query->where('allocated_craftsman_code', $user->craftman_code);
+                return $query->where('allocated_craftsman_code', $this->getCraftsmanCode($user));
             }
             return $query->where('id', 0); // No access for others (like Buyers)
         };
@@ -215,6 +222,11 @@ class PurchaseOrderController extends Controller
                 $q->where('craftsman_status', 'rejected')
                     ->orWhereRaw('JSON_LENGTH(rejected_items) > 0');
             })))->count(),
+            'overdue'      => $applyFilters($scopeFilter(PurchaseOrder::where('status', '!=', 'completed')
+                ->where(function($q) {
+                    $q->where('craftsman_status', '!=', 'rejected')->orWhereNull('craftsman_status');
+                })
+                ->whereDate('due_date', '<', now()->toDateString())))->count(),
         ];
 
         $query = $scopeFilter(PurchaseOrder::query());
@@ -248,6 +260,13 @@ class PurchaseOrderController extends Controller
                     $q->where('craftsman_status', 'rejected')
                         ->orWhereRaw('JSON_LENGTH(rejected_items) > 0');
                 });
+                break;
+            case 'overdue':
+                $query->where('status', '!=', 'completed')
+                      ->where(function($q) {
+                          $q->where('craftsman_status', '!=', 'rejected')->orWhereNull('craftsman_status');
+                      })
+                      ->whereDate('due_date', '<', now()->toDateString());
                 break;
             case 'all':
                 break;
@@ -413,7 +432,7 @@ class PurchaseOrderController extends Controller
 
         // Authorization for non-admins
         if (!$this->isAdmin($user)) {
-            if ($this->isCraftsman($user) && $purchaseOrder->allocated_craftsman_code !== $user->craftman_code) {
+            if ($this->isCraftsman($user) && $purchaseOrder->allocated_craftsman_code !== $this->getCraftsmanCode($user)) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
         }

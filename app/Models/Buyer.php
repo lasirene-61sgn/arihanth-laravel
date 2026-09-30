@@ -207,8 +207,8 @@ class Buyer extends Authenticatable
             'design',
             'catalogue',
             'work_order',
-            'wo_create',
-            'wo_edit',
+            // 'wo_create',
+            // 'wo_edit',
             'stock_order',
             'repairs',
             'favorites',
@@ -217,6 +217,7 @@ class Buyer extends Authenticatable
             'user_management',
             'meetings',
             'messages',
+            'dashboard_details',
         ];
     }
 

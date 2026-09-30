@@ -321,11 +321,22 @@ class RepairController extends Controller
             ? $request->item_received_through_custom 
             : $request->item_received_through;
 
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
+        $deliveredTo = $request->item_delivered_to === '__custom__'
+            ? $request->item_delivered_to_custom
+            : $request->item_delivered_to;
+
         $repair->update([
             'status' => 'Completed',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
             'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+            'item_delivered_by_type' => $request->item_delivered_by_type,
+            'item_delivered_by' => $deliveredBy,
+            'item_delivered_to' => $deliveredTo,
         ]);
         
         if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
@@ -339,23 +350,30 @@ class RepairController extends Controller
     {
         $repair = Repair::findOrFail($id);
 
-        $deliveredBy = $request->item_delivered_by === '__custom__' 
-            ? $request->item_delivered_by_custom 
-            : $request->item_delivered_by;
-
-        $deliveredTo = $request->item_delivered_to === '__custom__'
-            ? $request->item_delivered_to_custom
-            : $request->item_delivered_to;
-
         $repair->update([
             'status' => 'Buyer_Accepted',
             'buyer_accepted_at' => now(),
-            'item_delivered_by_type' => $request->item_delivered_by_type,
-            'item_delivered_by' => $deliveredBy,
-            'item_delivered_to' => $deliveredTo,
         ]);
 
         return redirect()->route('super-admin.repairs.index', ['tab' => 'completed'])->with('success', 'Repair marked as fully completed and delivered.');
+    }
+
+    public function bulkMarkCraftsmanComplete(Request $request)
+    {
+        $repairIds = $request->input('repair_ids', []);
+        if (empty($repairIds)) {
+            return redirect()->back()->with('error', 'No repair orders selected.');
+        }
+
+        $repairs = Repair::whereIn('id', $repairIds)->get();
+            
+        foreach ($repairs as $repair) {
+            $repair->update([
+                'status' => 'Craftsman_Completed',
+            ]);
+        }
+
+        return redirect()->route('super-admin.repairs.index', ['tab' => 'for_approval'])->with('success', count($repairs) . ' repair orders marked as Craftsman Completed and moved to Craftsman Approval tab.');
     }
 
     public function bulkComplete(Request $request)
@@ -369,6 +387,14 @@ class RepairController extends Controller
             ? $request->item_received_through_custom 
             : $request->item_received_through;
 
+        $deliveredBy = $request->item_delivered_by === '__custom__' 
+            ? $request->item_delivered_by_custom 
+            : $request->item_delivered_by;
+
+        $deliveredTo = $request->item_delivered_to === '__custom__'
+            ? $request->item_delivered_to_custom
+            : $request->item_delivered_to;
+
         $repairs = Repair::whereIn('id', $repairIds)->get();
             
         foreach ($repairs as $repair) {
@@ -377,6 +403,9 @@ class RepairController extends Controller
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+                'item_delivered_by_type' => $request->item_delivered_by_type,
+                'item_delivered_by' => $deliveredBy,
+                'item_delivered_to' => $deliveredTo,
             ]);
             if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
                 $repair->buyer->notify(new RepairCompleted($repair));
@@ -393,23 +422,12 @@ class RepairController extends Controller
             return redirect()->back()->with('error', 'No repair orders selected.');
         }
 
-        $deliveredBy = $request->item_delivered_by === '__custom__' 
-            ? $request->item_delivered_by_custom 
-            : $request->item_delivered_by;
-
-        $deliveredTo = $request->item_delivered_to === '__custom__'
-            ? $request->item_delivered_to_custom
-            : $request->item_delivered_to;
-
         $repairs = Repair::whereIn('id', $repairIds)->get();
             
         foreach ($repairs as $repair) {
             $repair->update([
                 'status' => 'Buyer_Accepted',
                 'buyer_accepted_at' => now(),
-                'item_delivered_by_type' => $request->item_delivered_by_type,
-                'item_delivered_by' => $deliveredBy,
-                'item_delivered_to' => $deliveredTo,
             ]);
         }
 

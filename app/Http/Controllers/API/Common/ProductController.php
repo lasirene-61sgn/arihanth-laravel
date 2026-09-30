@@ -42,7 +42,19 @@ class ProductController extends Controller
         if (isset($user->role) && ($user->role === 'craftsman')) {
             return $user->craftman_code ?? null;
         }
+        if (isset($user->role) && ($user->role === 'craftsman_staff')) {
+            $staff = \App\Models\CraftsmanStaff::with('craftsman')->find($user->id);
+            return $staff->craftsman->craftman_code ?? null;
+        }
         return null; // SuperAdmin / Admin
+    }
+
+    private function isCraftsman($user): bool
+    {
+        return ($user->role ?? '') === 'craftsman' 
+            || ($user->role ?? '') === 'craftsman_staff'
+            || $user instanceof \App\Models\Craftman
+            || $user instanceof \App\Models\CraftsmanStaff;
     }
 
     private function isAdmin($user): bool
