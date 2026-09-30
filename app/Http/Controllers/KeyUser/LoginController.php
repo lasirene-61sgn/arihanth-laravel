@@ -156,11 +156,11 @@ class LoginController extends Controller
     $woCompletedCount  = $woCompletedItems->count();
     $woOverdueCount    = $woOverdueItems->count();
 
-    $woNewWeight       = $woNewItems->sum(fn($wo) => (float) str_replace(',', '', $wo->weight_to ?? 0));
-    $woAllocatedWeight = $woAllocatedItems->sum(fn($wo) => (float) str_replace(',', '', $wo->weight_to ?? 0));
-    $woInProcessWeight = $woInProcessItems->sum(fn($wo) => (float) str_replace(',', '', $wo->weight_to ?? 0));
-    $woCompletedWeight = $woCompletedItems->sum(fn($wo) => (float) str_replace(',', '', $wo->weight_to ?? 0));
-    $woOverdueWeight   = $woOverdueItems->sum(fn($wo) => (float) str_replace(',', '', $wo->weight_to ?? 0));
+    $woNewWeight       = $woNewItems->sum('weight_to');
+    $woAllocatedWeight = $woAllocatedItems->sum('weight_to');
+    $woInProcessWeight = $woInProcessItems->sum('weight_to');
+    $woCompletedWeight = $woCompletedItems->sum('weight_to');
+    $woOverdueWeight   = $woOverdueItems->sum('weight_to');
 
     // Sanitized Work Orders (No Craftsman Data Included)
     $modalWorkOrders = $allWorkOrders->map(function ($wo) use ($today, $woNewItems, $woAllocatedItems, $woInProcessItems, $woCompletedItems, $woOverdueItems) {
