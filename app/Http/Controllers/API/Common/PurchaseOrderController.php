@@ -388,10 +388,72 @@ class PurchaseOrderController extends Controller
             return $po;
         });
 
+        $basePermissions = [
+            'can_create' => false,
+            'can_edit' => false,
+            'can_bulk_allocate' => false,
+            'can_bulk_accept' => false,
+            'can_bulk_reject' => false,
+            'can_bulk_complete' => false,
+            'can_approve' => false,
+            'can_reallocate' => false,
+            'can_complete' => false
+        ];
+
+        $getTabPerms = function($tabName) use ($user, $basePermissions) {
+            $prefix = strtolower(str_replace(' ', '_', $tabName)) . '_';
+            $perms = $basePermissions;
+            $actions = [
+                'po_create' => 'can_create', 
+                'po_edit' => 'can_edit', 
+                'po_allocate' => 'can_allocate', 
+                'po_bulk_allocate' => 'can_bulk_allocate', 
+                'po_accept' => 'can_accept', 
+                'po_bulk_accept' => 'can_bulk_accept', 
+                'po_reject' => 'can_reject', 
+                'po_bulk_reject' => 'can_bulk_reject', 
+                'po_complete' => 'can_complete', 
+                'po_bulk_complete' => 'can_bulk_complete', 
+                'po_approve' => 'can_approve', 
+                'po_bulk_approve' => 'can_bulk_approve', 
+                'po_reallocate' => 'can_reallocate'
+            ];
+            foreach ($actions as $action => $canKey) {
+                $perms[$canKey] = $this->isAdmin($user) || $this->checkPermission($user, "{$prefix}{$action}");
+            }
+            return $perms;
+        };
+
+        $availableTabs = [];
+        if ($this->isAdmin($user)) {
+             $availableTabs = [
+                 ['id' => 'created', 'label' => 'Created', 'count' => $counts['created'], 'global_permissions' => $getTabPerms('Created Tab')],
+                 ['id' => 'allocated', 'label' => 'Allocated', 'count' => $counts['allocated'], 'global_permissions' => $getTabPerms('Allocated Tab')],
+                 ['id' => 'in_process', 'label' => 'In Process', 'count' => $counts['in_process'], 'global_permissions' => $getTabPerms('In Process Tab')],
+                 ['id' => 'for_approval', 'label' => 'For Approval', 'count' => $counts['for_approval'], 'global_permissions' => $getTabPerms('For Approval Tab')],
+                 ['id' => 'completed', 'label' => 'Completed', 'count' => $counts['completed'], 'global_permissions' => $getTabPerms('Completed Tab')],
+                 ['id' => 'rejected', 'label' => 'Rejected', 'count' => $counts['rejected'], 'global_permissions' => $getTabPerms('Rejected Tab')],
+                 ['id' => 'all', 'label' => 'All', 'count' => $counts['all'], 'global_permissions' => $getTabPerms('All Orders Tab')],
+             ];
+        } else if ($this->isCraftsman($user)) {
+             $availableTabs = [
+                 ['id' => 'allocated', 'label' => 'Allocated', 'count' => $counts['allocated'], 'global_permissions' => $getTabPerms('Allocated Tab')],
+                 ['id' => 'in_process', 'label' => 'In Process', 'count' => $counts['in_process'], 'global_permissions' => $getTabPerms('In Process Tab')],
+                 ['id' => 'for_approval', 'label' => 'For Approval', 'count' => $counts['for_approval'], 'global_permissions' => $getTabPerms('For Approval Tab')],
+                 ['id' => 'completed', 'label' => 'Completed', 'count' => $counts['completed'], 'global_permissions' => $getTabPerms('Completed Tab')],
+                 ['id' => 'rejected', 'label' => 'Rejected', 'count' => $counts['rejected'], 'global_permissions' => $getTabPerms('Rejected Tab')],
+             ];
+        }
+
+        $paginatedData = $purchaseOrders->toArray();
+        $paginatedData = array_merge([
+            'available_tabs' => $availableTabs,
+        ], $paginatedData);
+
         return response()->json([
             'success' => true,
             'counts'  => $counts,
-            'data'    => $purchaseOrders
+            'data'    => $paginatedData
         ]);
     }
 

@@ -230,6 +230,10 @@
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="po_reject" id="perm_po_reject" {{ is_array(old('permissions')) && in_array('po_reject', old('permissions')) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="perm_po_reject">Reject <small class="text-muted">(API)</small></label>
                                         </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="po_complete" id="perm_po_complete" {{ is_array(old('permissions')) && in_array('po_complete', old('permissions')) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_po_complete">Complete <small class="text-muted">(API)</small></label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -288,8 +292,16 @@
                                     <h6 class="fw-bold text-secondary mb-2">Design & Catalogue</h6>
                                     <div class="d-flex flex-wrap gap-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="design_view" id="perm_design_view" {{ is_array(old('permissions')) && in_array('design_view', old('permissions')) ? 'checked' : '' }}>
+                                                                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="design_view" id="perm_design_view" {{ is_array(old('permissions')) && in_array('design_view', old('permissions')) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="perm_design_view">Design (View)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="design_accept" id="perm_design_accept" {{ is_array(old('permissions')) && in_array('design_accept', old('permissions')) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_design_accept">Design (Accept)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="design_reject" id="perm_design_reject" {{ is_array(old('permissions')) && in_array('design_reject', old('permissions')) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="perm_design_reject">Design (Reject)</label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="catalogue_view" id="perm_catalogue_view" {{ is_array(old('permissions')) && in_array('catalogue_view', old('permissions')) ? 'checked' : '' }}>

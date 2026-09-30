@@ -162,6 +162,8 @@ class KeyUser extends Authenticatable
         return [
             'product',
             'design',
+            'design_accept',
+            'design_reject',
             'catalogue',
             'work_order',
             'user_management',
