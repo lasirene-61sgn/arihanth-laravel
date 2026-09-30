@@ -235,8 +235,6 @@ class Craftman extends Authenticatable
             'catalogue',
             'purchase_order',
             'work_order',
-            'wo_accept',
-            'wo_reject',
             'wo_complete',
             'stock_order',
             'repair',

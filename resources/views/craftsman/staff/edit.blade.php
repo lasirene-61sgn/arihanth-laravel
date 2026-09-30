@@ -97,8 +97,7 @@
                         <h4 class="font-medium text-sm text-gray-800 mb-2">Work Orders</h4>
                         <div class="flex flex-wrap gap-4">
                             <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_view" {{ in_array('wo_view', $perms) ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">View</span></label>
-                            <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_accept" {{ in_array('wo_accept', $perms) ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">Accept</span></label>
-                            <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_reject" {{ in_array('wo_reject', $perms) ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">Reject</span></label>
+
                         </div>
                     </div>
 

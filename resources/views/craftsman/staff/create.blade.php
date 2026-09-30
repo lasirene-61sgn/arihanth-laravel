@@ -76,8 +76,7 @@
                         <h4 class="font-medium text-sm text-gray-800 mb-2">Work Orders</h4>
                         <div class="flex flex-wrap gap-4">
                             <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_view" class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">View</span></label>
-                            <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_accept" class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">Accept</span></label>
-                            <label class="inline-flex items-center"><input type="checkbox" name="permissions[]" value="wo_reject" class="rounded border-gray-300 text-indigo-600"><span class="ml-2 text-sm text-gray-700">Reject</span></label>
+
                         </div>
                     </div>
 

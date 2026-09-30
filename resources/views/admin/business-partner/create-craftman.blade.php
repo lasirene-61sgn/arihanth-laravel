@@ -527,14 +527,7 @@
                         <div class="row mt-3">
                             <div class="col-md-12">
                                 <h5>Work Order Permissions</h5>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="wo_accept" name="permissions[wo_accept]" value="true" checked>
-                                    <label class="form-check-label" for="wo_accept">Accept Work Order</label>
-                                </div>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="wo_reject" name="permissions[wo_reject]" value="true" checked>
-                                    <label class="form-check-label" for="wo_reject">Reject Work Order</label>
-                                </div>
+
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="wo_complete" name="permissions[wo_complete]" value="true" checked>
                                     <label class="form-check-label" for="wo_complete">Complete Work Order</label>

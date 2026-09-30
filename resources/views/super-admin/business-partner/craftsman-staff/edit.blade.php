@@ -206,14 +206,7 @@
                                             <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_view" id="perm_wo_view" {{ in_array('wo_view', $currentPermissions) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="perm_wo_view">View</label>
                                         </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_accept" id="perm_wo_accept" {{ in_array('wo_accept', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_wo_accept">Accept</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="permissions[]" value="wo_reject" id="perm_wo_reject" {{ in_array('wo_reject', $currentPermissions) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="perm_wo_reject">Reject</label>
-                                        </div>
+
                                     </div>
                                 </div>
                             </div>
