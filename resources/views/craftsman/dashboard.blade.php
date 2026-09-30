@@ -227,11 +227,20 @@
                 </div>
             </div>
 
-            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex items-center justify-between">
-                <span class="text-xs text-slate-500 font-medium" id="favoritesCategoryCountLabel">0 favorites listed</span>
-                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">
-                    Close
-                </button>
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex flex-wrap items-center justify-between w-full no-print">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-medium" id="favoritesCategoryCountLabel">0 favorites listed</span>
+                    <select id="favoritesPerPage" class="form-select text-xs rounded-md border-slate-200 py-1 pl-2 pr-6" onchange="changeFavoritesPage(1)">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="30">30 per page</option>
+                        <option value="40">40 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1" id="favoritesPagination"></div>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -503,6 +512,21 @@
                 </form>
             </div>
 
+            <div class="modal-footer border-t border-slate-100 bg-slate-50 px-6 py-3 flex flex-wrap items-center justify-between w-full no-print">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-medium" id="craftsmanOrdersSelectedCount">0 orders selected</span>
+                    <select id="craftsmanOrdersPerPage" class="form-select text-xs rounded-md border-slate-200 py-1 pl-2 pr-6" onchange="changeCraftsmanOrdersPage(1)">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="30">30 per page</option>
+                        <option value="40">40 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1" id="craftsmanOrdersPagination"></div>
+                <button type="button" class="px-5 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors" data-bs-dismiss="modal">Close</button>
+            </div>
             <div class="modal-body p-0 max-h-[60vh] overflow-y-auto bg-white hidden" id="modalPoTableWrapper">
                 <form action="{{ route('craftsman.purchase-order.print-selected') }}" method="POST" id="modalPoPrintForm" target="_blank">
                     @csrf
@@ -677,100 +701,152 @@
 </div>
 
 <script>
-    // Craftsman Designs Category Modal
-    const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
 
-    function openCraftsmanDesignModal(categoryName) {
-        document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
-        document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
+    function renderPaginationUI(containerId, currentPage, totalItems, perPage, changePageFuncName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const totalPages = Math.ceil(totalItems / perPage);
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        let html = '';
+        html += `<button type="button" class="px-2 py-1 mx-0.5 text-xs border rounded ${currentPage <= 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white hover:bg-slate-50 text-slate-700'}" ${currentPage > 1 ? 'onclick="'+changePageFuncName+'('+(currentPage - 1)+')"': ''}><i class="bi bi-chevron-left"></i></button>`;
+        
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
 
-        const filtered = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                html += `<button type="button" class="px-2.5 py-1 mx-0.5 text-xs border rounded bg-emerald-600 text-white font-bold">${i}</button>`;
+            } else {
+                html += `<button type="button" class="px-2.5 py-1 mx-0.5 text-xs border rounded bg-white hover:bg-slate-50 text-slate-700" onclick="${changePageFuncName}(${i})">${i}</button>`;
+            }
+        }
+        
+        html += `<button type="button" class="px-2 py-1 mx-0.5 text-xs border rounded ${currentPage >= totalPages ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white hover:bg-slate-50 text-slate-700'}" ${currentPage < totalPages ? 'onclick="'+changePageFuncName+'('+(currentPage + 1)+')"': ''}><i class="bi bi-chevron-right"></i></button>`;
+        
+        container.innerHTML = html;
+    }
+
+    let currentCraftsmanDesigns = [];
+    let currentCraftsmanDesignsPage = 1;
+
+    function changeCraftsmanDesignsPage(page) {
+        currentCraftsmanDesignsPage = page;
+        renderCraftsmanDesignsTable();
+    }
+
+    function renderCraftsmanDesignsTable() {
         const tbody = document.getElementById('craftsmanCategoryDesignsBody');
+        const perPage = parseInt(document.getElementById('designsPerPage')?.value || 10);
+        
+        const countLabel = document.getElementById('craftsmanCategoryDesignsCountLabel');
+        if (countLabel) countLabel.textContent = `${currentCraftsmanDesigns.length} design(s) found`;
+        
+        if (!currentCraftsmanDesigns.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400"><i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>No designs found.</td></tr>`;
+            renderPaginationUI('designsPagination', 1, 0, perPage, 'changeCraftsmanDesignsPage');
+            return;
+        }
 
-        document.getElementById('craftsmanCategoryDesignsCountLabel').textContent = `${filtered.length} design(s) found`;
+        const startIndex = (currentCraftsmanDesignsPage - 1) * perPage;
+        const pagedData = currentCraftsmanDesigns.slice(startIndex, startIndex + perPage);
 
-        if (!filtered.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-8 text-center text-slate-400">
-                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
-                        No designs found for this category.
-                    </td>
-                </tr>
-            `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url ?
-                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
-                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-                html += `
-                    <tr class="hover:bg-emerald-50/30 transition-colors">
+        let html = '';
+        pagedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+            html += `<tr class="hover:bg-emerald-50/30 transition-colors">
                         <td class="p-2.5 text-center">${imgHtml}</td>
                         <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
                         <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
+                        <td class="p-3.5 text-slate-600"><span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span></td>
                         <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
                         <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
+                    </tr>`;
+        });
+        tbody.innerHTML = html;
+        renderPaginationUI('designsPagination', currentCraftsmanDesignsPage, currentCraftsmanDesigns.length, perPage, 'changeCraftsmanDesignsPage');
+    }
+
+    let currentCraftsmanFavorites = [];
+    let currentCraftsmanFavoritesPage = 1;
+
+    function changeFavoritesPage(page) {
+        currentCraftsmanFavoritesPage = page;
+        renderCraftsmanFavoritesTable();
+    }
+
+    function renderCraftsmanFavoritesTable() {
+        const tbody = document.getElementById('favoritesCategoryBody');
+        const perPage = parseInt(document.getElementById('favoritesPerPage')?.value || 10);
+        
+        const countLabel = document.getElementById('favoritesCategoryCountLabel');
+        if (countLabel) countLabel.textContent = `${currentCraftsmanFavorites.length} favorite(s) found`;
+        
+        if (!currentCraftsmanFavorites.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400"><i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>No favorites found.</td></tr>`;
+            renderPaginationUI('favoritesPagination', 1, 0, perPage, 'changeFavoritesPage');
+            return;
         }
 
+        const startIndex = (currentCraftsmanFavoritesPage - 1) * perPage;
+        const pagedData = currentCraftsmanFavorites.slice(startIndex, startIndex + perPage);
+
+        let html = '';
+        pagedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+            html += `<tr class="hover:bg-rose-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600"><span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span></td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>`;
+        });
+        tbody.innerHTML = html;
+        renderPaginationUI('favoritesPagination', currentCraftsmanFavoritesPage, currentCraftsmanFavorites.length, perPage, 'changeFavoritesPage');
+    }
+
+
+    // Craftsman Designs Category Modal
+    const allCraftsmanDesigns = @json($categoryDesignsModal ?? []);
+
+    
+    function openCraftsmanDesignModal(categoryName) {
+        document.getElementById('modalCraftsmanCategoryTitle').textContent = categoryName;
+        document.getElementById('modalCraftsmanCategoryBadge').textContent = categoryName;
+        currentCraftsmanDesigns = allCraftsmanDesigns.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentCraftsmanDesignsPage = 1;
+        renderCraftsmanDesignsTable();
         const modal = new bootstrap.Modal(document.getElementById('craftsmanCategoryDesignsModal'));
         modal.show();
     }
 
+
     // Craftsman Favorites Category Modal
     const allCraftsmanFavorites = @json($modalFavorites ?? ($favoritesDesignsModal ?? []));
 
+    
     function openFavoritesCategoryModal(categoryName) {
         document.getElementById('favoritesCategoryTitle').textContent = categoryName;
-
-        const filtered = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
-        const tbody = document.getElementById('favoritesCategoryBody');
-
-        document.getElementById('favoritesCategoryCountLabel').textContent = `${filtered.length} favorite(s) found`;
-
-        if (!filtered.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-8 text-center text-slate-400">
-                        <i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>
-                        No favorites found for this category.
-                    </td>
-                </tr>
-            `;
-        } else {
-            let html = '';
-            filtered.forEach(item => {
-                const imgHtml = item.image_url ?
-                    `<img src="${item.image_url}" alt="${item.design_code}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">` :
-                    `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
-
-                html += `
-                    <tr class="hover:bg-rose-50/30 transition-colors">
-                        <td class="p-2.5 text-center">${imgHtml}</td>
-                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
-                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
-                        <td class="p-3.5 text-slate-600">
-                            <span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span>
-                        </td>
-                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
-                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-        }
-
+        currentCraftsmanFavorites = allCraftsmanFavorites.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentCraftsmanFavoritesPage = 1;
+        renderCraftsmanFavoritesTable();
         const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
         modal.show();
     }
+
 
     // Order Status Modals & Tabs
     let currentModalTab = 'wo';
@@ -831,6 +907,43 @@
         applyModalFilter();
     }
 
+    
+    let craftsmanCurrentOrderPage = 1;
+    let craftsmanFilteredOrdersList = [];
+
+    function changeCraftsmanOrdersPage(page) {
+        craftsmanCurrentOrderPage = page;
+        renderCraftsmanOrdersPage();
+    }
+
+    function renderCraftsmanOrdersPage() {
+        const perPage = parseInt(document.getElementById('craftsmanOrdersPerPage')?.value || 10);
+        
+        // Hide all rows in the filtered list
+        craftsmanFilteredOrdersList.forEach(row => {
+            row.style.display = 'none';
+        });
+
+        // Show only the rows for the current page
+        const startIndex = (craftsmanCurrentOrderPage - 1) * perPage;
+        const pageRows = craftsmanFilteredOrdersList.slice(startIndex, startIndex + perPage);
+        
+        pageRows.forEach(row => {
+            row.style.display = '';
+        });
+
+        if(typeof renderPaginationUI === 'function') {
+            renderPaginationUI('craftsmanOrdersPagination', craftsmanCurrentOrderPage, craftsmanFilteredOrdersList.length, perPage, 'changeCraftsmanOrdersPage');
+        }
+        
+        // Update selection count text
+        const countSpan = document.getElementById('craftsmanOrdersSelectedCount');
+        if (countSpan) {
+            countSpan.textContent = `Showing ${pageRows.length} of ${craftsmanFilteredOrdersList.length} orders`;
+        }
+    }
+
+    
     function applyModalFilter() {
         const searchInput = document.getElementById('modalLiveSearch');
         const clearBtn = document.getElementById('clearModalSearchBtn');
@@ -843,138 +956,250 @@
 
         const regex = rawTerm !== '' ? new RegExp(`(${rawTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi') : null;
 
-        function filterTable(rows, noMatchElem, counterElemId) {
-            let count = 0;
+        craftsmanFilteredOrdersList = [];
+        let woCount = 0;
+        let poCount = 0;
 
-            rows.forEach(row => {
-                const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
-                const isOverdue = row.getAttribute('data-is-overdue') === '1';
+        const processRow = (row, counterElemId) => {
+            const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+            const isOverdue = row.getAttribute('data-is-overdue') === '1';
 
-                let statusMatches = false;
-                if (currentModalStatus === 'all') {
-                    statusMatches = true;
-                } else if (currentModalStatus === 'overdue') {
-                    statusMatches = isOverdue;
+            let statusMatches = false;
+            if (currentModalStatus === 'all') {
+                statusMatches = true;
+            } else if (currentModalStatus === 'overdue') {
+                statusMatches = isOverdue;
+            } else {
+                statusMatches = (rowStatus === currentModalStatus);
+            }
+
+            const cells = row.querySelectorAll('.modal-search-item');
+            let searchMatches = (term === '');
+
+            cells.forEach(cell => {
+                const originalText = cell.getAttribute('data-text') || '';
+                if (term !== '' && originalText.toLowerCase().includes(term)) {
+                    searchMatches = true;
+                    cell.innerHTML = originalText.replace(regex, '<span class="highlight-term">$1</span>');
                 } else {
-                    statusMatches = (rowStatus === currentModalStatus);
-                }
-
-                const cells = row.querySelectorAll('.modal-search-item');
-                let searchMatches = (term === '');
-
-                cells.forEach(cell => {
-                    const originalText = cell.getAttribute('data-text') || '';
-                    if (term !== '' && originalText.toLowerCase().includes(term)) {
-                        searchMatches = true;
-                        cell.innerHTML = originalText.replace(regex, '<span class="highlight-term">$1</span>');
-                    } else {
-                        cell.innerHTML = originalText;
-                    }
-                });
-
-                if (statusMatches && searchMatches) {
-                    row.style.display = '';
-                    count++;
-                } else {
-                    row.style.display = 'none';
+                    cell.innerHTML = originalText;
                 }
             });
 
-            if (noMatchElem) {
-                noMatchElem.classList.toggle('hidden', count > 0 || rows.length === 0);
+            if (statusMatches && searchMatches) {
+                if (currentModalTab === 'wo' && row.classList.contains('modal-wo-row')) {
+                    craftsmanFilteredOrdersList.push(row);
+                    woCount++;
+                } else if (currentModalTab === 'po' && row.classList.contains('modal-po-row')) {
+                    craftsmanFilteredOrdersList.push(row);
+                    poCount++;
+                } else {
+                    row.style.display = 'none';
+                    if (row.classList.contains('modal-wo-row')) woCount++;
+                    if (row.classList.contains('modal-po-row')) poCount++;
+                }
+            } else {
+                row.style.display = 'none';
             }
-
-            const counter = document.getElementById(counterElemId);
-            if (counter) counter.textContent = count;
-        }
+        };
 
         const woRows = document.querySelectorAll('#modalWoTable tbody tr.modal-wo-row');
         const poRows = document.querySelectorAll('#modalPoTable tbody tr.modal-po-row');
+        
+        woRows.forEach(row => processRow(row, 'modalWoCount'));
+        poRows.forEach(row => processRow(row, 'modalPoCount'));
+
+        const woCountEl = document.getElementById('modalWoCount');
+        if(woCountEl) woCountEl.textContent = woCount;
+        
+        const poCountEl = document.getElementById('modalPoCount');
+        if(poCountEl) poCountEl.textContent = poCount;
+
         const woNoMatch = document.getElementById('modalWoNoMatch');
         const poNoMatch = document.getElementById('modalPoNoMatch');
+        
+        if (currentModalTab === 'wo') {
+            if (woNoMatch) woNoMatch.classList.toggle('hidden', woCount > 0 || woRows.length === 0);
+        } else {
+            if (poNoMatch) poNoMatch.classList.toggle('hidden', poCount > 0 || poRows.length === 0);
+        }
 
-        filterTable(woRows, woNoMatch, 'modalWoCount');
-        filterTable(poRows, poNoMatch, 'modalPoCount');
+        craftsmanCurrentOrderPage = 1;
+        renderCraftsmanOrdersPage();
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('modalLiveSearch');
-        const clearBtn = document.getElementById('clearModalSearchBtn');
+    // 1. Designs Pagination
+    let currentDesigns = [];
+    let currentDesignsPage = 1;
 
-        if (searchInput) {
-            searchInput.addEventListener('input', applyModalFilter);
-        }
-
-        if (clearBtn) {
-            clearBtn.addEventListener('click', function() {
-                searchInput.value = '';
-                applyModalFilter();
-                searchInput.focus();
-            });
-        }
-        
-        // Modal Select All Checkboxes
-        const selectAllModalWo = document.getElementById('selectAllModalWo');
-        if(selectAllModalWo) {
-            selectAllModalWo.addEventListener('change', function() {
-                document.querySelectorAll('.modal-wo-checkbox').forEach(cb => {
-                    // Only check visible rows
-                    if(cb.closest('tr').style.display !== 'none') {
-                        cb.checked = this.checked;
-                    }
-                });
-            });
-        }
-        
-        const selectAllModalPo = document.getElementById('selectAllModalPo');
-        if(selectAllModalPo) {
-            selectAllModalPo.addEventListener('change', function() {
-                document.querySelectorAll('.modal-po-checkbox').forEach(cb => {
-                    // Only check visible rows
-                    if(cb.closest('tr').style.display !== 'none') {
-                        cb.checked = this.checked;
-                    }
-                });
-            });
-        }
-    });
-
-    function openPrintModal() {
-        const modal = new bootstrap.Modal(document.getElementById('printCustomModal'));
-        modal.show();
+    function changeDesignsPage(page) {
+        currentDesignsPage = page;
+        renderDesignsTable();
     }
 
-    function executePrint() {
-        const checkboxes = document.querySelectorAll('#columnCheckboxes input[type="checkbox"]');
+    function renderDesignsTable() {
+        const tbody = document.getElementById('categoryDesignsBody');
+        const perPage = parseInt(document.getElementById('designsPerPage')?.value || 10);
+        
+        document.getElementById('categoryDesignsCountLabel').textContent = `${currentDesigns.length} design(s) found`;
+        
+        if (!currentDesigns.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400"><i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>No designs found.</td></tr>`;
+            renderPaginationUI('designsPagination', 1, 0, perPage, 'changeDesignsPage');
+            return;
+        }
 
-        checkboxes.forEach(cb => {
-            const classNames = cb.value.split(',');
-            classNames.forEach(cls => {
-                const elements = document.querySelectorAll(`.${cls.trim()}`);
-                elements.forEach(el => {
-                    if (cb.checked) {
-                        el.classList.remove('hidden');
-                    } else {
-                        el.classList.add('hidden');
-                    }
-                });
-            });
+        const startIndex = (currentDesignsPage - 1) * perPage;
+        const pagedData = currentDesigns.slice(startIndex, startIndex + perPage);
+
+        let html = '';
+        pagedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+            html += `<tr class="hover:bg-amber-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600"><span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span></td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>`;
         });
-
-        const modalEl = document.getElementById('printCustomModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-
-        setTimeout(() => {
-            window.print();
-            checkboxes.forEach(cb => {
-                const classNames = cb.value.split(',');
-                classNames.forEach(cls => {
-                    const elements = document.querySelectorAll(`.${cls.trim()}`);
-                    elements.forEach(el => el.classList.remove('hidden'));
-                });
-            });
-        }, 500);
+        tbody.innerHTML = html;
+        renderPaginationUI('designsPagination', currentDesignsPage, currentDesigns.length, perPage, 'changeDesignsPage');
     }
+
+    const origOpenDesignCategoryModal = window.openDesignCategoryModal || function(){};
+    window.openDesignCategoryModal = function(categoryName) {
+        document.getElementById('modalDesignCategoryTitle').textContent = categoryName;
+        document.getElementById('modalDesignCategoryBadge').textContent = categoryName;
+        
+        let designsArr = typeof allBuyerDesigns !== 'undefined' ? allBuyerDesigns : (typeof allCraftsmanDesigns !== 'undefined' ? allCraftsmanDesigns : []);
+        currentDesigns = designsArr.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentDesignsPage = 1;
+        renderDesignsTable();
+        
+        const modal = new bootstrap.Modal(document.getElementById('categoryDesignsModal'));
+        modal.show();
+    };
+
+
+    // 2. Favorites Pagination
+    let currentFavorites = [];
+    let currentFavoritesPage = 1;
+
+    function changeFavoritesPage(page) {
+        currentFavoritesPage = page;
+        renderFavoritesTable();
+    }
+
+    function renderFavoritesTable() {
+        const tbody = document.getElementById('favoritesCategoryBody');
+        const perPage = parseInt(document.getElementById('favoritesPerPage')?.value || 10);
+        
+        document.getElementById('favoritesCategoryCountLabel').textContent = `${currentFavorites.length} favorite(s) found`;
+        
+        if (!currentFavorites.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400"><i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>No favorites found.</td></tr>`;
+            renderPaginationUI('favoritesPagination', 1, 0, perPage, 'changeFavoritesPage');
+            return;
+        }
+
+        const startIndex = (currentFavoritesPage - 1) * perPage;
+        const pagedData = currentFavorites.slice(startIndex, startIndex + perPage);
+
+        let html = '';
+        pagedData.forEach(item => {
+            const imgHtml = item.image_url 
+                ? `<img src="${item.image_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs mx-auto">`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto"><i class="bi bi-image"></i></div>`;
+            html += `<tr class="hover:bg-rose-50/30 transition-colors">
+                        <td class="p-2.5 text-center">${imgHtml}</td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800">${item.design_code}</td>
+                        <td class="p-3.5 font-medium text-slate-700">${item.design_name}</td>
+                        <td class="p-3.5 text-slate-600"><span class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-medium">${item.category}</span></td>
+                        <td class="p-3.5 text-right font-medium text-slate-600">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900">${item.weight_to}</td>
+                    </tr>`;
+        });
+        tbody.innerHTML = html;
+        renderPaginationUI('favoritesPagination', currentFavoritesPage, currentFavorites.length, perPage, 'changeFavoritesPage');
+    }
+
+    const origOpenFavoritesCategoryModal = window.openFavoritesCategoryModal || function(){};
+    window.openFavoritesCategoryModal = function(categoryName) {
+        document.getElementById('favoritesCategoryTitle').textContent = categoryName;
+        
+        let favsArr = typeof allBuyerFavorites !== 'undefined' ? allBuyerFavorites : (typeof allCraftsmanFavorites !== 'undefined' ? allCraftsmanFavorites : []);
+        currentFavorites = favsArr.filter(d => (d.category || '').toLowerCase() === categoryName.toLowerCase());
+        currentFavoritesPage = 1;
+        renderFavoritesTable();
+        
+        const modal = new bootstrap.Modal(document.getElementById('favoritesCategoryModal'));
+        modal.show();
+    };
+
+    // 3. Work Orders Pagination
+    let currentWoPage = 1;
+    function changeWoPage(page) {
+        currentWoPage = page;
+        
+        let isOverdue = (currentCategoryKey === 'overdue');
+        renderWorkOrderTablePaged(filteredWorkOrders, isOverdue);
+    }
+    
+    function renderWorkOrderTablePaged(data, isOverdueTab) {
+        const tbody = document.getElementById('statusWorkOrdersBody');
+        const perPage = parseInt(document.getElementById('woPerPage')?.value || 10);
+        const totalColumns = isOverdueTab ? 8 : 7;
+        
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="${totalColumns}" class="p-8 text-center text-slate-400"><i class="bi bi-inbox text-3xl block mb-2 opacity-40"></i>No orders found.</td></tr>`;
+            updateSelectionCount();
+            renderPaginationUI('woPagination', 1, 0, perPage, 'changeWoPage');
+            return;
+        }
+
+        const startIndex = (currentWoPage - 1) * perPage;
+        const pagedData = data.slice(startIndex, startIndex + perPage);
+
+        let html = '';
+        pagedData.forEach(item => {
+            const overdueColHtml = isOverdueTab 
+                ? `<td class="p-3.5 text-center col-cell col-overdue_days"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-red-100 text-red-700 animate-pulse">${item.days_overdue} Days</span></td>` : ``;
+            html += `<tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3.5 text-center">
+                            <input type="checkbox" class="wo-row-select rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" value="${item.id}" checked>
+                        </td>
+                        <td class="p-3.5 font-bold font-mono text-slate-800 col-cell col-wo_number">${item.wo_number || item.order_number}</td>
+                        <td class="p-3.5 text-slate-600 col-cell col-due_date">${item.due_date}</td>
+                        ${overdueColHtml}
+                        <td class="p-3.5 text-center font-bold text-slate-700 col-cell col-qty">${item.qty}</td>
+                        <td class="p-3.5 text-right font-medium text-slate-600 col-cell col-weight_from">${item.weight_from}</td>
+                        <td class="p-3.5 text-right font-bold text-slate-900 col-cell col-weight_to">${item.weight_to}</td>
+                        <td class="p-3.5 text-center col-cell col-status">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${item.status_label || item.status}</span>
+                        </td>
+                    </tr>`;
+        });
+        tbody.innerHTML = html;
+        document.getElementById('modalSelectAll').checked = true;
+        
+        if (typeof applyColumnVisibility === 'function') applyColumnVisibility();
+        if (typeof updateSelectionCount === 'function') updateSelectionCount();
+        if (typeof attachSelectionEvents === 'function') attachSelectionEvents();
+        
+        renderPaginationUI('woPagination', currentWoPage, data.length, perPage, 'changeWoPage');
+    }
+
+    // Override the original renderWorkOrderTable if it exists
+    window.renderWorkOrderTable = function(data, isOverdueTab) {
+        currentWoPage = 1;
+        renderWorkOrderTablePaged(data, isOverdueTab);
+    };
+    
 </script>
+
+
 @endsection
