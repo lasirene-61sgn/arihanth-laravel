@@ -118,12 +118,10 @@ Route::get('/account-frozen', function () {
 })->name('account-frozen');
 
 // --- BUYER PANEL ---
-Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {
-});
+Route::middleware(['auth:buyer'])->prefix('buyer')->as('buyer.')->group(function () {});
 
 // --- CRAFTSMAN PANEL ---
-Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {
-});
+Route::middleware(['auth:craftsman'])->prefix('craftsman')->as('craftsman.')->group(function () {});
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -186,11 +184,9 @@ Route::get('/test-craftsman-catalogue', function () {
 });
 // Chat System Routes 
 // Super Admin Routes
-Route::prefix('super-admin')->name('super-admin.')->middleware(['auth:super_admin'])->group(function () {
-});
+Route::prefix('super-admin')->name('super-admin.')->middleware(['auth:super_admin'])->group(function () {});
 // Admin Routes
-Route::prefix('admin')->name('admin.')->middleware(['auth:admin'])->group(function () {
-});
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin'])->group(function () {});
 
 // Test route for design functionality
 Route::get('/test-design', [SuperAdminDesignController::class, 'test']);
@@ -573,6 +569,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{repair}/reject', [App\Http\Controllers\Admin\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/allocate', [App\Http\Controllers\Admin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\Admin\RepairController::class, 'complete'])->name('complete');
+            Route::post('/{repair}/delivery-complete', [App\Http\Controllers\Admin\RepairController::class, 'deliveryComplete'])->name('delivery-complete');
             Route::post('/{repair}/buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
             Route::post('/bulk-mark-craftsman-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkMarkCraftsmanComplete'])->name('bulk-mark-craftsman-complete');
             Route::post('/bulk-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
@@ -880,6 +877,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('/{repair}/reject', [App\Http\Controllers\SuperAdmin\RepairController::class, 'reject'])->name('reject');
             Route::post('/{repair}/allocate', [App\Http\Controllers\SuperAdmin\RepairController::class, 'allocate'])->name('allocate');
             Route::post('/{repair}/complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'complete'])->name('complete');
+            Route::post('/{repair}/delivery-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'deliveryComplete'])->name('delivery-complete');
             Route::post('/{repair}/buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
         });
 
@@ -1616,4 +1614,8 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
 
         // Chat Routes for Craftsman Staff
     });
+});
+
+Route::get('/documentation', function () {
+    return file_get_contents(base_path('document.html'));
 });

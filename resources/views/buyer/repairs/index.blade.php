@@ -248,7 +248,7 @@
                             </div>
                             <div class="col-6">
                                 <span class="text-muted d-block fs-7">Given To</span>
-                                <span>{{ $repair->item_given_to ?? 'N/A' }}</span>
+                                <span>{{ $repair->item_given_by ?? 'N/A' }}</span>
                             </div>
                             @if($repair->status == 'Rejected_by_Admin' && $repair->reject_reason)
                             <div class="col-12 mt-2">

@@ -68,8 +68,8 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="item_given_to" class="form-label">Item Given To</label>
-                                <input type="text" class="form-control" id="item_given_to" name="item_given_to" value="{{ old('item_given_to') }}">
+                                <label for="item_given_by" class="form-label">Item Given To</label>
+                                <input type="text" class="form-control" id="item_given_by" name="item_given_by" value="{{ old('item_given_by') }}">
                             </div>
 
                             <div class="col-md-6 mb-3">

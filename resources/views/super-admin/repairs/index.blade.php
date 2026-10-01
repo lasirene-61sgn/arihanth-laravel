@@ -210,6 +210,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ $activeTab == 'approval_tab' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'approval_tab', 'page' => null]) }}">
+                                Approval Tab <span class="badge bg-secondary ms-1">{{ $counts['approval_tab'] ?? 0 }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ $activeTab == 'buyer_approval' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['tab' => 'buyer_approval', 'page' => null]) }}">
                                 Buyer Approval <span class="badge bg-secondary ms-1">{{ $counts['buyer_approval'] ?? 0 }}</span>
                             </a>
@@ -232,7 +237,7 @@
                     </ul>
                     
                     <div class="mb-3">
-                        @if(in_array($activeTab, ['new', 'allocated']))
+                        @if(in_array($activeTab, ['allocated']))
                         <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#bulkMarkCraftsmanCompleteModal">
                             <i class="bi bi-person-check"></i> Bulk Mark Craftsman Completed
                         </button>
@@ -331,7 +336,7 @@
                                             @endif
 
                                             @if($repair->status == 'Pending')
-                                            <button type="submit" formaction="{{ route('super-admin.repairs.accept', $repair->id) }}" class="btn btn-sm btn-success" title="Accept"><i class="bi bi-check-lg"></i> Accept</button>
+                                            <button type="submit" formaction="{{ route('super-admin.repairs.accept', $repair->id) }}" class="btn btn-sm btn-success" title="Accept" formnovalidate><i class="bi bi-check-lg"></i> Accept</button>
                                             <button type="button" class="btn btn-sm btn-danger" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $repair->id }}">
                                                 <i class="bi bi-x-lg"></i>
                                             </button>
@@ -343,9 +348,15 @@
                                             </button>
                                             @endif
 
-                                            @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
+                                            @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Admin_Approved', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
                                             <button type="button" class="btn btn-sm btn-success" title="Craftsman Approval" data-bs-toggle="modal" data-bs-target="#completeModal{{ $repair->id }}">
                                                 <i class="bi bi-check-circle"></i> Complete
+                                            </button>
+                                            @endif
+
+                                            @if($repair->status == 'Admin_Approved')
+                                            <button type="button" class="btn btn-sm btn-success" title="Record Delivery" data-bs-toggle="modal" data-bs-target="#deliveryCompleteModal{{ $repair->id }}">
+                                                <i class="bi bi-truck"></i> Complete
                                             </button>
                                             @endif
 
@@ -548,7 +559,7 @@
                         </div>
                         @endif
 
-                        @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
+                        @if(!in_array($repair->status, ['Buyer_Accepted', 'Completed', 'Admin_Approved', 'Rejected_by_Admin', 'Buyer_Rejected', 'Pending', 'Accepted', 'Allocated']))
                         <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -565,19 +576,25 @@
                                             </div>
                                             @endif
                                             
-                                            <div class="mb-3">
-                                                <label class="form-label text-muted small mb-1">Item Received Through</label>
-                                                <select name="item_received_through" id="receivedThroughSelect{{ $repair->id }}" class="form-select" onchange="checkCustomInput('receivedThroughSelect{{ $repair->id }}', 'receivedThroughCustom{{ $repair->id }}')">
-                                                    <option value="">-- Select Source --</option>
-                                                    @php
-                                                        $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
-                                                    @endphp
-                                                    @foreach($receivedThroughOptions as $opt)
-                                                        <option value="{{ $opt }}" {{ $repair->item_received_through == $opt ? 'selected' : '' }}>{{ $opt }}</option>
-                                                    @endforeach
-                                                    <option value="__custom__">+ Add New...</option>
-                                                </select>
-                                                <input type="text" name="item_received_through_custom" id="receivedThroughCustom{{ $repair->id }}" placeholder="Enter new source..." class="form-control mt-2 d-none">
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label text-muted small mb-1">Item Received Through</label>
+                                                    <select name="item_received_through" id="receivedThroughSelect{{ $repair->id }}" class="form-select" onchange="checkCustomInput('receivedThroughSelect{{ $repair->id }}', 'receivedThroughCustom{{ $repair->id }}')">
+                                                        <option value="">-- Select Source --</option>
+                                                        @php
+                                                            $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
+                                                        @endphp
+                                                        @foreach($receivedThroughOptions as $opt)
+                                                            <option value="{{ $opt }}" {{ $repair->item_received_through == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                                        @endforeach
+                                                        <option value="__custom__">+ Add New...</option>
+                                                    </select>
+                                                    <input type="text" name="item_received_through_custom" id="receivedThroughCustom{{ $repair->id }}" placeholder="Enter new source..." class="form-control mt-2 d-none">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label text-muted small mb-1">Final Weight</label>
+                                                    <div class="fw-medium">{{ $repair->weight ?: 'N/A' }} g</div>
+                                                </div>
                                             </div>
                                             
                                             <div class="mb-3">
@@ -588,19 +605,43 @@
                                                     @else
                                                         <span class="text-muted fst-italic">No proof uploaded by craftsman.</span>
                                                     @endif
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-success">Approve</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        
+                        @if($repair->status == 'Admin_Approved')
+                        <div class="modal fade" id="deliveryCompleteModal{{ $repair->id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="{{ route('super-admin.repairs.delivery-complete', $repair->id) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Delivery Details for Repair #{{ $repair->id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body space-y-3">
+                                            <p class="mb-3 text-muted">Please provide delivery details for this repair.</p>
                                             
-                                            <div class="mb-3">
+                                            <!-- <div class="mb-3">
                                                 <label class="form-label">Delivered By Type <span class="text-danger">*</span></label>
                                                 <select name="item_delivered_by_type" class="form-select" required>
                                                     <option value="AJPL" {{ $repair->item_delivered_by_type == 'AJPL' ? 'selected' : '' }}>AJPL</option>
                                                     <option value="Self" {{ $repair->item_delivered_by_type == 'Self' ? 'selected' : '' }}>Self</option>
                                                 </select>
-                                            </div>
+                                            </div> -->
 
                                             <div class="mb-3">
-                                                <label class="form-label">Item Delivered By <span class="text-danger">*</span></label>
-                                                <select name="item_delivered_by" id="deliveredBySelect{{ $repair->id }}" class="form-select" required onchange="checkCustomInput('deliveredBySelect{{ $repair->id }}', 'deliveredByCustom{{ $repair->id }}')">
+                                                <label class="form-label">Item Delivering By <span class="text-danger">*</span></label>
+                                                <select name="item_delivered_by" id="deliveryDeliveredBySelect{{ $repair->id }}" class="form-select" required onchange="checkCustomInput('deliveryDeliveredBySelect{{ $repair->id }}', 'deliveryDeliveredByCustom{{ $repair->id }}')">
                                                     <option value="">-- Select Person --</option>
                                                     @php
                                                         $deliveredByOptions = \App\Models\Repair::where('item_delivered_by_type', 'AJPL')->whereNotNull('item_delivered_by')->distinct()->pluck('item_delivered_by');
@@ -610,12 +651,12 @@
                                                     @endforeach
                                                     <option value="__custom__">+ Add New...</option>
                                                 </select>
-                                                <input type="text" name="item_delivered_by_custom" id="deliveredByCustom{{ $repair->id }}" placeholder="Enter delivery person..." class="form-control mt-2 d-none">
+                                                <input type="text" name="item_delivered_by_custom" id="deliveryDeliveredByCustom{{ $repair->id }}" placeholder="Enter delivery person..." class="form-control mt-2 d-none">
                                             </div>
 
-                                            <div class="mb-3">
+                                            <!-- <div class="mb-3">
                                                 <label class="form-label">Item Delivered To <span class="text-danger">*</span></label>
-                                                <select name="item_delivered_to" id="deliveredToSelect{{ $repair->id }}" class="form-select" required onchange="checkCustomInput('deliveredToSelect{{ $repair->id }}', 'deliveredToCustom{{ $repair->id }}')">
+                                                <select name="item_delivered_to" id="deliveryDeliveredToSelect{{ $repair->id }}" class="form-select" required onchange="checkCustomInput('deliveryDeliveredToSelect{{ $repair->id }}', 'deliveryDeliveredToCustom{{ $repair->id }}')">
                                                     <option value="">-- Select Person --</option>
                                                     @php
                                                         $deliveredToOptions = \App\Models\Repair::whereNotNull('item_delivered_to')->distinct()->pluck('item_delivered_to');
@@ -625,12 +666,12 @@
                                                     @endforeach
                                                     <option value="__custom__">+ Add New...</option>
                                                 </select>
-                                                <input type="text" name="item_delivered_to_custom" id="deliveredToCustom{{ $repair->id }}" placeholder="Enter recipient..." class="form-control mt-2 d-none">
-                                            </div>
+                                                <input type="text" name="item_delivered_to_custom" id="deliveryDeliveredToCustom{{ $repair->id }}" placeholder="Enter recipient..." class="form-control mt-2 d-none">
+                                            </div> -->
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-success">Approve</button>
+                                            <button type="submit" class="btn btn-success">Save Delivery</button>
                                         </div>
                                     </form>
                                 </div>

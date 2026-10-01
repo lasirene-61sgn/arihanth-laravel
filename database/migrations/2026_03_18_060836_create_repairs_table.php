@@ -20,6 +20,7 @@ return new class extends Migration
             $table->text('repair_details')->nullable();
             $table->text('sample_details')->nullable();
             $table->string('item_given_to')->nullable();
+            $table->string('item_given_by')->nullable();
             $table->string('image_proof')->nullable();
             $table->string('order_no')->nullable();
             $table->string('repair')->nullable();

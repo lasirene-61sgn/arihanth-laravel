@@ -50,7 +50,8 @@ class Repair extends Model
         'completion_proof',
         'completed_craftsman_name',
         'completed_craftsman_code',
-        'completed_craftsman_mobile'
+        'completed_craftsman_mobile',
+        'item_given_by'
     ];
 
     protected $appends = ['creator_details', 'approver_details', 'allocator_details'];

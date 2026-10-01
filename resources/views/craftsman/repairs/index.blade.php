@@ -208,7 +208,7 @@
                                                     @php
                                                         $receivedThroughOptions = \App\Models\Repair::whereNotNull('item_received_through')->distinct()->pluck('item_received_through');
                                                     @endphp
-                                                    <label class="form-label">Item Given To</label>
+                                                    <label class="form-label">Item Given Through</label>
                                                     <input class="form-control" list="receivedThroughDatalist{{ $repair->id }}" name="item_received_through" placeholder="Type or select (Optional)" value="{{ $repair->item_received_through }}">
                                                     <datalist id="receivedThroughDatalist{{ $repair->id }}">
                                                         @foreach($receivedThroughOptions as $opt)

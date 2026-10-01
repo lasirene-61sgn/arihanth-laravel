@@ -186,7 +186,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="info-label">Item Given To</div>
-                            <div class="text-slate-700 fw-medium small">{{ $repair->item_received_by ?? 'N/A' }}</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_given_to ?? 'N/A' }}</div>
                         </div>
                         <!-- <div class="col-md-6">
                             <div class="info-label">Notes</div>

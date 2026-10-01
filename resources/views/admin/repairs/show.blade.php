@@ -183,8 +183,12 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="info-label">Item Given To</div>
+                            <div class="info-label">Item Given To(CRAFTSMAN)</div>
                             <div class="text-slate-700 fw-medium small">{{ $repair->item_given_to ?? 'N/A' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Item Given By(BUYER)</div>
+                            <div class="text-slate-700 fw-medium small">{{ $repair->item_given_by ?? 'N/A' }}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-label">Notes</div>
@@ -284,7 +288,7 @@
                                     <div class="info-value">{{ $repair->item_delivered_to ?? 'N/A' }}</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="info-label">Item Received By (Buyer)</div>
+                                    <div class="info-label">Item Received By (SELF)</div>
                                     <div class="info-value">{{ $repair->item_received_by ?? 'N/A' }}</div>
                                 </div>
                                 <div class="col-md-8">

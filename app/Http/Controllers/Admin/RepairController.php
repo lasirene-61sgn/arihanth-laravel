@@ -63,6 +63,7 @@ class RepairController extends Controller
             'allocated'      => ['Allocated'],
             'in_process'     => ['In_Process'],
             'for_approval'   => ['Craftsman_Completed'],
+            'approval_tab'   => ['Admin_Approved'],
             'buyer_approval' => ['Completed'],
             'completed'      => ['Buyer_Accepted'],
             'rejected'       => ['Rejected_by_Admin', 'Craftsman_Rejected', 'Buyer_Rejected'],
@@ -110,6 +111,7 @@ class RepairController extends Controller
             'allocated'      => (clone $baseCountQuery)->whereIn('status', $statusMap['allocated'])->count(),
             'in_process'     => (clone $baseCountQuery)->whereIn('status', $statusMap['in_process'])->count(),
             'for_approval'   => (clone $baseCountQuery)->whereIn('status', $statusMap['for_approval'])->count(),
+            'approval_tab'   => (clone $baseCountQuery)->whereIn('status', $statusMap['approval_tab'])->count(),
             'buyer_approval' => (clone $baseCountQuery)->whereIn('status', $statusMap['buyer_approval'])->count(),
             'completed'      => (clone $baseCountQuery)->whereIn('status', $statusMap['completed'])->count(),
             'rejected'       => (clone $baseCountQuery)->whereIn('status', $statusMap['rejected'])->count(),
@@ -321,6 +323,20 @@ class RepairController extends Controller
             ? $request->item_received_through_custom 
             : $request->item_received_through;
 
+        $repair->update([
+            'status' => 'Admin_Approved',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+            'item_received_through' => $receivedThrough ?: $repair->item_received_through,
+        ]);
+        
+        return redirect()->route('admin.repairs.index', ['tab' => 'approval_tab'])->with('success', 'Craftsman approval completed. Repair is now pending Delivery Details in Approval Tab.');
+    }
+
+    public function deliveryComplete(Request $request, $id)
+    {
+        $repair = Repair::findOrFail($id);
+
         $deliveredBy = $request->item_delivered_by === '__custom__' 
             ? $request->item_delivered_by_custom 
             : $request->item_delivered_by;
@@ -331,9 +347,6 @@ class RepairController extends Controller
 
         $repair->update([
             'status' => 'Completed',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-            'item_received_through' => $receivedThrough ?: $repair->item_received_through,
             'item_delivered_by_type' => $request->item_delivered_by_type,
             'item_delivered_by' => $deliveredBy,
             'item_delivered_to' => $deliveredTo,
@@ -343,7 +356,7 @@ class RepairController extends Controller
             $repair->buyer->notify(new RepairCompleted($repair));
         }
 
-        return redirect()->route('admin.repairs.index', ['tab' => 'buyer_approval'])->with('success', 'Craftsman approval completed. Repair is now pending Buyer Approval.');
+        return redirect()->route('admin.repairs.index', ['tab' => 'buyer_approval'])->with('success', 'Delivery details recorded. Repair is now pending Buyer Approval.');
     }
 
     public function buyerComplete(Request $request, $id)
@@ -399,20 +412,14 @@ class RepairController extends Controller
             
         foreach ($repairs as $repair) {
             $repair->update([
-                'status' => 'Completed',
+                'status' => 'Admin_Approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'item_received_through' => $receivedThrough ?: $repair->item_received_through,
-                'item_delivered_by_type' => $request->item_delivered_by_type,
-                'item_delivered_by' => $deliveredBy,
-                'item_delivered_to' => $deliveredTo,
             ]);
-            if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
-                $repair->buyer->notify(new RepairCompleted($repair));
-            }
         }
 
-        return redirect()->route('admin.repairs.index', ['tab' => 'buyer_approval'])->with('success', count($repairs) . ' repair orders marked as pending Buyer Approval.');
+        return redirect()->route('admin.repairs.index', ['tab' => 'approval_tab'])->with('success', count($repairs) . ' repair orders marked as pending Delivery Details.');
     }
 
     public function bulkBuyerComplete(Request $request)
