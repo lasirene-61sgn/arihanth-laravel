@@ -381,7 +381,7 @@
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" formaction="{{ route('admin.repairs.bulk-mark-craftsman-complete') }}" class="btn btn-info text-white" onclick="return confirm('Mark as Craftsman Completed?')">Confirm</button>
+                                        <button type="submit" formaction="{{ route('admin.repairs.bulk-mark-craftsman-complete') }}" class="btn btn-info text-white" formnovalidate onclick="return confirm('Mark as Craftsman Completed?')">Confirm</button>
                                     </div>
                                 </div>
                             </div>
@@ -473,7 +473,7 @@
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" formaction="{{ route('admin.repairs.bulk-buyer-complete') }}" class="btn btn-success" onclick="return confirm('Mark selected repairs as fully completed?')">Confirm Buyer Approval</button>
+                                        <button type="submit" formaction="{{ route('admin.repairs.bulk-buyer-complete') }}" class="btn btn-success" formnovalidate onclick="return confirm('Mark selected repairs as fully completed?')">Confirm Buyer Approval</button>
                                     </div>
                                 </div>
                             </div>
