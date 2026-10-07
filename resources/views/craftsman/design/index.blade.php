@@ -174,11 +174,13 @@
                         </a>
                         @else
                         <button disabled
-                            class="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-400 text-[10px] font-bold py-2.5 rounded-xl cursor-not-allowed border border-slate-200">
+                            class="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-400 text-[10px] font-bold py-2.5 rounded-xl cursor-not-allowed border border-slate-200"
+                            title="Design Locked">
                             <i class="bi bi-lock-fill"></i> LOCKED
                         </button>
                         @endif
 
+                        @if(!$isLocked)
                         <button type="button"
                             id="fav-btn-{{ $design->id }}"
                             onclick="openFavoriteModal({{ $design->id }}, '{{ addslashes($design->design_code) }}', '{{ addslashes($currentDesignName) }}', {{ $isFavorited ? 'true' : 'false' }})"
@@ -186,6 +188,13 @@
                             title="{{ $isFavorited ? 'Edit Favorite Design Name' : 'Add to Favorites' }}">
                             <i class="bi {{ $isFavorited ? 'bi-heart-fill' : 'bi-heart' }}"></i>
                         </button>
+                        @else
+                        <button type="button" 
+                            class="p-2 bg-slate-50 text-slate-400 border-slate-200 border rounded-xl cursor-not-allowed shadow-sm" 
+                            title="This design is locked" disabled>
+                            <i class="bi bi-heart"></i>
+                        </button>
+                        @endif
                     </div>
                 </div>
             </div>

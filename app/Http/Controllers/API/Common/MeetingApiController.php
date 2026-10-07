@@ -370,7 +370,7 @@ class MeetingApiController extends Controller
             return $meeting;
         }, $meetingsArray);
 
-        return response()->json(['success' => true, 'data' => $transformedMeetings]);
+        return response()->json(['success' => true, 'data' => array_values($transformedMeetings)]);
     }
 
     /**

@@ -127,12 +127,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 @foreach($designs as $design)
                 @php
+                    $isLocked = $design->isDesignLocked(Auth::guard('buyer')->user());
                     $isFavorited = array_key_exists($design->id, $buyerFavoritesMap);
                     $currentDesignName = $isFavorited ? ($buyerFavoritesMap[$design->id] ?? '') : '';
                 @endphp
                 <div class="group flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 overflow-hidden relative">
                     
-                    @if(Auth::guard('buyer')->user()->hasPermission('stock_order') && !$design->isDesignLocked(Auth::guard('buyer')->user()))
+                    @if(Auth::guard('buyer')->user()->hasPermission('stock_order') && !$isLocked)
                     <div class="absolute top-3 left-3 z-10">
                         <input type="checkbox" class="design-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm cursor-pointer" value="{{ $design->design_code }}" onchange="updateBulkCart()">
                     </div>
@@ -157,9 +158,6 @@
                         @endphp
 
                         @if($imgSrc)
-                        @php
-                        $isLocked = $design->isDesignLocked(Auth::guard('buyer')->user());
-                        @endphp
                         <img src="{{ $imgSrc }}"
                             class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 {{ $isLocked ? 'blur-3xl' : '' }}"
                             alt="{{ $design->product_name }}">
@@ -203,17 +201,18 @@
                         </div>
 
                         <div class="mt-auto pt-4 border-t border-slate-50 flex gap-2">
-                            @if(!$design->isDesignLocked(Auth::guard('buyer')->user()))
+                            @if(!$isLocked)
                             <a href="{{ route('buyer.design.show', $design->id) }}"
                                 class="flex-1 inline-flex items-center justify-center py-2.5 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-blue-600 transition-colors">
                                 VIEW
                             </a>
                             @else
-                            <button class="flex-1 inline-flex items-center justify-center py-2.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed border border-slate-200" disabled title="Design Locked - Add to Favorites to unlock">
+                            <button class="flex-1 inline-flex items-center justify-center py-2.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed border border-slate-200" disabled title="Design Locked">
                                 <i class="bi bi-lock-fill mr-1"></i> LOCKED
                             </button>
                             @endif
 
+                            @if(!$isLocked)
                             <button type="button" 
                                 id="fav-btn-{{ $design->id }}"
                                 onclick="openFavoriteModal({{ $design->id }}, '{{ addslashes($design->design_code) }}', '{{ addslashes($currentDesignName) }}', {{ $isFavorited ? 'true' : 'false' }})"
@@ -221,6 +220,13 @@
                                 title="{{ $isFavorited ? 'Edit Favorite Design Name' : 'Add to Favorites' }}">
                                 <i class="bi {{ $isFavorited ? 'bi-heart-fill' : 'bi-heart' }}"></i>
                             </button>
+                            @else
+                            <button type="button" 
+                                class="p-2 bg-slate-50 text-slate-400 border-slate-200 border rounded-xl cursor-not-allowed" 
+                                title="This design is locked" disabled>
+                                <i class="bi bi-heart"></i>
+                            </button>
+                            @endif
 
                             @if(Auth::guard('buyer')->user()->hasPermission('stock_order'))
                             <a href="{{ route('buyer.stock-order.create', ['add' => $design->design_code]) }}"
