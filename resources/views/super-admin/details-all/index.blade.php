@@ -1089,6 +1089,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center">
                         <select id="favoritesPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -1100,6 +1103,9 @@
                         <span class="mx-2 small fw-bold" id="favoritesPageInfo">Page 1 of 1</span>
                         <button class="btn btn-outline-secondary btn-sm" id="favoritesNextPage">Next</button>
                     </div>
+                    <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill" onclick="printAllFavorites()">
+                        <i class="bi bi-printer-fill me-1"></i> Print All
+                    </button>
                 </div>
                 <div class="table-responsive border rounded">
                     <table class="table table-hover align-middle mb-0" id="modalFavoritesTable">
@@ -1109,9 +1115,9 @@
                                 <th>Design Code</th>
                                 <th>Design Name</th>
                                 <th>Category</th>
-                                <th class="text-center">Quantity</th>
+                                <!-- <th class="text-center">Quantity</th> -->
                                 <th class="text-center">Weight From (g)</th>
-                                <th>Notes / Remarks</th>
+                                <!-- <th>Notes / Remarks</th> -->
                             </tr>
                         </thead>
                         <tbody id="favoritesListModalBody"></tbody>
@@ -1134,6 +1140,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center">
                         <select id="ordersPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -1264,6 +1273,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center">
                         <select id="designsPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -1290,7 +1302,7 @@
                                 <th>Design Code</th>
                                 <th>Design Name</th>
                                 <th>Category</th>
-                                <th class="text-center">Quantity</th>
+                                <!-- <th class="text-center">Quantity</th> -->
                                 <th class="text-center">Weight From (g)</th>
                             </tr>
                         </thead>
@@ -1454,7 +1466,7 @@
     // --- Fetch & Render Favorites ---
     let currentFavorites = [];
     let currentFavoritesPage = 1;
-    let favoritesPerPage = 50;
+    let favoritesPerPage = 10;
 
     function renderFavoritesPage() {
         const body = document.getElementById('favoritesListModalBody');
@@ -1487,10 +1499,8 @@
                 <td class="text-center">${imgHtml}</td>
                 <td><span class="badge bg-secondary">${fav.design_code}</span></td>
                 <td class="fw-bold">${fav.design_name}</td>
-                <td>${fav.category}</td>
                 <td class="text-center">${fav.qty}</td>
                 <td class="text-center">${fav.weight_from}</td>
-                <td class="small text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${fav.remarks}">${fav.remarks}</td>
             `;
             body.appendChild(tr);
         });
@@ -1552,7 +1562,7 @@
     // --- Fetch & Render Accepted Designs ---
     let currentDesigns = [];
     let currentDesignsPage = 1;
-    let designsPerPage = 50;
+    let designsPerPage = 10;
 
     function renderDesignsPage() {
         const body = document.getElementById('designsListModalBody');
@@ -1584,7 +1594,7 @@
                     <td class="fw-semibold text-dark">${item.design_code || '-'}</td>
                     <td>${item.design_name || '-'}</td>
                     <td><span class="badge bg-light text-dark border">${item.category || '-'}</span></td>
-                    <td class="text-center fw-bold">${item.qty || '-'}</td>
+                    
                     <td class="text-center fw-medium">${item.weight ? parseFloat(item.weight).toFixed(2) : '0.00'}</td>
                 </tr>`;
             body.insertAdjacentHTML('beforeend', row);
@@ -1684,7 +1694,7 @@
 
     let currentOrders = [];
     let currentOrdersPage = 1;
-    let ordersPerPage = 50;
+    let ordersPerPage = 10;
 
     function renderOrdersPage() {
         const body = document.getElementById('ordersListModalBody');
@@ -1801,6 +1811,10 @@
     // --- Helper function for cleaner print windows ---
     function openReportPrintWindow(title, tableHeaderHtml, tableBodyHtml) {
         const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Popup blocker prevented the print window from opening. Please allow popups for this site.');
+            return;
+        }
         const printDocument = `
             <!DOCTYPE html>
             <html>
@@ -1829,14 +1843,12 @@
                 </table>
                 <script>
                     window.onload = function() { 
-                        window.print(); 
-                        window.close(); 
+                        setTimeout(() => { window.print(); window.close(); }, 400);
                     };
                 <\/script>
             </body>
             </html>
         `;
-        printWindow.document.open();
         printWindow.document.write(printDocument);
         printWindow.document.close();
     }
@@ -2042,6 +2054,43 @@
         openReportPrintWindow(title, theadHtml, tbodyHtml);
     }
 
+    // --- Favorites List Modal Print ---
+    function printAllFavorites() {
+        if (!currentFavorites || currentFavorites.length === 0) {
+            alert('No favorites to print.');
+            return;
+        }
+
+        const title = document.getElementById('favoritesListModalTitle').innerText;
+        let theadHtml = `
+            <tr>
+                <th class="text-center">Image</th>
+                <th class="text-center">Design Code</th>
+                <th>Design Name</th>
+                <th class="text-center">Category</th>
+                <th class="text-center">Weight From (g)</th>
+            </tr>`;
+
+        let tbodyHtml = '';
+        currentFavorites.forEach(fav => {
+            let imgHtml = '-';
+            if (fav.image_path) {
+                const imgUrl = `/storage/${fav.image_path}`;
+                imgHtml = `<img src="${imgUrl}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">`;
+            }
+            tbodyHtml += `
+                <tr>
+                    <td class="text-center">${imgHtml}</td>
+                    <td class="text-center">${fav.design_code || '-'}</td>
+                    <td>${fav.design_name || '-'}</td>
+                    <td class="text-center">${fav.category || '-'}</td>
+                    <td class="text-center fw-bold">${fav.weight_from || '-'}</td>
+                </tr>`;
+        });
+
+        openReportPrintWindow(title, theadHtml, tbodyHtml);
+    }
+
     // --- Designs List Modal Print ---
     function printSelectedDesigns() {
         const selectedCheckboxes = document.querySelectorAll('.modal-design-checkbox:checked');
@@ -2059,7 +2108,6 @@
                 <th class="text-center">Design Code</th>
                 <th>Design Name</th>
                 <th class="text-center">Category</th>
-                <th class="text-center">Quantity</th>
                 <th class="text-center">Weight From (g)</th>
             </tr>`;
 
@@ -2076,7 +2124,6 @@
                     <td>${cells[3].innerText.trim()}</td>
                     <td class="text-center">${cells[4].innerText.trim()}</td>
                     <td class="text-center">${cells[5].innerText.trim()}</td>
-                    <td class="text-center">${cells[6].innerText.trim()}</td>
                 </tr>`;
         });
 

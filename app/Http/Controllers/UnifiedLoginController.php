@@ -46,9 +46,9 @@ class UnifiedLoginController extends Controller
         // ── 1. SuperAdmin & Admin (ProcessOwner) ───────────────────────────
         $processOwner = ProcessOwner::where(function ($q) use ($login, $isEmail) {
             $q->where('user_code', $login);
-            // Only check 'email' column if input is an email to avoid SQL errors
+            // Only check 'email_id' column if input is an email to avoid SQL errors
             if ($isEmail) {
-                $q->orWhere('email', $login); 
+                $q->orWhere('email_id', $login); 
             }
         })->first();
 
@@ -99,7 +99,7 @@ class UnifiedLoginController extends Controller
         // ── 4. Key User ───────────────────────────────────────────────────
         $keyUser = KeyUser::where(function ($q) use ($login, $isEmail) {
             $q->where('user_code', $login);
-            if ($isEmail) $q->orWhere('email', $login); 
+            if ($isEmail) $q->orWhere('email_id', $login); 
         })->first();
 
         if ($keyUser && Hash::check($password, $keyUser->password)) {

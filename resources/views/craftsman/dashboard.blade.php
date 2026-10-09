@@ -459,7 +459,7 @@
                             </td>
                             <td class="px-6 py-4 text-center font-bold text-slate-900 col-qty">{{ $wo->quantity }}</td>
                             <td class="px-6 py-4 text-right font-mono font-bold text-emerald-800 col-weight">
-                                {{ number_format($wo->weight_from ?? 0, 3) }} g
+                                {{ number_format((float)($wo->weight_from ?? 0), 3) }} g
                             </td>
                             <td class="px-6 py-4 col-due_date">
                                 <span class="whitespace-nowrap {{ $wo->is_delayed ? 'text-red-600 font-bold' : 'text-slate-700' }}">

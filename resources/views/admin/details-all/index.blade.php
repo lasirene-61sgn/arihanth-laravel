@@ -745,6 +745,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center">
                         <select id="favoritesPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -756,6 +759,9 @@
                         <span class="mx-2 small fw-bold" id="favoritesPageInfo">Page 1 of 1</span>
                         <button class="btn btn-outline-secondary btn-sm" id="favoritesNextPage">Next</button>
                     </div>
+                    <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill" onclick="printAllFavorites()">
+                        <i class="bi bi-printer-fill me-1"></i> Print All
+                    </button>
                 </div>
                 <div class="table-responsive border rounded">
                     <table class="table table-hover align-middle mb-0" id="modalFavoritesTable">
@@ -765,9 +771,9 @@
                                 <th>Design Code</th>
                                 <th>Design Name</th>
                                 <th>Category</th>
-                                <th class="text-center">Quantity</th>
+                                <!-- <th class="text-center">Quantity</th> -->
                                 <th class="text-center">Weight From (g)</th>
-                                <th>Notes / Remarks</th>
+                                <!-- <th>Notes / Remarks</th> -->
                             </tr>
                         </thead>
                         <tbody id="favoritesListModalBody"></tbody>
@@ -796,6 +802,9 @@
                         <span class="fw-bold small text-secondary"><i class="bi bi-sliders me-1"></i> Customize Print Columns:</span>
                         <div class="d-flex align-items-center gap-2">
                             <select id="ordersPerPage" class="form-select form-select-sm" style="width: auto;">
+                                <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                                 <option value="200">200</option>
@@ -893,6 +902,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center">
                         <select id="designsPerPage" class="form-select form-select-sm me-2" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -919,9 +931,9 @@
                                 <th>Design Code</th>
                                 <th>Design Name</th>
                                 <th>Category</th>
-                                <th class="text-center">Quantity</th>
+                                <!-- <th class="text-center">Quantity</th> -->
                                 <th class="text-center">Weight From (g)</th>
-                                <th>Notes / Remarks</th>
+                                <!-- <th>Notes / Remarks</th> -->
                             </tr>
                         </thead>
                         <tbody id="designsListModalBody"></tbody>
@@ -1022,7 +1034,7 @@
     // --- Fetch & Render Favorites ---
     let currentFavorites = [];
     let currentFavoritesPage = 1;
-    let favoritesPerPage = 50;
+    let favoritesPerPage = 10;
 
     function renderFavoritesPage() {
         const body = document.getElementById('favoritesListModalBody');
@@ -1056,9 +1068,8 @@
                 <td><span class="badge bg-secondary">${fav.design_code}</span></td>
                 <td class="fw-bold">${fav.design_name}</td>
                 <td>${fav.category}</td>
-                <td class="text-center">${fav.qty}</td>
+                
                 <td class="text-center">${fav.weight_from}</td>
-                <td class="small text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${fav.remarks}">${fav.remarks}</td>
             `;
             body.appendChild(tr);
         });
@@ -1141,7 +1152,7 @@
     let currentOrderType = 'wo';
     let currentModalOrders = [];
     let currentOrdersPage = 1;
-    let ordersPerPage = 50;
+    let ordersPerPage = 10;
 
     function showOrdersList(el, type) {
         currentOrderType = type;
@@ -1313,7 +1324,7 @@
     // Designs Modal State & Logic
     let currentDesigns = [];
     let currentDesignsPage = 1;
-    let designsPerPage = 50;
+    let designsPerPage = 10;
 
     function renderDesignsPage() {
         const body = document.getElementById('designsListModalBody');
@@ -1345,11 +1356,8 @@
                     <td style="vertical-align: middle;">${design.design_code || '-'}</td>
                     <td style="vertical-align: middle;">${design.design_name || '-'}</td>
                     <td style="vertical-align: middle;"><span class="badge bg-secondary-subtle text-secondary">${design.category || '-'}</span></td>
-                    <td class="text-center fw-bold" style="vertical-align: middle;">${design.qty || '-'}</td>
                     <td class="text-center fw-bold" style="vertical-align: middle;">${design.weight ? Number(design.weight).toFixed(2) : '-'}</td>
-                    <td style="vertical-align: middle;">
-                        <input type="text" class="form-control form-control-sm design-notes" placeholder="Notes / Remarks">
-                    </td>
+                    
                 </tr>`;
         });
         body.innerHTML = rowsHtml;
@@ -1427,26 +1435,23 @@
             });
     }
 
-    function printSelectedDesigns() {
-        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
-        if (checkboxes.length === 0) {
-            alert('Please select at least one design to print.');
+    function printAllFavorites() {
+        const rows = document.querySelectorAll('#favoritesListModalBody tr');
+        if (rows.length === 0 || (rows.length === 1 && rows[0].innerText.includes('Loading'))) {
+            alert('No favorites to print.');
             return;
         }
 
-        const title = document.getElementById('designsListModalTitle').innerText;
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-
+        const title = document.getElementById('favoritesListModalTitle').innerText;
         let tbodyHtml = '';
-        rowsToPrint.forEach(row => {
+        
+        rows.forEach(row => {
             const imgEl = row.querySelector('.design-img-preview');
             const imgSrc = imgEl ? imgEl.src : '';
-            const code = row.cells[2]?.innerText || '';
-            const name = row.cells[3]?.innerText || '';
-            const category = row.cells[4]?.innerText || '';
-            const qty = row.cells[5]?.innerText || '';
-            const weight = row.cells[6]?.innerText || '';
-            const notes = row.querySelector('.design-notes')?.value || '';
+            const code = row.cells[1]?.innerText || '';
+            const name = row.cells[2]?.innerText || '';
+            const category = row.cells[3]?.innerText || '';
+            const weight = row.cells[4]?.innerText || '';
 
             tbodyHtml += `
                 <tr>
@@ -1456,9 +1461,7 @@
                     <td style="vertical-align: middle; font-weight: bold;">${code}</td>
                     <td style="vertical-align: middle;">${name}</td>
                     <td style="vertical-align: middle;">${category}</td>
-                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${qty}</td>
                     <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
-                    <td style="vertical-align: middle;">${notes}</td>
                 </tr>`;
         });
 
@@ -1487,9 +1490,78 @@
                             <th>Design Code</th>
                             <th>Design Name</th>
                             <th>Category</th>
-                            <th style="text-align: center;">Quantity</th>
                             <th style="text-align: center;">Weight From (g)</th>
-                            <th>Notes / Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tbodyHtml}</tbody>
+                </table>
+                <script>
+                    window.onload = function() { 
+                        setTimeout(() => { window.print(); window.close(); }, 400); 
+                    }
+                <\/script>
+            </body>
+            </html>`);
+        printWindow.document.close();
+    }
+
+    function printSelectedDesigns() {
+        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one design to print.');
+            return;
+        }
+
+        const title = document.getElementById('designsListModalTitle').innerText;
+        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+
+        let tbodyHtml = '';
+        rowsToPrint.forEach(row => {
+            const imgEl = row.querySelector('.design-img-preview');
+            const imgSrc = imgEl ? imgEl.src : '';
+            const code = row.cells[2]?.innerText || '';
+            const name = row.cells[3]?.innerText || '';
+            const category = row.cells[4]?.innerText || '';
+            const weight = row.cells[5]?.innerText || '';
+
+            tbodyHtml += `
+                <tr>
+                    <td style="text-align: center; vertical-align: middle; padding: 8px;">
+                        ${imgSrc ? `<img src="${imgSrc}" style="max-height: 80px; max-width: 80px; object-fit: contain;">` : '-'}
+                    </td>
+                    <td style="vertical-align: middle; font-weight: bold;">${code}</td>
+                    <td style="vertical-align: middle;">${name}</td>
+                    <td style="vertical-align: middle;">${category}</td>
+                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
+                </tr>`;
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print - ${title}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
+                        .table { width: 100%; border-collapse: collapse; }
+                        .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 12px; }
+                        .text-center { text-align: center; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h4 class="text-center mb-4 fw-bold">${title}</h4>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="text-align: center; width: 100px;">Image</th>
+                            <th>Design Code</th>
+                            <th>Design Name</th>
+                            <th>Category</th>
+                            <th style="text-align: center;">Weight From (g)</th>
                         </tr>
                     </thead>
                     <tbody>${tbodyHtml}</tbody>
