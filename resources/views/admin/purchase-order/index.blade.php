@@ -500,7 +500,7 @@
                                                                         <td class="px-4 py-3 text-xs">
                                                                             @if(isset($item['grams']) && is_array($item['grams']))
                                                                                 @foreach($item['grams'] as $i => $gram)
-                                                                                    <div>{{ $gram }}g × {{ is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1 }} = <strong class="text-slate-800">{{ number_format(is_array($item['individual_totals'] ?? null) ? ($item['individual_totals'][$i] ?? 0) : ($item['individual_totals'] ?? 0), 2) }}g</strong></div>
+                                                                                    <div>{{ $gram }}g × {{ is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1 }} = <strong class="text-slate-800">{{ number_format(isset($item['individual_totals'][$i]) && $item['individual_totals'][$i] > 0 ? $item['individual_totals'][$i] : ((float)$gram * (float)(is_array($item['quantity'] ?? null) ? ($item['quantity'][$i] ?? 1) : 1)), 2) }}g</strong></div>
                                                                                 @endforeach
                                                                             @else
                                                                                 {{ $item['grams'] ?? 0 }}g × {{ $item['quantity'] ?? 0 }} = <strong class="text-slate-800">{{ number_format((float)($item['grams'] ?? 0) * (float)($item['quantity'] ?? 0), 2) }}g</strong>
