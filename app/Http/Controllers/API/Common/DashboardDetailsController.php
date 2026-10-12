@@ -99,21 +99,7 @@ class DashboardDetailsController extends Controller
             return $query->orderBy('created_at', 'desc');
         };
 
-        // If no specific type is requested, return an overview WITH ALL stats
-        if (!$type) {
-            $data = [
-                'top_picks_craftsman' => $this->getDetailsOverview($user, 'top_pick_craftsman', $request),
-                'top_picks_client' => $this->getDetailsOverview($user, 'top_pick_client', $request),
-                'overall_designs' => $this->getDetailsOverview($user, 'overall_designs', $request),
-                'craftsman_favorites' => $this->getDetailsOverview($user, 'craftsman_favorites', $request),
-                'buyer_favorites' => $this->getDetailsOverview($user, 'buyer_favorites', $request),
-            ];
 
-            return response()->json([
-                'success' => true,
-                'data' => $data
-            ]);
-        }
 
         if ($type === 'favorites_by_category') {
             if (!$userType) return response()->json(['success' => false, 'message' => 'Unauthorized for favorites'], 403);
@@ -151,16 +137,22 @@ class DashboardDetailsController extends Controller
         }
 
         if (!$type || $type === 'all') {
-            $types = ['top_pick_client', 'top_pick_craftsman', 'overall_designs', 'craftsman_favorites', 'buyer_favorites'];
+            $types = [
+                'top_picks_client' => 'top_pick_client',
+                'top_picks_craftsman' => 'top_pick_craftsman',
+                'overall_designs' => 'overall_designs',
+                'craftsman_favorites' => 'craftsman_favorites',
+                'buyer_favorites' => 'buyer_favorites'
+            ];
             $responseData = [];
             $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
             
-            foreach ($types as $t) {
+            foreach ($types as $key => $t) {
                 $dataArray = $this->getDetailsOverview($user, $t, $request);
                 $total = count($dataArray);
                 $items = array_slice($dataArray, ($page - 1) * $perPage, $perPage);
                 
-                $responseData[$t] = new \Illuminate\Pagination\LengthAwarePaginator(
+                $responseData[$key] = new \Illuminate\Pagination\LengthAwarePaginator(
                     $items, $total, $perPage, $page, [
                         'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
                         'query' => $request->query()

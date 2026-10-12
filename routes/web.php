@@ -236,6 +236,7 @@ Route::prefix('process-owner')->name('process-owner.')->group(function () {
 
         // Super Admin Creation Route (only for process owners)
         Route::post('/create-super-admin', [RegistrationController::class, 'createSuperAdmin'])->name('create-super-admin');
+        Route::put('/update-super-admin/{id}', [RegistrationController::class, 'updateSuperAdmin'])->name('update-super-admin');
     });
 });
 

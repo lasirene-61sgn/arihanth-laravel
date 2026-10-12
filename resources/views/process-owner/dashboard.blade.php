@@ -188,6 +188,9 @@
                                     <th>City / State</th>
                                     <th>Aadhar Number</th>
                                     <th>Status</th>
+                                    @if(Auth::guard('process_owner')->user()->role === 'process_owner')
+                                    <th>Action</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -209,10 +212,98 @@
                                                 <span class="badge bg-danger">Inactive</span>
                                             @endif
                                         </td>
+                                        @if(Auth::guard('process_owner')->user()->role === 'process_owner')
+                                        <td>
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ $admin->id }}">
+                                                Edit
+                                            </button>
+                                        </td>
+                                        @endif
                                     </tr>
+
+                                    <!-- Edit Modal for {{ $admin->full_name }} -->
+                                    <div class="modal fade" id="editModal{{ $admin->id }}" tabindex="-1" aria-labelledby="editModalLabel{{ $admin->id }}" aria-hidden="true">
+                                      <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                          <form method="POST" action="{{ route('process-owner.update-super-admin', $admin->id) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-header">
+                                              <h5 class="modal-title" id="editModalLabel{{ $admin->id }}">Edit Super Admin: {{ $admin->full_name }}</h5>
+                                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Full Name *</label>
+                                                        <input type="text" class="form-control" name="full_name" value="{{ $admin->full_name }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Email *</label>
+                                                        <input type="email" class="form-control" name="email_id" value="{{ $admin->email_id }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Mobile Number *</label>
+                                                        <input type="text" class="form-control" name="mobile_no" value="{{ $admin->mobile_no }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Status *</label>
+                                                        <select name="status" class="form-select" required>
+                                                            <option value="1" {{ $admin->status == 1 ? 'selected' : '' }}>Active</option>
+                                                            <option value="0" {{ $admin->status == 0 ? 'selected' : '' }}>Inactive</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Password (Leave blank to keep current)</label>
+                                                        <input type="password" class="form-control" name="password">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Confirm Password</label>
+                                                        <input type="password" class="form-control" name="password_confirmation">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">City</label>
+                                                        <input type="text" class="form-control" name="city" value="{{ $admin->city }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">State</label>
+                                                        <input type="text" class="form-control" name="state" value="{{ $admin->state }}">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Country</label>
+                                                        <input type="text" class="form-control" name="country" value="{{ $admin->country }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Pincode</label>
+                                                        <input type="text" class="form-control" name="pincode" value="{{ $admin->pincode }}">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Aadhar Number</label>
+                                                        <input type="text" class="form-control" name="aadhar_number" value="{{ $admin->aadhar_number }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                              <button type="submit" class="btn btn-primary">Save changes</button>
+                                            </div>
+                                          </form>
+                                        </div>
+                                      </div>
+                                    </div>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">
+                                        <td colspan="{{ Auth::guard('process_owner')->user()->role === 'process_owner' ? '8' : '7' }}" class="text-center py-4 text-muted">
                                             No Super Admins created yet.
                                         </td>
                                     </tr>

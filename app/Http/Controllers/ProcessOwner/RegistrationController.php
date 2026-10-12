@@ -140,6 +140,58 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Handle super admin update request from process owner dashboard
+     */
+    public function updateSuperAdmin(Request $request, $id)
+    {
+        $processOwner = auth()->guard('process_owner')->user();
+        
+        if ($processOwner->role !== 'process_owner') {
+            return redirect()->back()->with('error', 'Unauthorized access.');
+        }
+
+        $superAdmin = ProcessOwner::where('role', 'super_admin')->findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'full_name' => 'required|string|max:255',
+            'email_id' => 'required|string|email|max:255|unique:process_owners,email_id,' . $superAdmin->id,
+            'mobile_no' => 'required|string|max:15',
+            'password' => 'nullable|string|min:8|confirmed',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'pincode' => 'nullable|string|max:10',
+            'aadhar_number' => 'nullable|string|max:20',
+            'status' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $superAdmin->full_name = $request->full_name;
+        $superAdmin->email_id = $request->email_id;
+        $superAdmin->mobile_no = $request->mobile_no;
+        
+        if ($request->filled('password')) {
+            $superAdmin->password = Hash::make($request->password);
+        }
+        
+        $superAdmin->city = $request->city;
+        $superAdmin->state = $request->state;
+        $superAdmin->country = $request->country;
+        $superAdmin->pincode = $request->pincode;
+        $superAdmin->aadhar_number = $request->aadhar_number;
+        $superAdmin->status = $request->status;
+        
+        $superAdmin->save();
+
+        return redirect()->back()->with('success', 'Super Admin updated successfully!');
+    }
+
+    /**
      * Show the dashboard with the correct list of Super Admins
      */
     public function index()

@@ -1112,6 +1112,27 @@ class PurchaseOrderController extends Controller
                 });
                 $filename = 'rejected_purchase_orders';
                 break;
+            case 'overdue':
+                $nowDate = now()->toDateString();
+                $isPastNoon = now()->hour >= 12;
+
+                $query = PurchaseOrder::whereIn('status', ['created', 'in_process', 'for_approval'])
+                    ->where(function($q) {
+                        $q->whereNull('craftsman_status')
+                          ->orWhere('craftsman_status', '!=', 'rejected');
+                    })
+                    ->where(function($q) {
+                        $q->whereNull('rejected_items')
+                          ->orWhereRaw('JSON_LENGTH(rejected_items) = 0');
+                    })
+                    ->where(function($q) use ($nowDate, $isPastNoon) {
+                        $q->whereRaw("COALESCE(craftsman_due_date, due_date) < ?", [$nowDate]);
+                        if ($isPastNoon) {
+                            $q->orWhereRaw("COALESCE(craftsman_due_date, due_date) = ?", [$nowDate]);
+                        }
+                    });
+                $filename = 'overdue_purchase_orders';
+                break;
             default:
                 $query = PurchaseOrder::where('status', 'created')->whereNull('allocated_craftsman_code');
                 $filename = 'purchase_orders';
@@ -1136,6 +1157,17 @@ class PurchaseOrderController extends Controller
         if ($filterCraftsman) {
             $filterTerm = '%' . $filterCraftsman . '%';
             $query->where('allocated_craftsman_code', 'LIKE', $filterTerm);
+        }
+
+        $filterCategory = $request->get('category_filter');
+        $filterSubCategory = $request->get('sub_category_filter');
+
+        if ($filterCategory) {
+            $query->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['category' => (int)$filterCategory])]);
+        }
+        
+        if ($filterSubCategory) {
+            $query->whereRaw("JSON_CONTAINS(items, ?, '$')", [json_encode(['sub_category' => (int)$filterSubCategory])]);
         }
 
         if ($filterDesignCode) {

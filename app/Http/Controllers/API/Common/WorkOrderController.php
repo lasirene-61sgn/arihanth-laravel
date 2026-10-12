@@ -1461,6 +1461,11 @@ class WorkOrderController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Failed to send notification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Notification Error: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
         }
 
         return response()->json(['success' => true, 'message' => count($workOrderIds) . ' Work Orders allocated successfully!']);
@@ -1794,6 +1799,11 @@ class WorkOrderController extends Controller
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to notify admins in bulk: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Notification Error: ' . $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ], 500);
             }
         }
 
