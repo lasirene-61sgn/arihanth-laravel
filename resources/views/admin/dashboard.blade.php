@@ -285,24 +285,6 @@
                             </div>
                         </div>
 
-                        <!-- Repairs Card -->
-                        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
-                            <div class="dashboard-stat-card h-100">
-                                <div class="card-body p-3">
-                                    <a href="{{ route('admin.repairs.index') }}">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h2 class="stat-number mb-1">{{ number_format($repairsCount) }}</h2>
-                                                <p class="stat-label mb-0">{{ __('messages.repairs') }}</p>
-                                            </div>
-                                            <div class="stat-icon-wrapper">
-                                                <i class="bi bi-tools"></i>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Overdue Work Orders Card -->
                         <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">

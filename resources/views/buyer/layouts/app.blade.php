@@ -120,13 +120,7 @@
                     </a>
                     @endif
 
-                    {{-- Repairs --}}
-                    @if($authUser && $authUser->hasPermission('repairs'))
-                    <a href="{{ route('buyer.repairs.index') }}"
-                        class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.repairs.*') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.repairs.*') ? 'background:rgba(255,255,255,0.15)' : '' }}">
-                        <span class="flex items-center"><i class="bi bi-tools text-lg mr-3"></i> <span>Repairs</span></span>
-                    </a>
-                    @endif
+
 
                     {{-- Designs --}}
                     @if($authUser && $authUser->hasPermission('design'))

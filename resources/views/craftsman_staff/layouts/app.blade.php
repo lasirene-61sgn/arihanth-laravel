@@ -191,14 +191,7 @@
                     </li>
                     @endif
 
-                    @if(!$sidebarUser || ($sidebarUser->hasPermission('repair_view') || $sidebarUser->hasPermission('repair_accept') || $sidebarUser->hasPermission('repair_reject')))
-                    <li>
-                        <a href="{{ route('craftsman_staff.repairs.index') }}"
-                           class="nav-link flex items-center p-2.5 rounded-lg hover:bg-slate-800 hover:text-white {{ request()->routeIs('craftsman_staff.repairs.*') ? 'active' : '' }}">
-                            <i class="bi bi-tools text-lg mr-3"></i> Samples/Repairs
-                        </a>
-                    </li>
-                    @endif
+
 
                     @if($sidebarUser && ($sidebarUser->hasPermission('product_view') || $sidebarUser->hasPermission('product_create') || $sidebarUser->hasPermission('product_edit')))
                     <li>

@@ -254,18 +254,6 @@
                     </li>
                     @endif
 
-                    @if(Auth::guard('admin')->user()->hasPermission('work_order'))
-                    <li class="px-3">
-                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.repairs.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
-                            href="{{ route('admin.repairs.index') }}">
-                            <div class="flex items-center gap-3">
-                                <i class="bi bi-tools text-lg"></i>
-                                <span class="text-sm font-medium">Repairs</span>
-                            </div>
-                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['repairsCount'] }}</span>
-                        </a>
-                    </li>
-                    @endif
 
                     @if(Auth::guard('admin')->user()->hasPermission('product'))
                     <li class="px-3">
@@ -470,18 +458,6 @@
                     </li>
                     @endif
 
-                    @if(Auth::guard('admin')->user()->hasPermission('repair'))
-                    <li class="px-3">
-                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.repairs.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
-                            href="{{ route('admin.repairs.index') }}">
-                            <div class="flex items-center gap-3">
-                                <i class="bi bi-tools text-lg"></i>
-                                <span class="text-sm font-medium">Repair/Sample</span>
-                            </div>
-                            <span class="px-2 py-0.5 bg-white/10 text-white rounded-full text-[0.65rem] font-bold">{{ $sidebarCounts['repairsCount'] }}</span>
-                        </a>
-                    </li>
-                    @endif
 
                     @if(Auth::guard('admin')->user()->hasPermission('purchase_order'))
                     <li class="px-3">

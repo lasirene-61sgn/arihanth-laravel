@@ -386,22 +386,6 @@
                         </a>
                     </div>
 
-                    <!-- Repairs Card -->
-                    <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">
-                        <a href="{{ route('super-admin.repairs.index') }}" class="tw-no-underline">
-                            <div class="tw-p-4">
-                                <div class="tw-flex tw-justify-between tw-items-start">
-                                    <div>
-                                        <h2 id="stat-total-repairs" class="tw-text-2xl tw-font-bold tw-text-gray-900 dark:tw-text-white tw-mb-1">{{ number_format($repairsCount) }}</h2>
-                                        <p class="tw-text-[10px] tw-font-bold tw-text-gray-500 dark:tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-0">{{ __('messages.repairs') }}</p>
-                                    </div>
-                                    <div class="tw-w-10 tw-h-10 tw-rounded-lg tw-bg-maroon tw-text-white tw-flex tw-items-center tw-justify-center tw-text-lg">
-                                        <i class="bi bi-tools"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
 
                     <!-- Overdue Work Orders Card -->
                     <div class="tw-bg-white dark:tw-bg-slate-900 tw-border tw-border-gray-200 dark:tw-border-slate-800 tw-rounded-xl tw-transition-all hover:-tw-translate-y-1 hover:tw-shadow-lg">

@@ -558,24 +558,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/bulk-complete', [\App\Http\Controllers\Admin\StockOrderController::class, 'bulkComplete'])->name('bulk-complete');
         });
 
-        Route::prefix('repairs')->name('repairs.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Admin\RepairController::class, 'index'])->name('index');
-            Route::get('/create', [App\Http\Controllers\Admin\RepairController::class, 'create'])->name('create');
-            Route::post('/', [App\Http\Controllers\Admin\RepairController::class, 'store'])->name('store');
-            Route::get('/{repair}', [App\Http\Controllers\Admin\RepairController::class, 'show'])->name('show');
-            Route::get('/{repair}/edit', [App\Http\Controllers\Admin\RepairController::class, 'edit'])->name('edit');
-            Route::put('/{repair}', [App\Http\Controllers\Admin\RepairController::class, 'update'])->name('update');
-            Route::delete('/{repair}', [App\Http\Controllers\Admin\RepairController::class, 'destroy'])->name('destroy');
-            Route::post('/{repair}/accept', [App\Http\Controllers\Admin\RepairController::class, 'accept'])->name('accept');
-            Route::post('/{repair}/reject', [App\Http\Controllers\Admin\RepairController::class, 'reject'])->name('reject');
-            Route::post('/{repair}/allocate', [App\Http\Controllers\Admin\RepairController::class, 'allocate'])->name('allocate');
-            Route::post('/{repair}/complete', [App\Http\Controllers\Admin\RepairController::class, 'complete'])->name('complete');
-            Route::post('/{repair}/delivery-complete', [App\Http\Controllers\Admin\RepairController::class, 'deliveryComplete'])->name('delivery-complete');
-            Route::post('/{repair}/buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
-            Route::post('/bulk-mark-craftsman-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkMarkCraftsmanComplete'])->name('bulk-mark-craftsman-complete');
-            Route::post('/bulk-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
-            Route::post('/bulk-buyer-complete', [App\Http\Controllers\Admin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
-        });
         // Finance Routes (Dummy for now)
         Route::prefix('finance')->group(function () {
             Route::get('/', [AdminLoginController::class, 'finance'])->name('finance.index');
@@ -859,28 +841,6 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::get('/{purchaseOrder}/copy', [App\Http\Controllers\SuperAdmin\PurchaseOrderController::class, 'copy'])->name('copy');
         });
 
-        // Repairs Routes inside your admin/super-admin prefix group
-        Route::prefix('repairs')->name('repairs.')->group(function () {
-            // 1. Place static/action routes BEFORE dynamic /{repair} parameters
-            Route::post('bulk-mark-craftsman-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkMarkCraftsmanComplete'])->name('bulk-mark-craftsman-complete');
-            Route::post('bulk-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkComplete'])->name('bulk-complete');
-            Route::post('bulk-buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'bulkBuyerComplete'])->name('bulk-buyer-complete');
-            Route::get('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'index'])->name('index');
-            Route::get('/create', [App\Http\Controllers\SuperAdmin\RepairController::class, 'create'])->name('create');
-            Route::post('/', [App\Http\Controllers\SuperAdmin\RepairController::class, 'store'])->name('store');
-
-            // 2. Dynamic parameter routes go after
-            Route::get('/{repair}', [App\Http\Controllers\SuperAdmin\RepairController::class, 'show'])->name('show');
-            Route::get('/{repair}/edit', [App\Http\Controllers\SuperAdmin\RepairController::class, 'edit'])->name('edit');
-            Route::put('/{repair}', [App\Http\Controllers\SuperAdmin\RepairController::class, 'update'])->name('update');
-            Route::delete('/{repair}', [App\Http\Controllers\SuperAdmin\RepairController::class, 'destroy'])->name('destroy');
-            Route::post('/{repair}/accept', [App\Http\Controllers\SuperAdmin\RepairController::class, 'accept'])->name('accept');
-            Route::post('/{repair}/reject', [App\Http\Controllers\SuperAdmin\RepairController::class, 'reject'])->name('reject');
-            Route::post('/{repair}/allocate', [App\Http\Controllers\SuperAdmin\RepairController::class, 'allocate'])->name('allocate');
-            Route::post('/{repair}/complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'complete'])->name('complete');
-            Route::post('/{repair}/delivery-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'deliveryComplete'])->name('delivery-complete');
-            Route::post('/{repair}/buyer-complete', [App\Http\Controllers\SuperAdmin\RepairController::class, 'buyerComplete'])->name('buyer-complete');
-        });
 
         // Finance Routes (Dummy for now)
         Route::prefix('finance')->group(function () {
@@ -1109,14 +1069,6 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
             Route::post('/{purchaseOrder}/complete', [CraftsmanPurchaseOrderController::class, 'complete'])->name('complete');
         });
 
-        // Repairs Routes for Craftsmen
-        Route::prefix('repairs')->name('repairs.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Craftsman\RepairController::class, 'index'])->name('index');
-            Route::get('/{id}', [App\Http\Controllers\Craftsman\RepairController::class, 'show'])->name('show');
-            Route::post('/{repair}/accept', [App\Http\Controllers\Craftsman\RepairController::class, 'accept'])->name('accept');
-            Route::post('/{repair}/reject', [App\Http\Controllers\Craftsman\RepairController::class, 'reject'])->name('reject');
-            Route::post('/{repair}/complete', [App\Http\Controllers\Craftsman\RepairController::class, 'complete'])->name('complete');
-        });
 
         // Stock Order Routes for Craftsmen
         Route::prefix('stock-order')->name('stock-order.')->group(function () {
@@ -1319,15 +1271,6 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
         Route::get('/profile', [App\Http\Controllers\Buyer\ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [App\Http\Controllers\Buyer\ProfileController::class, 'update'])->name('profile.update');
 
-        // Repairs Routes
-        Route::prefix('repairs')->name('repairs.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Buyer\RepairController::class, 'index'])->name('index');
-            Route::get('/create', [App\Http\Controllers\Buyer\RepairController::class, 'create'])->name('create');
-            Route::get('/{id}', [App\Http\Controllers\Buyer\RepairController::class, 'show'])->name('show');
-            Route::post('/', [App\Http\Controllers\Buyer\RepairController::class, 'store'])->name('store');
-            Route::post('/{repair}/accept-completed', [App\Http\Controllers\Buyer\RepairController::class, 'acceptCompleted'])->name('accept-completed');
-            Route::post('/{repair}/reject-completed', [App\Http\Controllers\Buyer\RepairController::class, 'rejectCompleted'])->name('reject-completed');
-        });
 
         // Key User Management Routes
         Route::prefix('key-user-management')->name('key-user-management.')->group(function () {
@@ -1583,12 +1526,6 @@ Route::prefix('craftsman-staff')->name('craftsman_staff.')->group(function () {
         Route::post('purchase-order/{purchaseOrder}/complete-items', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'completeItems'])->name('purchase-order.complete-items');
         Route::get('purchase-order/{purchaseOrder}/print', [App\Http\Controllers\CraftsmanStaff\PurchaseOrderController::class, 'print'])->name('purchase-order.print');
 
-        // Repairs
-        Route::resource('repairs', App\Http\Controllers\CraftsmanStaff\RepairController::class)->except(['create', 'store', 'edit', 'update', 'destroy']);
-        Route::get('repairs/export', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'export'])->name('repairs.export');
-        Route::post('repairs/{id}/accept', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'accept'])->name('repairs.accept');
-        Route::post('repairs/{id}/reject', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'reject'])->name('repairs.reject');
-        Route::post('repairs/{id}/complete', [App\Http\Controllers\CraftsmanStaff\RepairController::class, 'complete'])->name('repairs.complete');
 
         // Products
         Route::get('product/export', [App\Http\Controllers\CraftsmanStaff\ProductController::class, 'export'])->name('product.export');

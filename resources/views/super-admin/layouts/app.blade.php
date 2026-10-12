@@ -167,7 +167,6 @@
                 ['perm' => 'work_order', 'route' => 'super-admin.work-order.index', 'icon' => 'bi-clipboard-check', 'label' => __('messages.work_order'), 'count' => $sidebarCounts['workOrdersCount']],
                 ['perm' => 'stock_order', 'route' => 'super-admin.stock-order.index', 'icon' => 'bi-box2-heart', 'label' => __('messages.live_stock_order'), 'count' => $sidebarCounts['stockOrdersCount']],
                 ['perm' => 'meetings', 'route' => 'super-admin.meetings.index', 'icon' => 'bi-camera-video', 'label' => 'Meetings', 'count' => null],
-                ['perm' => 'work_order', 'route' => 'super-admin.repairs.index', 'icon' => 'bi-tools', 'label' => __('messages.repairs'), 'count' => $sidebarCounts['repairsCount']],
                 ['perm' => 'purchase_order', 'route' => 'super-admin.purchase-order.index', 'icon' => 'bi-cart3', 'label' => __('messages.purchase_order'), 'count' => $sidebarCounts['purchaseOrdersCount']],
                 ['perm' => 'product', 'route' => 'super-admin.product.index', 'icon' => 'bi-box-seam', 'label' => __('messages.product'), 'count' => $sidebarCounts['productsCount']],
                 ['perm' => 'design', 'route' => 'super-admin.design.index', 'icon' => 'bi-palette', 'label' => __('messages.design'), 'count' => $sidebarCounts['designsCount']],
