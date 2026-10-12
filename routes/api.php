@@ -520,6 +520,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::get('/meetings/{room_id}/token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'getAgoraToken'])->name('meetings.token');
     Route::post('/meetings/{room_id}/notify-join', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'notifyJoin'])->name('meetings.notify-join');
     Route::post('/meetings/voip-token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'updateVoipToken'])->name('meetings.voip-token');
+    Route::post('/meetings/test-voip', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'testVoip'])->name('meetings.test-voip');
 
 
 

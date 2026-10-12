@@ -56,8 +56,9 @@ use App\Http\Controllers\KeyUser\ProductController as KeyUserProductController;
 // Purchase Order Controllers
 use App\Http\Controllers\Admin\PurchaseOrderController as AdminPurchaseOrderController;
 use App\Http\Controllers\Buyer\BuyerMeetingController;
-
+use App\Http\Controllers\Buyer\BuyerRepairController;
 use App\Http\Controllers\Craftsman\CraftsmanMeetingController;
+use App\Http\Controllers\Craftsman\CraftsmanRepairController;
 use App\Http\Controllers\Craftsman\PurchaseOrderController as CraftsmanPurchaseOrderController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\SuperAdmin\SuperAdminMeetingController;
@@ -937,6 +938,15 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         });
         Route::resource('updates', NewUpdatesController::class);
         Route::resource('repairs', RepairController::class);
+        Route::patch('repairs/{repair}/accept', [RepairController::class, 'accept'])->name('repairs.accept');
+        Route::patch('repairs/{repair}/reject', [RepairController::class, 'reject'])->name('repairs.reject');
+        Route::patch('repairs/{repair}/allocate', [RepairController::class, 'allocate'])->name('repairs.allocate');
+        Route::patch('repairs/{repair}/complete', [RepairController::class, 'complete'])->name('repairs.complete');
+        Route::post('repairs/bulk-complete', [RepairController::class, 'bulkComplete'])->name('repairs.bulk-complete');
+        Route::patch('repairs/{repair}/approve-completion', [RepairController::class, 'approveCompletion'])->name('repairs.approve-completion');
+        Route::patch('repairs/{repair}/mark-fully-completed', [RepairController::class, 'markFullyCompleted'])->name('repairs.mark-fully-completed');
+        Route::patch('repairs/{repair}/store-item-sent-by', [RepairController::class, 'storeItemSentBy'])->name('repairs.store-item-sent-by');
+        Route::patch('repairs/{repair}/buyer-complete', [RepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete');
     });
 });
 
@@ -1092,6 +1102,10 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         Route::prefix('finance')->group(function () {
             Route::get('/', [App\Http\Controllers\Craftsman\LoginController::class, 'finance'])->name('finance.index');
         });
+
+        Route::get('repairs', [CraftsmanRepairController::class, 'index'])->name('repairs.index');
+        Route::patch('repairs/{repair}/accept', [CraftsmanRepairController::class, 'acceptOrder'])->name('repairs.accept');
+        Route::patch('repairs/{repair}/complete', [CraftsmanRepairController::class, 'markComplete'])->name('repairs.complete');
 
         // Chat Routes for Craftsmen
     });
@@ -1380,6 +1394,9 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
             Route::post('/', [App\Http\Controllers\Buyer\FavoriteController::class, 'store'])->name('store');
             Route::delete('/{id}', [App\Http\Controllers\Buyer\FavoriteController::class, 'destroy'])->name('destroy');
         });
+
+        Route::resource('repairs', BuyerRepairController::class)->except(['show']);
+    Route::patch('repairs/{repair}/accept-completion', [BuyerRepairController::class, 'acceptCompletion'])->name('repairs.accept-completion');
 
         // Chat Routes for Buyers
     });

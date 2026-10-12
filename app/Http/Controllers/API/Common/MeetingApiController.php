@@ -872,4 +872,40 @@ class MeetingApiController extends Controller
             'voip_token' => $user->voip_token
         ]);
     }
+
+    /**
+     * Test sending an Apple PushKit VoIP notification.
+     */
+    public function testVoip(Request $request)
+    {
+        $user = Auth::user();
+        $targetToken = $request->input('voip_token') ?? ($user ? $user->voip_token : null);
+
+        if (!$targetToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No VoIP token provided or found for this user.'
+            ], 422);
+        }
+
+        $testUuid = \Illuminate\Support\Str::uuid()->toString();
+        $apnsService = app(\App\Services\ApnsVoipService::class);
+        $result = $apnsService->sendVoipNotification($targetToken, [
+            'id'          => $testUuid,
+            'call_id'     => $testUuid,
+            'uuid'        => $testUuid,
+            'meeting_id'  => (string) ($request->input('meeting_id') ?? 'test_999'),
+            'room_id'     => (string) ($request->input('room_id') ?? 'test_room'),
+            'caller_name' => (string) ($request->input('caller_name') ?? ($user ? ($user->name ?? $user->full_name ?? 'Test Caller') : 'Test Caller')),
+            'action'      => 'join_meeting',
+            'status'      => 'approved',
+            'call_type'   => 'video',
+            'isVideo'     => 'true',
+        ]);
+
+        return response()->json([
+            'success' => $result['success'],
+            'apns_result' => $result,
+        ], $result['success'] ? 200 : 400);
+    }
 }

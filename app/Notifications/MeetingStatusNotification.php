@@ -5,6 +5,7 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use App\Channels\CustomFcmChannel;
+use App\Channels\ApnsVoipChannel;
 use App\Models\Meeting;
 use Illuminate\Support\Facades\Log;
 
@@ -25,7 +26,53 @@ class MeetingStatusNotification extends Notification
 
     public function via($notifiable)
     {
-        return [CustomFcmChannel::class];
+        $channels = [CustomFcmChannel::class];
+
+        // If the notifiable has a registered Apple VoIP token, send via APNs VoIP PushKit
+        if (!empty($notifiable->voip_token)) {
+            $channels[] = ApnsVoipChannel::class;
+        }
+
+        return $channels;
+    }
+
+    /**
+     * Build the Apple PushKit VoIP payload
+     */
+    public function toVoip($notifiable)
+    {
+        $effectiveStatus = ($this->status === 're_ring') ? 'approved' : $this->status;
+
+        $isHost = ($this->meeting->host_id == $notifiable->id && $this->meeting->host_type == get_class($notifiable));
+        $otherParty = $isHost ? $this->meeting->participant : $this->meeting->host;
+
+        $uuid = \Illuminate\Support\Str::uuid()->toString();
+
+        $payload = [
+            'id'          => $uuid,
+            'call_id'     => $uuid,
+            'uuid'        => $uuid,
+            'meeting_id'  => (string) $this->meeting->id,
+            'room_id'     => (string) ($this->meeting->room_id ?? ''),
+            'status'      => $effectiveStatus,
+            'action'      => ($this->status === 'joined' || $this->status === 're_ring') ? 'join_meeting' : 'meeting_update',
+            'type'        => '1',
+            'isVideo'     => 'true',
+            'call_type'   => 'video',
+            'caller_name' => $this->getFormattedCallerName($otherParty),
+        ];
+
+        if (!empty($this->agoraDetails)) {
+            foreach ($this->agoraDetails as $key => $value) {
+                $payload[$key] = (string) $value;
+            }
+        }
+
+        if ($this->status === 'joined' && !isset($payload['uid'])) {
+            $payload['uid'] = (string) $notifiable->id;
+        }
+
+        return $payload;
     }
 
     public function toFcm($notifiable)

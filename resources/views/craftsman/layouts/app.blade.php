@@ -209,6 +209,15 @@
             </li>
             @endif
 
+           @if($craftsmanUser && $craftsmanUser->hasPermission('repair'))
+    <li>
+        <a href="{{ route('craftsman.repairs.index') }}"
+            class="nav-link flex items-center justify-between p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.repairs.*') ? 'active bg-emerald-800' : '' }}">
+            <span><i class="bi bi-file-earmark-text mr-3"></i> Repairs</span>
+        </a>
+    </li>
+@endif
+
 
 
             {{-- Products --}}

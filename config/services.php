@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'apns' => [
+        'key_id'      => env('APNS_KEY_ID', 'VCBWFP7W26'),
+        'team_id'     => env('APNS_TEAM_ID', 'LM2J9T7ZSA'),
+        'bundle_id'   => env('APNS_BUNDLE_ID', 'com.ajpl.arianth.voip'),
+        'key_path'    => env('APNS_KEY_PATH', storage_path('app/AuthKey_VCBWFP7W26.p8')),
+        'environment' => env('APNS_ENVIRONMENT', 'sandbox'),
+    ],
+
 ];
