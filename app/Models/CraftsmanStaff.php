@@ -26,6 +26,8 @@ class CraftsmanStaff extends Authenticatable
         'aadhar_image',
         'is_active',
         'permissions',
+        'fcm_token',
+        'voip_token',
     ];
 
     protected $hidden = [

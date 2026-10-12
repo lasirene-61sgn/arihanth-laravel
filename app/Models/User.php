@@ -42,6 +42,7 @@ class User extends Authenticatable
         'created_by',
         'is_frozen',
         'fcm_token',
+        'voip_token',
         'permissions',
     ];
 

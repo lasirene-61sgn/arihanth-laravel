@@ -64,6 +64,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminMeetingController;
 use App\Http\Controllers\Public\RegistrationController as PublicRegistrationController;
 use App\Http\Controllers\SuperAdmin\NewUpdatesController;
 use App\Http\Controllers\SuperAdmin\RegistrationController as SuperAdminRegistrationController;
+use App\Http\Controllers\SuperAdmin\RepairController;
 
 Route::get('/ajlogo.svg', function () {
     $path = public_path('images/ajlogo.svg');
@@ -935,6 +936,7 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\SuperAdmin\FavoriteController::class, 'destroy'])->name('destroy');
         });
         Route::resource('updates', NewUpdatesController::class);
+        Route::resource('repairs', RepairController::class);
     });
 });
 

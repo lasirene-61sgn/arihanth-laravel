@@ -108,6 +108,11 @@ class MeetingStatusNotification extends Notification
             $data['caller_name'] = $this->getFormattedCallerName($otherParty);
         }
 
+        // Ensure voip_token is included for iOS VoIP/CallKit notifications
+        if (!isset($data['voip_token']) && !empty($notifiable->voip_token)) {
+            $data['voip_token'] = (string) $notifiable->voip_token;
+        }
+
         return [
             'title' => $title,
             'body'  => $body,

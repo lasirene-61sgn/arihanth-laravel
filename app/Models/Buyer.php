@@ -71,6 +71,7 @@ class Buyer extends Authenticatable
         'is_frozen',
         'kyc_status',
         'fcm_token',
+        'voip_token',
         'brand_logo',
     ];
 

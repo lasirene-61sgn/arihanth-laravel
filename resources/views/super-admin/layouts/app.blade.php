@@ -172,6 +172,7 @@
                 ['perm' => 'design', 'route' => 'super-admin.design.index', 'icon' => 'bi-palette', 'label' => __('messages.design'), 'count' => $sidebarCounts['designsCount']],
                 ['perm' => 'catalogue', 'route' => 'super-admin.catalogue.index', 'icon' => 'bi-book', 'label' => __('messages.catalogue'), 'count' => $sidebarCounts['cataloguesCount']],
                 ['perm' => 'design', 'route' => 'super-admin.favorites.index', 'icon' => 'bi-heart', 'label' => 'Favorites', 'count' => null],
+                ['perm' => 'repairs', 'route' => 'super-admin.repairs.index', 'icon' => 'bi-reapir', 'label' => 'Repairs/Samples', 'count' => null],
                 ['perm' => 'updates', 'route' => 'super-admin.updates.index', 'icon' => 'bi-heart', 'label' => 'Updates', 'count' => null],
                 ];
                 @endphp

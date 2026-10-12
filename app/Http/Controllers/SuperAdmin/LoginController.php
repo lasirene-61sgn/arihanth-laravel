@@ -116,7 +116,6 @@ class LoginController extends Controller
             ->whereNull('allocated_craftsman_code')
             ->count();
         $stockOrdersCount = StockOrder::where('status', 'Pending')->count();
-        $repairsCount = Repair::whereIn('status', ['Pending', 'Accepted'])->count();
         $usersCount = User::count();
         $keyUsersCount = KeyUser::count();
         
@@ -538,7 +537,6 @@ class LoginController extends Controller
             'topPicksClientsFull',
             'leastPicksClientsFull',
             'stockOrdersCount',
-            'repairsCount',
             'workOrdersOverdueCount',
             'purchaseOrdersOverdueCount'
         ));

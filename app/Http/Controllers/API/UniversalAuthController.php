@@ -54,6 +54,10 @@ class UniversalAuthController extends Controller
 
             'fcm_token' => 'nullable|string',
 
+            'voip_token' => 'nullable|string',
+
+            'device_type' => 'nullable|string',
+
         ]);
 
 
@@ -77,6 +81,22 @@ class UniversalAuthController extends Controller
         $loginId = $request->email;
 
         $password = $request->password;
+
+        $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+
+        // Helper to sync FCM and iOS VoIP tokens
+        $syncDeviceTokens = function ($userModel) use ($request, $isIos) {
+            $updateData = [];
+            if ($request->filled('fcm_token')) {
+                $updateData['fcm_token'] = $request->fcm_token;
+            }
+            if ($request->filled('voip_token') && $isIos) {
+                $updateData['voip_token'] = $request->voip_token;
+            }
+            if (!empty($updateData)) {
+                $userModel->update($updateData);
+            }
+        };
 
 
 
@@ -103,11 +123,7 @@ class UniversalAuthController extends Controller
 
         if ($superAdmin && Hash::check($password, $superAdmin->password)) {
 
-            if ($request->filled('fcm_token')) {
-
-                $superAdmin->update(['fcm_token' => $request->fcm_token]);
-
-            }
+            $syncDeviceTokens($superAdmin);
 
             $token = $superAdmin->createToken('admin_token')->plainTextToken;
 
@@ -150,11 +166,7 @@ class UniversalAuthController extends Controller
 
         if ($buyer && Hash::check($password, $buyer->password)) {
 
-            if ($request->filled('fcm_token')) {
-
-                $buyer->update(['fcm_token' => $request->fcm_token]);
-
-            }
+            $syncDeviceTokens($buyer);
 
             $token = $buyer->createToken('buyer_token')->plainTextToken;
 
@@ -201,11 +213,7 @@ class UniversalAuthController extends Controller
 
         if ($craftsman && Hash::check($password, $craftsman->password)) {
 
-            if ($request->filled('fcm_token')) {
-
-                $craftsman->update(['fcm_token' => $request->fcm_token]);
-
-            }
+            $syncDeviceTokens($craftsman);
 
             $token = $craftsman->createToken('craftsman_token')->plainTextToken;
 
@@ -252,7 +260,7 @@ class UniversalAuthController extends Controller
 
         if ($craftsmanStaff && Hash::check($password, $craftsmanStaff->password)) {
 
-            // Assuming craftsman staff might have fcm_token later, wrap in try/catch or skip. We will skip for now.
+            $syncDeviceTokens($craftsmanStaff);
 
             $token = $craftsmanStaff->createToken('craftsman_staff_token')->plainTextToken;
 
@@ -294,11 +302,7 @@ class UniversalAuthController extends Controller
 
         if ($keyUser && Hash::check($password, $keyUser->password)) {
 
-            if ($request->filled('fcm_token')) {
-
-                $keyUser->update(['fcm_token' => $request->fcm_token]);
-
-            }
+            $syncDeviceTokens($keyUser);
 
             $token = $keyUser->createToken('keyuser_token')->plainTextToken;
 
@@ -345,11 +349,7 @@ class UniversalAuthController extends Controller
 
         if ($user && Hash::check($password, $user->password)) {
 
-            if ($request->filled('fcm_token')) {
-
-                $user->update(['fcm_token' => $request->fcm_token]);
-
-            }
+            $syncDeviceTokens($user);
 
             $token = $user->createToken('user_token')->plainTextToken;
 

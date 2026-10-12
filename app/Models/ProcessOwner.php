@@ -46,6 +46,7 @@ class ProcessOwner extends Authenticatable
         'is_frozen',
         'dear',
         'fcm_token',
+        'voip_token',
         'category',
     ];
 

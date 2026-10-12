@@ -71,6 +71,7 @@ class Craftman extends Authenticatable
         'cin_no',
         'cin_attachment',
         'fcm_token',
+        'voip_token',
         'brand_logo',
     ];
 

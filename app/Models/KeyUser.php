@@ -44,6 +44,7 @@ class KeyUser extends Authenticatable
         'aadhar_number',
         'is_frozen',
         'fcm_token',
+        'voip_token',
     ];
 
     /**

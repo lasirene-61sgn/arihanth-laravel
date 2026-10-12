@@ -68,7 +68,6 @@ class SidebarCountComposer
                                     ->count(),
                 'kycPendingCount' => 0,
                 'stockOrdersCount' => StockOrder::where('status', 'Pending')->count(),
-                'repairsCount' => Repair::whereIn('status', ['Pending', 'Accepted'])->count(),
                 'pendingRegistrationsCount' => RegistrationRequest::where('status', 'Pending')->count(),
             ];
         } elseif (Auth::guard('buyer')->check()) {

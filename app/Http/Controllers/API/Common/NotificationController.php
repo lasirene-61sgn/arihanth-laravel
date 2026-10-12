@@ -15,7 +15,9 @@ class NotificationController extends Controller
     public function storeFcmToken(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fcm_token' => 'required|string',
+            'fcm_token' => 'nullable|string',
+            'voip_token' => 'nullable|string',
+            'device_type' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -35,13 +37,25 @@ class NotificationController extends Controller
             ], 401);
         }
 
-        $user->update([
-            'fcm_token' => $request->fcm_token
-        ]);
+        $data = [];
+        if ($request->filled('fcm_token')) {
+            $data['fcm_token'] = $request->fcm_token;
+        }
+
+        $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+        if ($request->filled('voip_token') && $isIos) {
+            $data['voip_token'] = $request->voip_token;
+        }
+
+        if (!empty($data)) {
+            $user->update($data);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'FCM token updated successfully'
+            'message' => 'Device token(s) updated successfully',
+            'fcm_token' => $user->fcm_token,
+            'voip_token' => $user->voip_token
         ]);
     }
 }

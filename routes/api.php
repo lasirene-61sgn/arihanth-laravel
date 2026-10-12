@@ -509,6 +509,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
 
     // --- Notifications ---
     Route::post('/store-fcm-token', [\App\Http\Controllers\API\Common\NotificationController::class, 'storeFcmToken'])->name('notifications.store-fcm-token');
+    Route::post('/store-voip-token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'updateVoipToken'])->name('notifications.store-voip-token');
 
     // --- Meetings / Video Call ---
     Route::get('/meetings', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'index'])->name('meetings.index');
@@ -518,6 +519,7 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::post('/meetings/{id}/cancel', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'cancel'])->name('meetings.cancel');
     Route::get('/meetings/{room_id}/token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'getAgoraToken'])->name('meetings.token');
     Route::post('/meetings/{room_id}/notify-join', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'notifyJoin'])->name('meetings.notify-join');
+    Route::post('/meetings/voip-token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'updateVoipToken'])->name('meetings.voip-token');
 
 
 

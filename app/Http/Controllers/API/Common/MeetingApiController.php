@@ -22,6 +22,14 @@ class MeetingApiController extends Controller
     {
         $user = Auth::user();
 
+        // Store iOS VoIP token if provided in request
+        if ($request->filled('voip_token')) {
+            $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+            if ($isIos) {
+                $user->update(['voip_token' => $request->voip_token]);
+            }
+        }
+
         $meeting = Meeting::where('room_id', $room_id)->first();
 
         if (!$meeting) {
@@ -98,7 +106,8 @@ class MeetingApiController extends Controller
                         'token' => $targetToken,
                         'channel_name' => $room_id,
                         'uid' => $userToNotify->id,
-                        'caller_name' => $this->getFormattedCallerName($user)
+                        'caller_name' => $this->getFormattedCallerName($user),
+                        'voip_token' => $userToNotify->voip_token ?? null,
                     ]));
 
                     // If a Buyer/Craftsman joined, ring the Admin web panel
@@ -131,7 +140,9 @@ class MeetingApiController extends Controller
                     'app_id' => $appId,
                     'channel_name' => $room_id,
                     'token' => $agoraToken,
-                    'uid' => $user->id
+                    'uid' => $user->id,
+                    'target_voip_token' => $userToNotify ? ($userToNotify->voip_token ?? null) : null,
+                    'voip_token' => $user->voip_token ?? null,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -145,6 +156,15 @@ class MeetingApiController extends Controller
     public function notifyJoin(Request $request, $room_id)
     {
         $user = Auth::user();
+
+        // Store iOS VoIP token if provided in request
+        if ($request->filled('voip_token')) {
+            $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+            if ($isIos) {
+                $user->update(['voip_token' => $request->voip_token]);
+            }
+        }
+
         $meeting = Meeting::where('room_id', $room_id)->first();
 
         if (!$meeting) {
@@ -223,7 +243,8 @@ class MeetingApiController extends Controller
                     'token' => $targetToken,
                     'channel_name' => $room_id,
                     'uid' => $userToNotify->id,
-                    'caller_name' => $this->getFormattedCallerName($user)
+                    'caller_name' => $this->getFormattedCallerName($user),
+                    'voip_token' => $userToNotify->voip_token ?? null,
                 ]));
             } catch (\Exception $e) {
                 \Log::warning("FCM Mobile Notification failed: " . $e->getMessage());
@@ -409,13 +430,13 @@ class MeetingApiController extends Controller
         $data = [];
 
         if ($category === 'admin') {
-            $data = \App\Models\ProcessOwner::where('role', 'admin')->where('id', '!=', $user->id)->get(['id', 'full_name', 'category', 'user_code']);
+            $data = \App\Models\ProcessOwner::where('role', 'admin')->where('id', '!=', $user->id)->get(['id', 'full_name', 'category', 'user_code', 'voip_token']);
         } elseif ($category === 'superadmin') {
-            $data = \App\Models\ProcessOwner::whereIn('role', ['superadmin', 'super_admin'])->where('id', '!=', $user->id)->get(['id', 'full_name', 'user_code']);
+            $data = \App\Models\ProcessOwner::whereIn('role', ['superadmin', 'super_admin'])->where('id', '!=', $user->id)->get(['id', 'full_name', 'user_code', 'voip_token']);
         } elseif ($category === 'buyer') {
-            $data = \App\Models\Buyer::select('id', \Illuminate\Support\Facades\DB::raw('COALESCE(business_name, name) as full_name'), 'bp_code as user_code')->get();
+            $data = \App\Models\Buyer::select('id', \Illuminate\Support\Facades\DB::raw('COALESCE(business_name, name) as full_name'), 'bp_code as user_code', 'voip_token')->get();
         } elseif ($category === 'craftsman') {
-            $data = \App\Models\Craftman::select('id', \Illuminate\Support\Facades\DB::raw('COALESCE(business_name, name) as full_name'), 'craftman_code as user_code')->get();
+            $data = \App\Models\Craftman::select('id', \Illuminate\Support\Facades\DB::raw('COALESCE(business_name, name) as full_name'), 'craftman_code as user_code', 'voip_token')->get();
         } else {
             return response()->json(['success' => false, 'message' => 'Invalid category.'], 400);
         }
@@ -439,6 +460,14 @@ class MeetingApiController extends Controller
         ]);
 
         $user = Auth::user();
+
+        // Store iOS VoIP token if provided in request
+        if ($request->filled('voip_token')) {
+            $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+            if ($isIos) {
+                $user->update(['voip_token' => $request->voip_token]);
+            }
+        }
 
         $typeMap = [
             'buyer' => \App\Models\Buyer::class,
@@ -562,6 +591,7 @@ class MeetingApiController extends Controller
 
         $responseData = $meeting->toArray();
         $responseData['participant_code'] = $participantCode;
+        $responseData['participant_voip_token'] = $meeting->participant->voip_token ?? null;
 
         return response()->json($responseData, 201);
     }
@@ -608,7 +638,8 @@ class MeetingApiController extends Controller
                     'token'        => $targetToken,
                     'channel_name' => $meeting->room_id,
                     'uid'          => $meeting->host->id,
-                    'caller_name'  => $this->getFormattedCallerName($user)
+                    'caller_name'  => $this->getFormattedCallerName($user),
+                    'voip_token'   => $meeting->host->voip_token ?? null,
                 ]));
             }
             return response()->json(['success' => true, 'message' => 'Meeting already approved. Notification resent.', 'data' => $meeting]);
@@ -629,7 +660,9 @@ class MeetingApiController extends Controller
 
         // Send notification to host
         if ($meeting->host && method_exists($meeting->host, 'notify')) {
-            $meeting->host->notify(new MeetingStatusNotification($meeting, 'approved'));
+            $meeting->host->notify(new MeetingStatusNotification($meeting, 'approved', [
+                'voip_token' => $meeting->host->voip_token ?? null,
+            ]));
         }
 
         return response()->json(['success' => true, 'message' => 'Meeting approved successfully', 'data' => $meeting]);
@@ -806,5 +839,37 @@ class MeetingApiController extends Controller
         }
 
         return $code ?: ($name ?: 'Participant');
+    }
+
+    /**
+     * Store or update iOS VoIP token for the authenticated user.
+     */
+    public function updateVoipToken(Request $request)
+    {
+        $request->validate([
+            'voip_token' => 'required|string',
+            'device_type' => 'nullable|string',
+        ]);
+
+        $isIos = !$request->filled('device_type') || strtolower($request->device_type) === 'ios';
+        if (!$isIos) {
+            return response()->json([
+                'success' => false,
+                'message' => 'VoIP token is only applicable for iOS devices.'
+            ], 400);
+        }
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+
+        $user->update(['voip_token' => $request->voip_token]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'VoIP token updated successfully',
+            'voip_token' => $user->voip_token
+        ]);
     }
 }
