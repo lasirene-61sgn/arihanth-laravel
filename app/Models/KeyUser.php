@@ -107,6 +107,10 @@ class KeyUser extends Authenticatable
             $permissions = json_decode($permissions, true) ?? [];
         }
 
+        if ($permission === 'chat' || $permission === 'messages') {
+            return in_array('chat', $permissions) || in_array('messages', $permissions);
+        }
+
         return in_array($permission, $permissions);
     }
 
@@ -166,7 +170,9 @@ class KeyUser extends Authenticatable
             'catalogue',
             'work_order',
             'user_management',
-            'finance'
+            'finance',
+            'messages',
+            'chat',
         ];
     }
 

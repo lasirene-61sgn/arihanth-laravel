@@ -115,6 +115,10 @@ class Buyer extends Authenticatable
             $permissions = json_decode($permissions, true) ?? [];
         }
 
+        if ($permission === 'chat' || $permission === 'messages') {
+            return in_array('chat', $permissions) || in_array('messages', $permissions);
+        }
+
         return in_array($permission, $permissions);
     }
 
@@ -174,19 +178,6 @@ class Buyer extends Authenticatable
     }
 
     /**
-     * Check if the buyer has a specific permission
-     */
-    // public function hasPermission($permission)
-    // {
-    //     $permissions = $this->permissions ?? [];
-    //     if (is_string($permissions)) {
-    //         $permissions = json_decode($permissions, true) ?? [];
-    //     }
-
-    //     return in_array($permission, $permissions);
-    // }
-
-    /**
      * Get permissions as array
      */
     public function getPermissionsArray()
@@ -218,6 +209,7 @@ class Buyer extends Authenticatable
             'user_management',
             'meetings',
             'messages',
+            'chat',
             'dashboard_details',
         ];
     }
@@ -313,4 +305,5 @@ class Buyer extends Authenticatable
     {
         return $this->morphMany(Meeting::class, 'participant');
     }
+
 }

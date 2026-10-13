@@ -45,6 +45,13 @@ class ChatApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
+        }
+
         $appId = env('AGORA_APP_ID');
         $appCertificate = env('AGORA_APP_CERTIFICATE');
 
@@ -122,6 +129,17 @@ class ChatApiController extends Controller
      * - Craftsman Staff: their parent Craftsman + fellow staff under same craftsman_id + Admins
      * - Admin/Super Admin: All participants across the system
      */
+    /**
+     * Get eligible contacts for the authenticated user to chat with or add to groups.
+     * Enforces all role restrictions and supports search, category filtering, and pagination.
+     *
+     * Query Parameters:
+     * - search: string (search by name, user code, bp_code, email, or mobile)
+     * - type: string ('all', 'buyers', 'craftsmen', 'key_users', 'craftsman_staff', 'admins')
+     * - page: int (default: 1)
+     * - per_page: int (default: 20, max: 100)
+     * - grouped: bool (optional: true returns grouped dictionary)
+     */
     public function getEligibleContacts(Request $request)
     {
         $user = Auth::user();
@@ -129,104 +147,269 @@ class ChatApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        $filterType = strtolower(trim((string) $request->input('type', 'all')));
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = min(100, max(1, (int) $request->input('per_page', 20)));
+        $isGrouped = $request->boolean('grouped');
+
         $isSuperAdmin = $this->isSuperAdmin($user);
         $isAdmin = ($user instanceof ProcessOwner);
 
-        $contacts = [
-            'my_role'         => $this->getModelTypeString($user),
-            'key_users'       => [],
-            'craftsman_staff' => [],
-            'buyers'          => [],
-            'craftsmen'       => [],
-            'admins'          => [],
-        ];
+        // 1. Buyer Query
+        $buyerQuery = Buyer::query();
+        if ($search !== '') {
+            $buyerQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('business_name', 'like', "%{$search}%")
+                  ->orWhere('bp_code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('business_email', 'like', "%{$search}%")
+                  ->orWhere('mobile', 'like', "%{$search}%");
+            });
+        }
 
-        // 1. If Super Admin or Admin: can see everyone
+        // 2. Craftsman Query
+        $craftsmanQuery = Craftman::query();
+        if ($search !== '') {
+            $craftsmanQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('business_name', 'like', "%{$search}%")
+                  ->orWhere('craftman_code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('business_email', 'like', "%{$search}%")
+                  ->orWhere('mobile', 'like', "%{$search}%");
+            });
+        }
+
+        // 3. Key User Query
+        $keyUserQuery = KeyUser::query();
+        if ($search !== '') {
+            $keyUserQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('user_code', 'like', "%{$search}%")
+                  ->orWhere('bp_code', 'like', "%{$search}%")
+                  ->orWhere('email_id', 'like', "%{$search}%")
+                  ->orWhere('mobile_no', 'like', "%{$search}%");
+            });
+        }
+
+        // 4. Craftsman Staff Query
+        $staffQuery = CraftsmanStaff::query();
+        if ($search !== '') {
+            $staffQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('staff_code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('mobile', 'like', "%{$search}%");
+            });
+        }
+
+        // 5. Admin (ProcessOwner) Query
+        $adminQuery = ProcessOwner::query();
+        if ($search !== '') {
+            $adminQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('user_code', 'like', "%{$search}%")
+                  ->orWhere('email_id', 'like', "%{$search}%")
+                  ->orWhere('mobile_no', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply Role Isolation with Buyer-Craftsman communication enabled:
         if ($isAdmin) {
-            $contacts['admins'] = ProcessOwner::where('id', '!=', $user->id)
-                ->get()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            $contacts['buyers'] = Buyer::all()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            $contacts['craftsmen'] = Craftman::all()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            $contacts['key_users'] = KeyUser::all()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            $contacts['craftsman_staff'] = CraftsmanStaff::all()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            return response()->json(['success' => true, 'data' => $contacts]);
+            // Super Admin & Admin can contact anyone across the platform
+            $adminQuery->where('id', '!=', $user->id);
+        } elseif ($user instanceof Buyer) {
+            // Buyer: their own Key Users + Craftsmen (with chat permissions) + Admins
+            $buyerQuery->whereRaw('0 = 1');
+            $craftsmanQuery->where(function ($q) {
+                $q->whereNull('permissions')
+                  ->orWhereJsonContains('permissions', 'chat')
+                  ->orWhereJsonContains('permissions', 'messages');
+            });
+            $staffQuery->whereRaw('0 = 1');
+            $keyUserQuery->where('bp_code', $user->bp_code);
+        } elseif ($user instanceof KeyUser) {
+            // Key User: their parent Buyer + fellow Key Users under same BP code + Craftsmen + Admins
+            $buyerQuery->where('bp_code', $user->bp_code);
+            $craftsmanQuery->where(function ($q) {
+                $q->whereNull('permissions')
+                  ->orWhereJsonContains('permissions', 'chat')
+                  ->orWhereJsonContains('permissions', 'messages');
+            });
+            $staffQuery->whereRaw('0 = 1');
+            $keyUserQuery->where('bp_code', $user->bp_code)->where('id', '!=', $user->id);
+        } elseif ($user instanceof Craftman) {
+            // Craftsman: their own staff + Buyers (with chat permissions) + Key Users + Admins
+            $buyerQuery->where(function ($q) {
+                $q->whereNull('permissions')
+                  ->orWhereJsonContains('permissions', 'chat')
+                  ->orWhereJsonContains('permissions', 'messages');
+            });
+            $craftsmanQuery->whereRaw('0 = 1');
+            $keyUserQuery->where(function ($q) {
+                $q->whereNull('permissions')
+                  ->orWhereJsonContains('permissions', 'chat')
+                  ->orWhereJsonContains('permissions', 'messages');
+            });
+            $staffQuery->where('craftsman_id', $user->id);
+        } elseif ($user instanceof CraftsmanStaff) {
+            // Staff: their parent Craftsman + fellow staff + Buyers + Admins
+            $buyerQuery->where(function ($q) {
+                $q->whereNull('permissions')
+                  ->orWhereJsonContains('permissions', 'chat')
+                  ->orWhereJsonContains('permissions', 'messages');
+            });
+            $craftsmanQuery->where('id', $user->craftsman_id);
+            $keyUserQuery->whereRaw('0 = 1');
+            $staffQuery->where('craftsman_id', $user->craftsman_id)->where('id', '!=', $user->id);
+        } else {
+            // Generic user: only Admins
+            $buyerQuery->whereRaw('0 = 1');
+            $craftsmanQuery->whereRaw('0 = 1');
+            $keyUserQuery->whereRaw('0 = 1');
+            $staffQuery->whereRaw('0 = 1');
         }
 
-        // Always provide Admins & Superadmins as available contacts
-        $contacts['admins'] = ProcessOwner::all()
-            ->map(fn($u) => $this->formatUserSummary($u));
+        // Calculate counts for frontend filter tabs
+        $counts = [
+            'all'             => 0,
+            'buyers'          => (clone $buyerQuery)->count(),
+            'craftsmen'       => (clone $craftsmanQuery)->count(),
+            'key_users'       => (clone $keyUserQuery)->count(),
+            'craftsman_staff' => (clone $staffQuery)->count(),
+            'admins'          => (clone $adminQuery)->count(),
+        ];
+        $counts['all'] = $counts['buyers'] + $counts['craftsmen'] + $counts['key_users'] + $counts['craftsman_staff'] + $counts['admins'];
 
-        // 2. If Buyer: ONLY their own Key Users
-        if ($user instanceof Buyer) {
-            $contacts['key_users'] = KeyUser::where('bp_code', $user->bp_code)
-                ->get()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            return response()->json(['success' => true, 'data' => $contacts]);
+        // Option: return grouped format if requested
+        if ($isGrouped) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'my_role'         => $this->getModelTypeString($user),
+                    'admins'          => $adminQuery->get()->map(fn($u) => $this->formatUserSummary($u))->values(),
+                    'buyers'          => $buyerQuery->get()->map(fn($u) => $this->formatUserSummary($u))->values(),
+                    'craftsmen'       => $craftsmanQuery->get()->map(fn($u) => $this->formatUserSummary($u))->values(),
+                    'key_users'       => $keyUserQuery->get()->map(fn($u) => $this->formatUserSummary($u))->values(),
+                    'craftsman_staff' => $staffQuery->get()->map(fn($u) => $this->formatUserSummary($u))->values(),
+                ],
+                'filter_counts' => $counts,
+            ]);
         }
 
-        // 3. If Key User: their parent Buyer, and colleagues under same BP code
-        if ($user instanceof KeyUser) {
-            $parentBuyer = Buyer::where('bp_code', $user->bp_code)->first();
-            if ($parentBuyer) {
-                $contacts['buyers'] = [$this->formatUserSummary($parentBuyer)];
+        // Flat paginated list format
+        $normalizedType = match ($filterType) {
+            'buyer', 'buyers'                     => 'buyers',
+            'craftman', 'craftsman', 'craftsmen' => 'craftsmen',
+            'key_user', 'key_users', 'keyuser'    => 'key_users',
+            'staff', 'craftsman_staff'            => 'craftsman_staff',
+            'admin', 'admins'                     => 'admins',
+            default                               => 'all',
+        };
+
+        if ($normalizedType === 'buyers') {
+            $paginator = $buyerQuery->orderBy('name')->paginate($perPage, ['*'], 'page', $page);
+            $items = collect($paginator->items())->map(fn($u) => $this->formatUserSummary($u))->values();
+            $total = $paginator->total();
+        } elseif ($normalizedType === 'craftsmen') {
+            $paginator = $craftsmanQuery->orderBy('name')->paginate($perPage, ['*'], 'page', $page);
+            $items = collect($paginator->items())->map(fn($u) => $this->formatUserSummary($u))->values();
+            $total = $paginator->total();
+        } elseif ($normalizedType === 'key_users') {
+            $paginator = $keyUserQuery->orderBy('full_name')->paginate($perPage, ['*'], 'page', $page);
+            $items = collect($paginator->items())->map(fn($u) => $this->formatUserSummary($u))->values();
+            $total = $paginator->total();
+        } elseif ($normalizedType === 'craftsman_staff') {
+            $paginator = $staffQuery->orderBy('name')->paginate($perPage, ['*'], 'page', $page);
+            $items = collect($paginator->items())->map(fn($u) => $this->formatUserSummary($u))->values();
+            $total = $paginator->total();
+        } elseif ($normalizedType === 'admins') {
+            $paginator = $adminQuery->orderBy('full_name')->paginate($perPage, ['*'], 'page', $page);
+            $items = collect($paginator->items())->map(fn($u) => $this->formatUserSummary($u))->values();
+            $total = $paginator->total();
+        } else {
+            // 'all': Combine eligible categories
+            $allContacts = collect();
+
+            if ($counts['admins'] > 0) {
+                $allContacts = $allContacts->concat($adminQuery->get()->map(fn($u) => $this->formatUserSummary($u)));
+            }
+            if ($counts['buyers'] > 0) {
+                $allContacts = $allContacts->concat($buyerQuery->get()->map(fn($u) => $this->formatUserSummary($u)));
+            }
+            if ($counts['craftsmen'] > 0) {
+                $allContacts = $allContacts->concat($craftsmanQuery->get()->map(fn($u) => $this->formatUserSummary($u)));
+            }
+            if ($counts['key_users'] > 0) {
+                $allContacts = $allContacts->concat($keyUserQuery->get()->map(fn($u) => $this->formatUserSummary($u)));
+            }
+            if ($counts['craftsman_staff'] > 0) {
+                $allContacts = $allContacts->concat($staffQuery->get()->map(fn($u) => $this->formatUserSummary($u)));
             }
 
-            $contacts['key_users'] = KeyUser::where('bp_code', $user->bp_code)
-                ->where('id', '!=', $user->id)
-                ->get()
-                ->map(fn($u) => $this->formatUserSummary($u));
+            // Natural case-insensitive alphabetical sort by display name
+            $allContacts = $allContacts->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
-            return response()->json(['success' => true, 'data' => $contacts]);
+            $total = $allContacts->count();
+            $items = $allContacts->slice(($page - 1) * $perPage, $perPage)->values();
         }
 
-        // 4. If Craftsman: ONLY their own Craftsman Staff + Admins
-        if ($user instanceof Craftman) {
-            $contacts['craftsman_staff'] = CraftsmanStaff::where('craftsman_id', $user->id)
-                ->get()
-                ->map(fn($u) => $this->formatUserSummary($u));
+        $lastPage = (int) max(1, ceil($total / $perPage));
 
-            return response()->json(['success' => true, 'data' => $contacts]);
-        }
-
-        // 5. If Craftsman Staff: their parent Craftsman, and fellow staff under same workshop + Admins
-        if ($user instanceof CraftsmanStaff) {
-            $parentCraftsman = Craftman::find($user->craftsman_id);
-            if ($parentCraftsman) {
-                $contacts['craftsmen'] = [$this->formatUserSummary($parentCraftsman)];
-            }
-
-            $contacts['craftsman_staff'] = CraftsmanStaff::where('craftsman_id', $user->craftsman_id)
-                ->where('id', '!=', $user->id)
-                ->get()
-                ->map(fn($u) => $this->formatUserSummary($u));
-
-            return response()->json(['success' => true, 'data' => $contacts]);
-        }
-
-        return response()->json(['success' => true, 'data' => $contacts]);
+        return response()->json([
+            'success'       => true,
+            'data'          => $items,
+            'pagination'    => [
+                'current_page' => $page,
+                'per_page'     => $perPage,
+                'total'        => $total,
+                'last_page'    => $lastPage,
+                'from'         => $total > 0 ? (($page - 1) * $perPage) + 1 : 0,
+                'to'           => min($total, $page * $perPage),
+                'has_more'     => $page < $lastPage,
+            ],
+            'filter_counts' => $counts,
+            'active_filter' => $normalizedType,
+        ]);
     }
 
     /**
-     * List direct 1-to-1 conversations for current user.
+     * Unified Login-Wise Recent Chats & Recent Messages API with Pagination.
+     * Endpoints:
+     *   - GET /api/common/chat/recent-chats
+     *   - GET /api/common/chat/recent-messages
+     *   - GET /api/common/chat/conversations
      */
-    public function getConversations(Request $request)
+    public function getRecentChats(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = max(1, min(100, (int) $request->input('per_page', 15)));
+        $unreadOnly = filter_var($request->input('unread_only', false), FILTER_VALIDATE_BOOLEAN);
+        $typeFilter = strtolower(trim((string) $request->input('type', 'all')));
+
+        // Fetch all conversations for the logged in user
         $conversations = Conversation::where(function ($q) use ($user) {
             $q->where('sender_id', $user->id)->where('sender_type', get_class($user));
         })->orWhere(function ($q) use ($user) {
@@ -237,9 +420,55 @@ class ChatApiController extends Controller
         ->orderByDesc('updated_at')
         ->get();
 
-        $data = $conversations->map(function ($c) use ($user) {
+        $conversationIds = $conversations->pluck('id')->toArray();
+
+        // Calculate global unread count for current user
+        $totalUnreadCount = 0;
+        if (!empty($conversationIds)) {
+            $totalUnreadCount = (int) Message::whereIn('conversation_id', $conversationIds)
+                ->where(function ($q) use ($user) {
+                    $q->where('sender_id', '!=', $user->id)
+                      ->orWhere('sender_type', '!=', get_class($user));
+                })
+                ->where('is_read', false)
+                ->count();
+        }
+
+        $filteredChats = [];
+
+        foreach ($conversations as $c) {
             $isSender = ($c->sender_id == $user->id && $c->sender_type == get_class($user));
             $partner = $isSender ? $c->receiver : $c->sender;
+            $partnerSummary = $this->formatUserSummary($partner);
+
+            // Filter by role/type if requested
+            if ($typeFilter !== 'all' && $typeFilter !== '') {
+                $pType = strtolower($partnerSummary['type'] ?? '');
+                if ($typeFilter === 'admins' || $typeFilter === 'admin') {
+                    if (!in_array($pType, ['admin', 'super_admin', 'superadmin', 'process_owner'])) continue;
+                } elseif ($typeFilter === 'buyers' || $typeFilter === 'buyer') {
+                    if ($pType !== 'buyer') continue;
+                } elseif ($typeFilter === 'craftsmen' || $typeFilter === 'craftsman') {
+                    if ($pType !== 'craftsman') continue;
+                } elseif ($typeFilter === 'key_users' || $typeFilter === 'key_user') {
+                    if ($pType !== 'key_user') continue;
+                } elseif ($typeFilter === 'craftsman_staff' || $typeFilter === 'staff') {
+                    if ($pType !== 'craftsman_staff') continue;
+                }
+            }
+
+            // Search filter
+            if ($search !== '') {
+                $searchLower = strtolower($search);
+                $nameMatch  = str_contains(strtolower($partnerSummary['name'] ?? ''), $searchLower);
+                $codeMatch  = str_contains(strtolower($partnerSummary['code'] ?? ''), $searchLower);
+                $emailMatch = str_contains(strtolower($partnerSummary['email'] ?? ''), $searchLower);
+                $phoneMatch = str_contains(strtolower($partnerSummary['mobile'] ?? ''), $searchLower);
+                $msgMatch   = $c->latestMessage && str_contains(strtolower($c->latestMessage->body ?? ''), $searchLower);
+                if (!$nameMatch && !$codeMatch && !$emailMatch && !$phoneMatch && !$msgMatch) {
+                    continue;
+                }
+            }
 
             $unreadCount = Message::where('conversation_id', $c->id)
                 ->where(function ($q) use ($user) {
@@ -249,17 +478,57 @@ class ChatApiController extends Controller
                 ->where('is_read', false)
                 ->count();
 
-            return [
+            if ($unreadOnly && $unreadCount === 0) {
+                continue;
+            }
+
+            $recentMessageData = $c->latestMessage ? $this->formatMessageSummary($c->latestMessage) : null;
+
+            $filteredChats[] = [
                 'id'              => (int) $c->id,
-                'partner'         => $this->formatUserSummary($partner),
-                'last_message_at' => optional($c->last_message_at)->toISOString(),
-                'latest_message'  => $c->latestMessage ? $this->formatMessageSummary($c->latestMessage) : null,
+                'conversation_id' => (int) $c->id,
+                'partner'         => $partnerSummary,
+                'recent_message'  => $recentMessageData,
+                'latest_message'  => $recentMessageData,
                 'unread_count'    => (int) $unreadCount,
+                'last_message_at' => optional($c->last_message_at)->toISOString(),
                 'created_at'      => optional($c->created_at)->toISOString(),
             ];
-        });
+        }
 
-        return response()->json(['success' => true, 'data' => $data]);
+        // Apply pagination
+        $total = count($filteredChats);
+        $lastPage = (int) max(1, ceil($total / $perPage));
+        $offset = ($page - 1) * $perPage;
+        $paginatedData = array_slice($filteredChats, $offset, $perPage);
+
+        return response()->json([
+            'success'            => true,
+            'total_unread_count' => (int) $totalUnreadCount,
+            'data'               => $paginatedData,
+            'pagination'         => [
+                'current_page' => $page,
+                'per_page'     => $perPage,
+                'total'        => $total,
+                'last_page'    => $lastPage,
+                'from'         => $total > 0 ? $offset + 1 : 0,
+                'to'           => min($total, $page * $perPage),
+                'has_more'     => $page < $lastPage,
+            ],
+        ]);
+    }
+
+    /**
+     * Backward-compatible aliases
+     */
+    public function getConversations(Request $request)
+    {
+        return $this->getRecentChats($request);
+    }
+
+    public function getRecentMessages(Request $request)
+    {
+        return $this->getRecentChats($request);
     }
 
     /**
@@ -267,20 +536,24 @@ class ChatApiController extends Controller
      */
     public function startConversation(Request $request)
     {
-        $request->validate([
-            'target_id'   => 'required',
-            'target_type' => 'required|string',
-            'body'        => 'nullable|string',
-        ]);
+        $targetId = $request->input('target_id') ?? $request->input('recipient_id') ?? $request->input('user_id');
+        $targetType = $request->input('target_type') ?? $request->input('recipient_type') ?? $request->input('type');
+
+        if (!$targetId || !$targetType) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Both target_id (or recipient_id) and target_type (or recipient_type) are required.'
+            ], 422);
+        }
 
         $user = Auth::user();
-        $targetClass = $this->resolveModelClass($request->target_type);
+        $targetClass = $this->resolveModelClass($targetType);
 
         if (!$targetClass) {
             return response()->json(['success' => false, 'message' => 'Invalid target user type.'], 400);
         }
 
-        $target = $this->resolveTargetModel($targetClass, $request->target_id);
+        $target = $this->resolveTargetModel($targetClass, $targetId);
         if (!$target) {
             return response()->json(['success' => false, 'message' => 'Target user not found.'], 404);
         }
@@ -343,46 +616,87 @@ class ChatApiController extends Controller
      */
     public function getConversationMessages(Request $request, $id)
     {
-        $user = Auth::user();
-        $conversation = Conversation::findOrFail($id);
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            }
 
-        $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
-            || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
+            if (!$this->hasChatPermission($user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+                ], 403);
+            }
 
-        if (!$isParticipant && !$this->isSuperAdmin($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized to view this conversation.'], 403);
+            $conversation = Conversation::find($id);
+            if (!$conversation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Conversation #{$id} not found."
+                ], 404);
+            }
+
+            $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
+                || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
+
+            if (!$isParticipant && !$this->isSuperAdmin($user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this conversation.'
+                ], 403);
+            }
+
+            // Mark incoming messages as read
+            try {
+                Message::where('conversation_id', $id)
+                    ->where(function ($q) use ($user) {
+                        $q->where('sender_id', '!=', $user->id)
+                          ->orWhere('sender_type', '!=', get_class($user));
+                    })
+                    ->where('is_read', false)
+                    ->update(['is_read' => true]);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to mark messages as read: ' . $e->getMessage());
+            }
+
+            $perPage = max(1, min(100, (int) $request->input('per_page', 50)));
+            $messages = Message::where('conversation_id', $id)
+                ->with(['attachments', 'sender'])
+                ->orderBy('created_at', 'asc')
+                ->paginate($perPage);
+
+            $partner = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
+                ? $conversation->receiver
+                : $conversation->sender;
+
+            $formattedMessages = [];
+            foreach ($messages->items() as $m) {
+                $formattedMessages[] = $this->formatMessageSummary($m);
+            }
+
+            return response()->json([
+                'success'         => true,
+                'conversation_id' => (int) $conversation->id,
+                'partner'         => $partner ? $this->formatUserSummary($partner) : null,
+                'messages'        => $formattedMessages,
+                'data'            => $formattedMessages,
+                'pagination'      => [
+                    'current_page' => $messages->currentPage(),
+                    'last_page'    => $messages->lastPage(),
+                    'per_page'     => $messages->perPage(),
+                    'total'        => $messages->total(),
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('getConversationMessages error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server Error: ' . $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => basename($e->getFile()),
+            ], 500);
         }
-
-        // Mark incoming messages as read
-        Message::where('conversation_id', $id)
-            ->where(function ($q) use ($user) {
-                $q->where('sender_id', '!=', $user->id)
-                  ->orWhere('sender_type', '!=', get_class($user));
-            })
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
-
-        $perPage = (int) $request->input('per_page', 50);
-        $messages = Message::where('conversation_id', $id)
-            ->with(['attachments', 'sender'])
-            ->orderBy('created_at', 'asc')
-            ->paginate($perPage);
-
-        $partner = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
-            ? $conversation->receiver
-            : $conversation->sender;
-
-        return response()->json([
-            'success' => true,
-            'partner' => $this->formatUserSummary($partner),
-            'data'    => $messages->map(fn($m) => $this->formatMessageSummary($m)),
-            'pagination' => [
-                'current_page' => $messages->currentPage(),
-                'last_page'    => $messages->lastPage(),
-                'per_page'     => $messages->perPage(),
-                'total'        => $messages->total(),
-            ]
-        ]);
     }
 
     /**
@@ -390,101 +704,131 @@ class ChatApiController extends Controller
      */
     public function sendConversationMessage(Request $request, $id)
     {
-        // Auto-decode JSON if Content-Type was omitted in Postman
-        $rawContent = $request->getContent();
-        if (!empty($rawContent)) {
-            $json = json_decode($rawContent, true);
-            if (is_array($json)) {
-                $request->merge($json);
+        try {
+            // Auto-decode JSON if Content-Type was omitted in Postman/Client
+            $rawContent = $request->getContent();
+            if (!empty($rawContent)) {
+                $json = json_decode($rawContent, true);
+                if (is_array($json)) {
+                    $request->merge($json);
+                }
             }
-        }
 
-        $request->validate([
-            'body'          => 'nullable|string',
-            'message'       => 'nullable|string',
-            'text'          => 'nullable|string',
-            'content'       => 'nullable|string',
-            'attachments.*' => 'nullable|file|max:51200',
-            'image'         => 'nullable',
-            'video'         => 'nullable',
-        ]);
+            $request->validate([
+                'body'          => 'nullable|string',
+                'message'       => 'nullable|string',
+                'text'          => 'nullable|string',
+                'content'       => 'nullable|string',
+                'attachments.*' => 'nullable|file|max:51200',
+                'image'         => 'nullable',
+                'video'         => 'nullable',
+            ]);
 
-        $user = Auth::user();
-        $conversation = Conversation::findOrFail($id);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            }
 
-        $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
-            || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
+            if (!$this->hasChatPermission($user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+                ], 403);
+            }
 
-        if (!$isParticipant && !$this->isSuperAdmin($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized to send message here.'], 403);
-        }
+            $conversation = Conversation::find($id);
+            if (!$conversation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Conversation #{$id} not found."
+                ], 404);
+            }
 
-        $bodyText = $request->input('body') 
-            ?? $request->input('message') 
-            ?? $request->input('text') 
-            ?? $request->input('content')
-            ?? (!empty($rawContent) && !str_starts_with(trim($rawContent), '{') ? trim($rawContent) : null);
+            $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
+                || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
 
-        $hasText = !is_null($bodyText) && trim((string)$bodyText) !== '';
-        $hasMedia = $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video') || $request->hasFile('file');
+            if (!$isParticipant && !$this->isSuperAdmin($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized to send message here.'], 403);
+            }
 
-        if (!$hasText && !$hasMedia) {
+            $bodyText = $request->input('body') 
+                ?? $request->input('message') 
+                ?? $request->input('text') 
+                ?? $request->input('content')
+                ?? $request->input('reply')
+                ?? $request->input('input')
+                ?? $request->input('action_input')
+                ?? (!empty($rawContent) && !str_starts_with(trim($rawContent), '{') ? trim($rawContent) : null);
+
+            $hasText = !is_null($bodyText) && trim((string)$bodyText) !== '';
+            $hasMedia = $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video') || $request->hasFile('file');
+
+            if (!$hasText && !$hasMedia) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Message body or an attachment is required.',
+                    'debug'   => [
+                        'received_keys' => array_keys($request->all()),
+                        'hint' => 'Send a JSON body like {"body": "your message"} or form-data with key "body".'
+                    ]
+                ], 422);
+            }
+
+            $message = $this->storeMessageRecord(
+                conversationId: $conversation->id,
+                chatGroupId: null,
+                user: $user,
+                request: $request
+            );
+
+            $conversation->update(['last_message_at' => now()]);
+
+            // Broadcast Reverb WebSocket event (non-fatal if socket server is off)
+            try {
+                broadcast(new MessageSent($message))->toOthers();
+            } catch (\Throwable $e) {
+                Log::warning('Socket broadcasting failed (non-fatal): ' . $e->getMessage());
+            }
+
+            // Send FCM Push Notification to the partner
+            $partner = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
+                ? $conversation->receiver
+                : $conversation->sender;
+
+            if ($partner && method_exists($partner, 'notify')) {
+                try {
+                    $senderSummary = $this->formatUserSummary($user);
+                    $bodyPreview = $message->body ?: ($message->attachments->count() > 0 ? 'Sent media attachment' : 'New message');
+
+                    $partner->notify(new NewChatMessageNotification(
+                        $message,
+                        $senderSummary['label'],
+                        $bodyPreview,
+                        [
+                            'conversation_id' => (string) $conversation->id,
+                            'sender_code'     => (string) ($senderSummary['code'] ?? ''),
+                            'sender_name'     => (string) $senderSummary['name'],
+                        ]
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning('FCM Notification error (non-fatal): ' . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Message sent successfully.',
+                'data'    => $this->formatMessageSummary($message)
+            ], 201);
+        } catch (\Throwable $e) {
+            Log::error('sendConversationMessage error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Message body or an attachment is required.',
-                'debug'   => [
-                    'received_keys' => array_keys($request->all()),
-                    'hint' => 'In Postman, send a JSON body like {"body": "your message"} or form-data with key "body".'
-                ]
-            ], 422);
+                'message' => 'Failed to send message: ' . $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => basename($e->getFile()),
+            ], 500);
         }
-
-        $message = $this->storeMessageRecord(
-            conversationId: $conversation->id,
-            chatGroupId: null,
-            user: $user,
-            request: $request
-        );
-
-        $conversation->update(['last_message_at' => now()]);
-
-        // Broadcast Reverb WebSocket event
-        try {
-            broadcast(new MessageSent($message))->toOthers();
-        } catch (\Throwable $e) {
-            Log::warning('Reverb broadcasting failed (non-fatal): ' . $e->getMessage());
-        }
-
-        // Send FCM Push Notification to the partner
-        $partner = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
-            ? $conversation->receiver
-            : $conversation->sender;
-
-        if ($partner && method_exists($partner, 'notify')) {
-            try {
-                $senderSummary = $this->formatUserSummary($user);
-                $bodyPreview = $message->body ?: ($message->attachments->count() > 0 ? 'Sent media attachment' : 'New message');
-
-                $partner->notify(new NewChatMessageNotification(
-                    $message,
-                    $senderSummary['label'],
-                    $bodyPreview,
-                    [
-                        'conversation_id' => (string) $conversation->id,
-                        'sender_code'     => (string) ($senderSummary['code'] ?? ''),
-                        'sender_name'     => (string) $senderSummary['name'],
-                    ]
-                ));
-            } catch (\Throwable $e) {
-                Log::warning('FCM Notification error (non-fatal): ' . $e->getMessage());
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Message sent successfully.',
-            'data'    => $this->formatMessageSummary($message)
-        ], 201);
     }
 
     /**
@@ -506,6 +850,13 @@ class ChatApiController extends Controller
         $user = Auth::user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
         }
 
         $isBuyer = ($user instanceof Buyer);
@@ -627,6 +978,13 @@ class ChatApiController extends Controller
         $user = Auth::user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
         }
 
         $isSuperAdmin = $this->isSuperAdmin($user);
@@ -796,6 +1154,16 @@ class ChatApiController extends Controller
     public function getGroupMessages(Request $request, $id)
     {
         $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
+        }
         $group = ChatGroup::findOrFail($id);
 
         if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
@@ -831,19 +1199,41 @@ class ChatApiController extends Controller
     {
         $request->validate([
             'body'          => 'nullable|string',
+            'message'       => 'nullable|string',
+            'text'          => 'nullable|string',
+            'content'       => 'nullable|string',
+            'reply'         => 'nullable|string',
+            'input'         => 'nullable|string',
+            'action_input'  => 'nullable|string',
             'attachments.*' => 'nullable|file|max:51200',
             'image'         => 'nullable|file|image|max:15360',
             'video'         => 'nullable|file|mimes:mp4,mov,avi,3gp,webm,mkv|max:51200',
         ]);
 
         $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$this->hasChatPermission($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ], 403);
+        }
         $group = ChatGroup::findOrFail($id);
 
         if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized to send messages in this group.'], 403);
         }
 
-        $bodyText = $request->input('body') ?? $request->input('message') ?? $request->input('text') ?? $request->input('content');
+        $bodyText = $request->input('body') 
+            ?? $request->input('message') 
+            ?? $request->input('text') 
+            ?? $request->input('content')
+            ?? $request->input('reply')
+            ?? $request->input('input')
+            ?? $request->input('action_input');
         $hasText = !is_null($bodyText) && trim((string)$bodyText) !== '';
         $hasMedia = $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video') || $request->hasFile('file');
 
@@ -1379,62 +1769,147 @@ class ChatApiController extends Controller
     }
 
     /**
+     * Check if a user has permission to use the chat module.
+     * Respects 'chat' and 'messages' permissions assigned by Super Admin.
+     */
+    private function hasChatPermission($user): bool
+    {
+        if (!$user) return false;
+
+        // Super Admin & Process Owners (Admins) always have full access
+        if ($this->isSuperAdmin($user) || $user instanceof ProcessOwner) {
+            return true;
+        }
+
+        // Key User: check their permissions, or fallback to parent Buyer
+        if ($user instanceof KeyUser) {
+            if ($user->permissions === null) {
+                if ($user->buyer) {
+                    return $this->hasChatPermission($user->buyer);
+                }
+                return true;
+            }
+            return $user->hasPermission('chat') || $user->hasPermission('messages');
+        }
+
+        // Craftsman Staff: check their permissions, or fallback to parent Craftsman
+        if ($user instanceof CraftsmanStaff) {
+            if ($user->permissions === null) {
+                if ($user->craftsman) {
+                    return $this->hasChatPermission($user->craftsman);
+                }
+                return true;
+            }
+            return $user->hasPermission('chat') || $user->hasPermission('messages');
+        }
+
+        // Buyer, Craftsman, or any model with hasPermission
+        if (method_exists($user, 'hasPermission')) {
+            // If user's permissions column is null (default unconfigured account), allow
+            if ($user->permissions === null) {
+                return true;
+            }
+            return $user->hasPermission('chat') || $user->hasPermission('messages');
+        }
+
+        return true;
+    }
+
+    /**
      * Validate whether two users have permission to communicate directly.
      */
     private function validateCommunicationPermission($user, $target): array
     {
-        // Superadmin or Admin can communicate with anyone
+        // 1. Verify current user has chat permission enabled
+        if (!$this->hasChatPermission($user)) {
+            return [
+                'allowed' => false,
+                'reason'  => 'You do not have chat permissions enabled. Please contact Super Admin.'
+            ];
+        }
+
+        // 2. Verify target contact has chat permission enabled
+        if (!$this->hasChatPermission($target)) {
+            return [
+                'allowed' => false,
+                'reason'  => 'The selected contact does not have chat permissions enabled.'
+            ];
+        }
+
+        // 3. Superadmin or Admin can communicate with anyone
         if ($user instanceof ProcessOwner || $target instanceof ProcessOwner) {
             return ['allowed' => true];
         }
 
-        // Buyer permissions
+        // 4. Buyer communication rules
         if ($user instanceof Buyer) {
+            // Own Key Users
             if ($target instanceof KeyUser && strtoupper(trim($target->bp_code)) === strtoupper(trim($user->bp_code))) {
                 return ['allowed' => true];
             }
-            return [
-                'allowed' => false,
-                'reason'  => 'Buyers can only communicate directly with their own Key Users or Admins.'
-            ];
-        }
-
-        // Key User permissions
-        if ($user instanceof KeyUser) {
-            if ($target instanceof Buyer && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
-                return ['allowed' => true];
-            }
-            if ($target instanceof KeyUser && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
+            // Craftsmen and Craftsman Staff
+            if ($target instanceof Craftman || $target instanceof CraftsmanStaff) {
                 return ['allowed' => true];
             }
             return [
                 'allowed' => false,
-                'reason'  => 'Key users can only communicate directly with their parent Buyer, colleagues under the same BP code, or Admins.'
+                'reason'  => 'Buyers can only communicate directly with their Key Users, Craftsmen, or Admins.'
             ];
         }
 
-        // Craftsman permissions
+        // 5. Craftsman communication rules
         if ($user instanceof Craftman) {
+            // Own staff
             if ($target instanceof CraftsmanStaff && (int) $target->craftsman_id === (int) $user->id) {
                 return ['allowed' => true];
             }
+            // Buyers and their Key Users
+            if ($target instanceof Buyer || $target instanceof KeyUser) {
+                return ['allowed' => true];
+            }
             return [
                 'allowed' => false,
-                'reason'  => 'Craftsmen can only communicate directly with their own staff or Admins.'
+                'reason'  => 'Craftsmen can only communicate directly with their staff, Buyers, or Admins.'
             ];
         }
 
-        // Craftsman Staff permissions
-        if ($user instanceof CraftsmanStaff) {
-            if ($target instanceof Craftman && (int) $user->craftsman_id === (int) $target->id) {
+        // 6. Key User communication rules
+        if ($user instanceof KeyUser) {
+            // Parent Buyer
+            if ($target instanceof Buyer && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
                 return ['allowed' => true];
             }
-            if ($target instanceof CraftsmanStaff && (int) $user->craftsman_id === (int) $target->craftsman_id) {
+            // Fellow Key Users under same BP code
+            if ($target instanceof KeyUser && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
+                return ['allowed' => true];
+            }
+            // Craftsmen and Craftsman Staff
+            if ($target instanceof Craftman || $target instanceof CraftsmanStaff) {
                 return ['allowed' => true];
             }
             return [
                 'allowed' => false,
-                'reason'  => 'Staff can only communicate directly with their Craftsman, fellow staff members, or Admins.'
+                'reason'  => 'Key users can only communicate directly with their parent Buyer, colleagues, Craftsmen, or Admins.'
+            ];
+        }
+
+        // 7. Craftsman Staff communication rules
+        if ($user instanceof CraftsmanStaff) {
+            // Parent Craftsman
+            if ($target instanceof Craftman && (int) $user->craftsman_id === (int) $target->id) {
+                return ['allowed' => true];
+            }
+            // Fellow staff members
+            if ($target instanceof CraftsmanStaff && (int) $user->craftsman_id === (int) $target->craftsman_id) {
+                return ['allowed' => true];
+            }
+            // Buyers and Key Users
+            if ($target instanceof Buyer || $target instanceof KeyUser) {
+                return ['allowed' => true];
+            }
+            return [
+                'allowed' => false,
+                'reason'  => 'Staff can only communicate directly with their Craftsman, fellow staff members, Buyers, or Admins.'
             ];
         }
 
@@ -1447,46 +1922,71 @@ class ChatApiController extends Controller
     private function formatUserSummary($user): array
     {
         if (!$user) {
-            return ['id' => null, 'name' => 'Unknown', 'type' => 'unknown', 'label' => 'Unknown'];
+            return ['id' => null, 'name' => 'Unknown', 'type' => 'unknown', 'label' => 'Unknown', 'badge' => 'Unknown', 'agora_user_id' => null];
         }
 
         $type = $this->getModelTypeString($user);
         $code = null;
         $name = 'User';
         $avatar = null;
+        $email = null;
+        $mobile = null;
+        $badge = 'User';
 
         if ($user instanceof Buyer) {
             $code = $user->bp_code;
             $name = $user->name ?? ($user->full_name ?? ($user->business_name ?? 'Buyer'));
             $avatar = $user->image_url ?? ($user->image ? asset('storage/' . $user->image) : null);
+            $email = $user->email ?? $user->business_email;
+            $mobile = $user->mobile;
+            $badge = 'Buyer';
         } elseif ($user instanceof Craftman) {
             $code = $user->craftman_code;
             $name = $user->name ?? ($user->full_name ?? ($user->business_name ?? 'Craftsman'));
             $avatar = $user->image ? asset('storage/' . $user->image) : null;
+            $email = $user->email ?? $user->business_email;
+            $mobile = $user->mobile;
+            $badge = 'Craftsman';
         } elseif ($user instanceof KeyUser) {
             $code = $user->user_code;
             $name = $user->full_name ?? ($user->name ?? 'Key User');
-            $avatar = $user->profile_picture ?? null;
+            $avatar = $user->profile_picture ? asset('storage/' . $user->profile_picture) : null;
+            $email = $user->email_id;
+            $mobile = $user->mobile_no;
+            $badge = 'Key User';
         } elseif ($user instanceof CraftsmanStaff) {
             $code = $user->staff_code;
             $name = $user->name ?? 'Staff';
             $avatar = $user->image_url ?? ($user->image ? asset('storage/' . $user->image) : null);
+            $email = $user->email;
+            $mobile = $user->mobile;
+            $badge = 'Craftsman Staff';
         } elseif ($user instanceof ProcessOwner) {
             $code = $user->user_code;
             $name = $user->full_name ?? ($user->name ?? 'Admin');
             $avatar = $user->profile_picture ? asset('storage/' . $user->profile_picture) : null;
+            $email = $user->email_id;
+            $mobile = $user->mobile_no;
+            $badge = in_array(strtolower($user->role ?? ''), ['super_admin', 'superadmin']) ? 'Super Admin' : 'Admin';
         } elseif ($user instanceof User) {
             $name = $user->name ?? 'User';
+            $email = $user->email ?? null;
+            $mobile = $user->phone ?? null;
+            $badge = 'User';
         }
 
         return [
-            'id'         => (int) $user->id,
-            'type'       => $type,
-            'model_type' => get_class($user),
-            'code'       => $code,
-            'name'       => $name,
-            'label'      => trim(($code ? "{$code} - " : "") . $name),
-            'avatar_url' => $avatar,
+            'id'            => (int) $user->id,
+            'type'          => $type,
+            'model_type'    => get_class($user),
+            'agora_user_id' => $this->getAgoraUserId($user),
+            'code'          => $code,
+            'name'          => $name,
+            'label'         => trim(($code ? "{$code} - " : "") . $name),
+            'avatar_url'    => $avatar,
+            'email'         => $email,
+            'mobile'        => $mobile,
+            'badge'         => $badge,
         ];
     }
 
@@ -1567,16 +2067,31 @@ class ChatApiController extends Controller
      */
     private function storeMessageRecord(?int $conversationId, ?int $chatGroupId, $user, Request $request): Message
     {
-        $bodyContent = $request->input('body') ?? $request->input('message') ?? $request->input('text') ?? $request->input('content') ?? '';
+        $bodyContent = $request->input('body') 
+            ?? $request->input('message') 
+            ?? $request->input('text') 
+            ?? $request->input('content') 
+            ?? $request->input('reply') 
+            ?? $request->input('input') 
+            ?? $request->input('action_input') 
+            ?? '';
 
-        $message = Message::create([
-            'conversation_id' => $conversationId,
-            'chat_group_id'   => $chatGroupId,
-            'sender_id'       => $user->id,
-            'sender_type'     => get_class($user),
-            'body'            => (string) $bodyContent,
-            'is_read'         => false,
-        ]);
+        $messageData = [
+            'sender_id'   => $user->id,
+            'sender_type' => get_class($user),
+            'body'        => (string) $bodyContent,
+            'is_read'     => false,
+        ];
+
+        if (!is_null($conversationId)) {
+            $messageData['conversation_id'] = $conversationId;
+        }
+
+        if (!is_null($chatGroupId)) {
+            $messageData['chat_group_id'] = $chatGroupId;
+        }
+
+        $message = Message::create($messageData);
 
         $filesToProcess = [];
 

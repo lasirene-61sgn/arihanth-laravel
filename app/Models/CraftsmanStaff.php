@@ -84,6 +84,15 @@ class CraftsmanStaff extends Authenticatable
     {
         $perms = $this->getPermissionsArray();
         
+        if ($permission === 'chat' || $permission === 'messages') {
+            if (in_array('chat', $perms, true) || in_array('messages', $perms, true)) {
+                return true;
+            }
+            if ((array_key_exists('chat', $perms) && $perms['chat'] == true) || (array_key_exists('messages', $perms) && $perms['messages'] == true)) {
+                return true;
+            }
+        }
+
         // Handle flat array: ['work_order', 'product']
         if (in_array($permission, $perms, true)) {
             return true;

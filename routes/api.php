@@ -532,8 +532,10 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     // Eligible contacts for chat & group creation (Strict role filtering)
     Route::get('/chat/contacts', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getEligibleContacts'])->name('chat.contacts');
 
-    // 1-to-1 Direct Conversations
-    Route::get('/chat/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getConversations'])->name('chat.conversations');
+    // 1-to-1 Direct Conversations & Recent Chats (Unified Login-Wise API with Pagination)
+    Route::get('/chat/recent-chats', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getRecentChats'])->name('chat.recent-chats');
+    Route::get('/chat/recent-messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getRecentChats'])->name('chat.recent-messages');
+    Route::get('/chat/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getRecentChats'])->name('chat.conversations');
     Route::post('/chat/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'startConversation'])->name('chat.conversations.start');
     Route::get('/chat/conversations/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getConversationMessages'])->name('chat.conversations.messages');
     Route::post('/chat/conversations/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'sendConversationMessage'])->name('chat.conversations.send');

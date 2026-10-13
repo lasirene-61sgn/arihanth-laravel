@@ -85,7 +85,11 @@ class FirebaseService
                 'data'    => array_map('strval', $data),
                 'android' => [
                     'priority'     => 'high',
-                    'notification' => ['sound' => 'default'],
+                    'notification' => [
+                        'sound'        => 'default',
+                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        'channel_id'   => 'chat_messages',
+                    ],
                 ],
                 'apns' => [
                     'payload' => [
@@ -93,6 +97,7 @@ class FirebaseService
                             // 'content-available' => 1, // Removed to prevent double notifications on iOS
                             'sound'             => 'default',
                             'badge'             => 1,
+                            'category'          => $data['category'] ?? 'CHAT_MESSAGE_REPLY',
                         ],
                     ],
                 ],

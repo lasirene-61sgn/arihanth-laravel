@@ -174,6 +174,10 @@ class Craftman extends Authenticatable
             $permissions = json_decode($permissions, true) ?? [];
         }
 
+        if ($permission === 'chat' || $permission === 'messages') {
+            return in_array('chat', $permissions) || in_array('messages', $permissions);
+        }
+
         return in_array($permission, $permissions);
     }
 
@@ -246,6 +250,7 @@ class Craftman extends Authenticatable
             'favorites',
             'meetings',
             'messages',
+            'chat',
             'dashboard_details',
         ];
     }

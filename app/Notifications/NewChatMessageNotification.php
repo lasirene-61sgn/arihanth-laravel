@@ -31,14 +31,27 @@ class NewChatMessageNotification extends Notification
 
     public function toFcm($notifiable)
     {
+        $conversationId = (string) ($this->message->conversation_id ?? '');
+        $chatGroupId = (string) ($this->message->chat_group_id ?? '');
+
+        $replyUrl = $conversationId !== ''
+            ? url('/api/common/chat/conversations/' . $conversationId . '/messages')
+            : url('/api/common/chat/groups/' . $chatGroupId . '/messages');
+
         $data = array_merge([
-            'type'            => 'chat_message',
-            'message_id'      => (string) $this->message->id,
-            'conversation_id' => (string) ($this->message->conversation_id ?? ''),
-            'chat_group_id'   => (string) ($this->message->chat_group_id ?? ''),
-            'sender_id'       => (string) $this->message->sender_id,
-            'sender_type'     => (string) $this->message->sender_type,
-            'action'          => 'open_chat',
+            'type'              => 'chat_message',
+            'message_id'        => (string) $this->message->id,
+            'conversation_id'   => $conversationId,
+            'chat_group_id'     => $chatGroupId,
+            'sender_id'         => (string) $this->message->sender_id,
+            'sender_type'       => (string) $this->message->sender_type,
+            'action'            => 'reply',
+            'action_type'       => 'inline_reply',
+            'allow_input'       => 'true',
+            'input_placeholder' => 'Type a reply...',
+            'category'          => 'CHAT_MESSAGE_REPLY',
+            'reply_url'         => $replyUrl,
+            'reply_method'      => 'POST',
         ], $this->extraData);
 
         return [
