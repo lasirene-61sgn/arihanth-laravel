@@ -96,4 +96,14 @@ class CraftsmanStaff extends Authenticatable
         
         return false;
     }
+
+    public function routeNotificationForFcm()
+    {
+        return $this->fcm_token;
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('storage/' . $this->image) : null;
+    }
 }

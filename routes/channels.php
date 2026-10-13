@@ -3,7 +3,11 @@
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::routes(['middleware' => ['web', 'auth:web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+// Allow both Session-based web guards and Token-based Sanctum API guard (for iOS / mobile apps)
+Broadcast::routes(['middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum']]);
+
+$allowedGuards = ['sanctum', 'web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff'];
 
 Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
     if (!$user) {
@@ -35,7 +39,7 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
                   (!isset($conversation->receiver_type) || $conversation->receiver_type === $userClass);
 
     return $isSender || $isReceiver;
-}, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);
+}, ['guards' => $allowedGuards]);
 
 Broadcast::channel('group.{chatGroupId}', function ($user, $chatGroupId) {
     if (!$user) return false;
@@ -62,18 +66,20 @@ Broadcast::channel('group.{chatGroupId}', function ($user, $chatGroupId) {
         ->where('user_id', $user->id)
         ->where('user_type', get_class($user))
         ->exists();
-}, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);
+}, ['guards' => $allowedGuards]);
 
 Broadcast::channel('user.{type}.{id}', function ($user, $type, $id) {
     if (!$user) return false;
     $typeMap = [
-        'buyer' => \App\Models\Buyer::class,
-        'craftsman' => \App\Models\Craftman::class,
+        'buyer'           => \App\Models\Buyer::class,
+        'craftsman'       => \App\Models\Craftman::class,
         'craftsman_staff' => \App\Models\CraftsmanStaff::class,
-        'admin' => \App\Models\ProcessOwner::class,
-        'super-admin' => \App\Models\ProcessOwner::class,
-        'processowner' => \App\Models\ProcessOwner::class,
+        'admin'           => \App\Models\ProcessOwner::class,
+        'super-admin'     => \App\Models\ProcessOwner::class,
+        'processowner'    => \App\Models\ProcessOwner::class,
+        'key_user'        => \App\Models\KeyUser::class,
+        'user'            => \App\Models\User::class,
     ];
     $expectedClass = $typeMap[strtolower($type)] ?? null;
     return (int)$user->id === (int)$id && get_class($user) === $expectedClass;
-}, ['guards' => ['web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff']]);
+}, ['guards' => $allowedGuards]);

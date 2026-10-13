@@ -522,6 +522,43 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::post('/meetings/voip-token', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'updateVoipToken'])->name('meetings.voip-token');
     Route::post('/meetings/test-voip', [\App\Http\Controllers\API\Common\MeetingApiController::class, 'testVoip'])->name('meetings.test-voip');
 
+    // --- Chat & Chatbot System (Agora Supported, iOS Optimized) ---
+    // Agora Token Generator for Chat / RTM / RTC
+    Route::match(['get', 'post'], '/chat/agora-token', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getAgoraToken'])->name('chat.agora-token');
+
+    // WebSocket (Reverb) Connection Status & Configuration for Frontend/iOS
+    Route::get('/chat/websocket-config', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getWebsocketConfig'])->name('chat.websocket-config');
+
+    // Eligible contacts for chat & group creation (Strict role filtering)
+    Route::get('/chat/contacts', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getEligibleContacts'])->name('chat.contacts');
+
+    // 1-to-1 Direct Conversations
+    Route::get('/chat/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getConversations'])->name('chat.conversations');
+    Route::post('/chat/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'startConversation'])->name('chat.conversations.start');
+    Route::get('/chat/conversations/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getConversationMessages'])->name('chat.conversations.messages');
+    Route::post('/chat/conversations/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'sendConversationMessage'])->name('chat.conversations.send');
+    Route::delete('/chat/conversations/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'deleteConversation'])->name('chat.conversations.delete');
+
+    // Chat Groups (Buyer -> only their Key Users; Craftsman -> only their Staff + Admin/SuperAdmin)
+    Route::get('/chat/groups', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroups'])->name('chat.groups');
+    Route::post('/chat/groups', [\App\Http\Controllers\API\Common\ChatApiController::class, 'createGroup'])->name('chat.groups.create');
+    Route::get('/chat/groups/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroupDetails'])->name('chat.groups.show');
+    Route::post('/chat/groups/{id}/participants', [\App\Http\Controllers\API\Common\ChatApiController::class, 'addGroupParticipants'])->name('chat.groups.add-participants');
+    Route::delete('/chat/groups/{id}/participants/{participantId}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'removeGroupParticipant'])->name('chat.groups.remove-participant');
+    Route::get('/chat/groups/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroupMessages'])->name('chat.groups.messages');
+    Route::post('/chat/groups/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'sendGroupMessage'])->name('chat.groups.send');
+    Route::delete('/chat/groups/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'deleteGroup'])->name('chat.groups.delete');
+
+    // Message Actions
+    Route::delete('/chat/messages/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'deleteMessage'])->name('chat.messages.delete');
+
+    // Super Admin Chat Monitoring & Overview
+    Route::get('/chat/super-admin/overview', [\App\Http\Controllers\API\Common\ChatApiController::class, 'superAdminOverview'])->name('chat.super-admin.overview');
+    Route::get('/chat/super-admin/conversations', [\App\Http\Controllers\API\Common\ChatApiController::class, 'superAdminAllConversations'])->name('chat.super-admin.conversations');
+
+    // Chatbot Assistant (Auto AI/FAQ Assistance & Agora Voice/Video Consultation)
+    Route::post('/chatbot/message', [\App\Http\Controllers\API\Common\ChatApiController::class, 'chatbotMessage'])->name('chatbot.message');
+
 
 
     // --- Profile Unified (Optional redirection or direct) ---

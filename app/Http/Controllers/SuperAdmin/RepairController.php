@@ -9,6 +9,7 @@ use App\Models\Buyer;
 use App\Models\Craftman;
 use App\Models\Repair;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RepairController extends Controller
 {
@@ -116,22 +117,42 @@ class RepairController extends Controller
         return back()->with('success', 'Order marked as fully completed and closed.');
     }
 
-    // Single Complete Order
     public function complete(Request $request, Repair $repair)
     {
         $request->validate([
             'item_returned_by' => ['required', 'string', 'max:255'],
             'item_collected_by' => ['required', 'string', 'max:255'],
+            'weight' => ['nullable', 'numeric'],
+            'craftsman_voucher_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'craftsman_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
+
+        $voucherPath = $repair->craftsman_voucher_image;
+        if ($request->hasFile('craftsman_voucher_image')) {
+            if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+                Storage::disk('public')->delete($voucherPath);
+            }
+            $voucherPath = $request->file('craftsman_voucher_image')->store('repairs/vouchers', 'public');
+        }
+
+        $proofPath = $repair->craftsman_completion_proof_image;
+        if ($request->hasFile('craftsman_completion_proof_image')) {
+            if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+                Storage::disk('public')->delete($proofPath);
+            }
+            $proofPath = $request->file('craftsman_completion_proof_image')->store('repairs/proofs', 'public');
+        }
 
         $repair->update([
-            'status' => 'completed',
+            'craftsman_status' => 'pending_approval', // <-- Moves to Craftsman Approval tab instead of completed
             'item_returned_by' => $request->item_returned_by,
             'item_collected_by' => $request->item_collected_by,
-            'completed_at' => now(),
+            'weight' => $request->filled('weight') ? $request->weight : $repair->weight,
+            'craftsman_voucher_image' => $voucherPath,
+            'craftsman_completion_proof_image' => $proofPath,
         ]);
 
-        return back()->with('success', 'Repair order marked as completed successfully.');
+        return back()->with('success', 'Order marked as completed by Superadmin and sent to Craftsman Approval tab.');
     }
 
     // Bulk Complete Orders
@@ -196,7 +217,15 @@ class RepairController extends Controller
 
     public function store(CreateReapir $request)
     {
-        Repair::create($request->validated());
+        $validatedData = $request->validated();
+
+        // Handle file upload before creating the record
+        if ($request->hasFile('repair_image')) {
+            $validatedData['repair_image'] = $request->file('repair_image')->store('repairs', 'public');
+        }
+
+        // Create the record with all validated data including the image path
+        Repair::create($validatedData);
 
         return redirect()->route('super-admin.repairs.index')
             ->with('success', 'Repair/Sample record created successfully.');
@@ -219,7 +248,24 @@ class RepairController extends Controller
 
     public function update(UpdateReapir $request, Repair $repair)
     {
-        $repair->update($request->validated());
+        $validatedData = $request->validated();
+
+        // Handle file upload if a new image is provided
+        if ($request->hasFile('repair_image')) {
+            // Delete old image if it exists
+            if ($repair->repair_image && Storage::disk('public')->exists($repair->repair_image)) {
+                Storage::disk('public')->delete($repair->repair_image);
+            }
+
+            // Store the new image and add path to validated data
+            $validatedData['repair_image'] = $request->file('repair_image')->store('repairs', 'public');
+        } else {
+            // Keep existing image if no new file is uploaded
+            $validatedData['repair_image'] = $repair->repair_image;
+        }
+
+        // Update the record
+        $repair->update($validatedData);
 
         return redirect()->route('super-admin.repairs.index')
             ->with('success', 'Repair/Sample record updated successfully.');
@@ -227,6 +273,12 @@ class RepairController extends Controller
 
     public function destroy(Repair $repair)
     {
+        // Delete associated image from storage if it exists
+        if ($repair->repair_image && Storage::disk('public')->exists($repair->repair_image)) {
+            Storage::disk('public')->delete($repair->repair_image);
+        }
+
+        // Delete the database record
         $repair->delete();
 
         return redirect()->route('super-admin.repairs.index')

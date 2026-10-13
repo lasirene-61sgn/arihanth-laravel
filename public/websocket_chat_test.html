@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arihanth Real-Time Chat WebSocket Tester</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #090d16 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            transition: all 0.3s;
+        }
+
+        .status-badge.connected {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.connecting {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-warning);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select, textarea {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .btn {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .chat-feed-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-feed {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 6px;
+            max-height: 520px;
+        }
+
+        .message-bubble {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message-bubble.incoming {
+            border-left: 4px solid var(--accent-success);
+        }
+
+        .message-bubble.sent {
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .sender-badge {
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .msg-time {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .msg-body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            word-break: break-word;
+        }
+
+        .channel-tag {
+            align-self: flex-start;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+
+        .send-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .log-console {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #38bdf8;
+            max-height: 140px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .flow-banner {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+
+        .flow-banner strong {
+            color: #818cf8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <h1>⚡ Real-Time Chat WebSocket Tester (Laravel Reverb)</h1>
+            <p>Connect and watch real-time messages arrive via WebSockets as you send them via Postman or REST API</p>
+        </div>
+        <div id="statusBadge" class="status-badge">
+            <span class="dot"></span>
+            <span id="statusText">Disconnected</span>
+        </div>
+    </div>
+
+    <div class="flow-banner">
+        <strong>How This Works:</strong> You type and send a message via the <strong>REST API</strong> (`POST /api/common/chat/conversations/{id}/messages`). Laravel saves it to the MySQL database and dispatches `MessageSent` event. Laravel Reverb pushes it through <strong>WebSockets</strong> instantly to this screen without page refresh!
+    </div>
+
+    <div class="grid-container">
+        <!-- Configuration Column -->
+        <div class="card">
+            <div class="card-title">
+                <span>⚙️ Connection Setup</span>
+                <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="loadDefaults()">Reset Defaults</button>
+            </div>
+
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" id="apiHost" value="http://127.0.0.1:8000">
+            </div>
+
+            <div class="form-group">
+                <label>Reverb Host & Port</label>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                    <input type="text" id="reverbHost" value="localhost">
+                    <input type="number" id="reverbPort" value="8080">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reverb App Key</label>
+                <input type="text" id="reverbKey" value="lffoipjc57ebkzslnfcc">
+            </div>
+
+            <div class="form-group">
+                <label>Sanctum Bearer Token</label>
+                <input type="text" id="bearerToken" placeholder="Paste your login token here...">
+            </div>
+
+            <div class="form-group">
+                <label>Listen Channel</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <select id="channelType">
+                        <option value="conversation">Conversation</option>
+                        <option value="group">Group</option>
+                    </select>
+                    <input type="number" id="channelId" value="1" placeholder="ID (e.g. 1)">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="connectBtn" class="btn" style="flex: 1;" onclick="toggleConnection()">Connect & Listen</button>
+                <button id="disconnectBtn" class="btn btn-danger" style="display: none;" onclick="disconnect()">Disconnect</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Debug Logs</label>
+                <div id="logConsole" class="log-console">Waiting for connection...</div>
+            </div>
+        </div>
+
+        <!-- Live Messages Feed -->
+        <div class="card chat-feed-card">
+            <div class="card-title">
+                <span>💬 Live Real-Time Message Feed</span>
+                <span id="activeChannelLabel" style="font-size: 12px; color: var(--text-muted);">No channel active</span>
+            </div>
+
+            <div id="chatFeed" class="chat-feed">
+                <div style="text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 13px;">
+                    Connect to a conversation or group channel on the left.<br>
+                    When anyone sends a message in Postman or iOS, it will appear here <strong>instantly in real time</strong>!
+                </div>
+            </div>
+
+            <!-- Send Message Box (Tests REST API -> WebSocket Roundtrip) -->
+            <div class="send-box">
+                <input type="text" id="messageInput" placeholder="Type a message to test sending..." style="flex: 1;">
+                <button class="btn" onclick="sendMessage()">Send via API</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pusher = null;
+        let activeChannel = null;
+
+        function log(msg) {
+            const consoleEl = document.getElementById('logConsole');
+            const time = new Date().toLocaleTimeString();
+            consoleEl.textContent += `[${time}] ${msg}\n`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function loadDefaults() {
+            document.getElementById('apiHost').value = 'http://127.0.0.1:8000';
+            document.getElementById('reverbHost').value = 'localhost';
+            document.getElementById('reverbPort').value = '8080';
+            document.getElementById('reverbKey').value = 'lffoipjc57ebkzslnfcc';
+        }
+
+        function updateStatus(status, text) {
+            const badge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            badge.className = 'status-badge ' + status;
+            statusText.textContent = text;
+        }
+
+        function toggleConnection() {
+            if (pusher) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+
+        function connect() {
+            const apiHost = document.getElementById('apiHost').value.trim();
+            const wsHost = document.getElementById('reverbHost').value.trim();
+            const wsPort = parseInt(document.getElementById('reverbPort').value);
+            const wsKey = document.getElementById('reverbKey').value.trim();
+            const token = document.getElementById('bearerToken').value.trim();
+            const type = document.getElementById('channelType').value;
+            const id = document.getElementById('channelId').value.trim();
+
+            if (!token) {
+                alert('Please enter your Sanctum Bearer Token to authenticate private channels!');
+                return;
+            }
+
+            if (!id) {
+                alert('Please enter a Conversation ID or Group ID!');
+                return;
+            }
+
+            updateStatus('connecting', 'Connecting...');
+            log(`Initializing connection to Reverb at ${wsHost}:${wsPort}...`);
+
+            // Configure Pusher client pointing to Laravel Reverb
+            pusher = new Pusher(wsKey, {
+                wsHost: wsHost,
+                wsPort: wsPort,
+                wssPort: wsPort,
+                forceTLS: false,
+                encrypted: false,
+                enabledTransports: ['ws', 'flash'],
+                authEndpoint: `${apiHost}/api/broadcasting/auth`,
+                auth: {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                }
+            });
+
+            pusher.connection.bind('connected', function() {
+                updateStatus('connected', 'Connected to Reverb');
+                log('Socket connected successfully!');
+                subscribeToChannel(type, id);
+            });
+
+            pusher.connection.bind('error', function(err) {
+                updateStatus('', 'Connection Error');
+                log(`Connection error: ${JSON.stringify(err)}`);
+            });
+
+            pusher.connection.bind('disconnected', function() {
+                updateStatus('', 'Disconnected');
+                log('Socket disconnected.');
+            });
+
+            document.getElementById('connectBtn').style.display = 'none';
+            document.getElementById('disconnectBtn').style.display = 'inline-flex';
+        }
+
+        function subscribeToChannel(type, id) {
+            const channelName = `private-${type}.${id}`;
+            log(`Subscribing to channel: ${channelName}...`);
+
+            activeChannel = pusher.subscribe(channelName);
+
+            activeChannel.bind('pusher:subscription_succeeded', function() {
+                log(`Subscribed successfully to ${channelName}!`);
+                document.getElementById('activeChannelLabel').textContent = `Listening on ${channelName}`;
+            });
+
+            activeChannel.bind('pusher:subscription_error', function(status) {
+                log(`Subscription failed (${status}) - Ensure your Bearer token has access to this ${type}!`);
+                alert(`Authorization Failed! Your Bearer token does not have access to ${channelName}.`);
+            });
+
+            // Listen for 'message.sent' event
+            activeChannel.bind('message.sent', function(data) {
+                log(`Received message.sent event: ${JSON.stringify(data)}`);
+                renderMessage(data, channelName);
+            });
+
+            // Listen for 'message.deleted' event
+            activeChannel.bind('message.deleted', function(data) {
+                log(`Received message.deleted event for Message #${data.messageId}`);
+                removeMessage(data.messageId);
+            });
+        }
+
+        function renderMessage(data, channelName) {
+            const feed = document.getElementById('chatFeed');
+            
+            // Clear placeholder if first message
+            if (feed.children.length === 1 && feed.children[0].textContent.includes('Connect to a conversation')) {
+                feed.innerHTML = '';
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble incoming';
+            bubble.id = `msg-${data.id}`;
+
+            const timeStr = data.created_at ? new Date(data.created_at).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+            bubble.innerHTML = `
+                <div class="msg-header">
+                    <span class="sender-badge">${data.sender_name || 'User'} (${data.sender_code || 'ID: ' + data.sender_id})</span>
+                    <span class="msg-time">${timeStr}</span>
+                </div>
+                <div class="msg-body">${data.body || '<i>(No text body)</i>'}</div>
+                <div class="channel-tag">${channelName} • Event: message.sent</div>
+            `;
+
+            feed.appendChild(bubble);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function removeMessage(messageId) {
+            const el = document.getElementById(`msg-${messageId}`);
+            if (el) {
+                el.style.opacity = '0.4';
+                el.innerHTML += `<div style="color: var(--accent-danger); font-size: 11px;">⚠️ This message was deleted</div>`;
+            }
+        }
+
+        function disconnect() {
+            if (pusher) {
+                pusher.disconnect();
+                pusher = null;
+            }
+            updateStatus('', 'Disconnected');
+            document.getElementById('connectBtn').style.display = 'inline-flex';
+            document.getElementById('disconnectBtn').style.display = 'none';
+            document.getElementById('activeChannelLabel').textContent = 'No channel active';
+            log('Disconnected manually.');
+        }
+
+        async function sendMessage() {
+            const apiHost = document.getElementById('apiHost').value.trim();
+            const token = document.getElementById('bearerToken').value.trim();
+            const type = document.getElementById('channelType').value;
+            const id = document.getElementById('channelId').value.trim();
+            const text = document.getElementById('messageInput').value.trim();
+
+            if (!text) return;
+            if (!token) {
+                alert('Please enter your Sanctum token first!');
+                return;
+            }
+
+            const endpoint = (type === 'group') 
+                ? `${apiHost}/api/common/chat/groups/${id}/messages` 
+                : `${apiHost}/api/common/chat/conversations/${id}/messages`;
+
+            log(`Sending message via REST API: POST ${endpoint}...`);
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ body: text })
+                });
+
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    log(`API Success: Message #${json.data.id} stored in database!`);
+                    document.getElementById('messageInput').value = '';
+                } else {
+                    log(`API Error: ${json.message || 'Failed to send'}`);
+                    alert(`API Error: ${json.message}`);
+                }
+            } catch (err) {
+                log(`Fetch failed: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -12,9 +12,9 @@
         <select class="form-select @error('buyer_id') is-invalid @enderror" id="buyer_id" name="buyer_id" required>
             <option value="">Select Buyer</option>
             @foreach($buyers as $buyer)
-                <option value="{{ $buyer->id }}" {{ old('buyer_id', $repair->buyer_id ?? '') == $buyer->id ? 'selected' : '' }}>
-                    {{ $buyer->bp_code ?? $buyer->name }} ({{ $buyer->name }})
-                </option>
+            <option value="{{ $buyer->id }}" {{ old('buyer_id', $repair->buyer_id ?? '') == $buyer->id ? 'selected' : '' }}>
+                {{ $buyer->bp_code ?? $buyer->name }} ({{ $buyer->name }})
+            </option>
             @endforeach
         </select>
         @error('buyer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -65,8 +65,8 @@
         <input type="text" class="form-control @error('item_delivered_by') is-invalid @enderror" id="item_delivered_by" name="item_delivered_by" list="deliveredList" value="{{ old('item_delivered_by', $repair->item_delivered_by ?? '') }}" placeholder="Select or type new name..." required>
         <datalist id="deliveredList">
             @foreach($deliveredNames as $name)
-                <option value="{{ $name }}">
-            @endforeach
+            <option value="{{ $name }}">
+                @endforeach
         </datalist>
         @error('item_delivered_by')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
@@ -77,8 +77,8 @@
         <input type="text" class="form-control @error('item_received_by') is-invalid @enderror" id="item_received_by" name="item_received_by" list="receivedList" value="{{ old('item_received_by', $repair->item_received_by ?? '') }}" placeholder="Select or type new name..." required>
         <datalist id="receivedList">
             @foreach($receivedNames as $name)
-                <option value="{{ $name }}">
-            @endforeach
+            <option value="{{ $name }}">
+                @endforeach
         </datalist>
         @error('item_received_by')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
@@ -96,6 +96,8 @@
         <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="2">{{ old('notes', $repair->notes ?? '') }}</textarea>
         @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
+
+    
 
     <!-- Submit Button -->
     <div class="col-12 mt-4">

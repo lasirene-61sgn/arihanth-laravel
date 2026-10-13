@@ -33,6 +33,7 @@ class UpdateReapir extends FormRequest
             'repair_details' => ['nullable', 'string'],
             'item_delivered_by' => ['required', 'string', 'max:255'],
             'item_received_by' => ['required', 'string', 'max:255'],
+            'repair_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
         ];
     }
 }

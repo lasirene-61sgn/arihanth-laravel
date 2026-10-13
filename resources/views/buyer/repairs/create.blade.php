@@ -3,15 +3,15 @@
 @section('content')
 <div class="container px-4 my-4">
     <h2>Add New Repair / Sample Request</h2>
-    
+
     <!-- Display Logged-in Buyer Info -->
     @if(isset($currentBuyer))
-        <div class="alert alert-info py-2 my-3">
-            <strong>Buyer Name:</strong> {{ $currentBuyer->name }} | <strong>BP Code:</strong> {{ $currentBuyer->bp_code }}
-        </div>
+    <div class="alert alert-info py-2 my-3">
+        <strong>Buyer Name:</strong> {{ $currentBuyer->name }} | <strong>BP Code:</strong> {{ $currentBuyer->bp_code }}
+    </div>
     @endif
 
-    <form action="{{ route('buyer.repairs.store') }}" method="POST" class="mt-3">
+    <form action="{{ route('buyer.repairs.store') }}" method="POST" enctype="multipart/form-data" class="mt-3">
         @csrf
         <div class="mb-3">
             <label class="form-label">Date <span class="text-danger">*</span></label>
@@ -39,6 +39,18 @@
         <div class="mb-3">
             <label class="form-label">Repair Details</label>
             <textarea name="repair_details" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Repair Image</label>
+            <input type="file" name="repair_image" class="form-control" accept="image/*">
+            @if(isset($repair) && $repair->repair_image)
+            <div class="mt-2">
+                <p class="text-muted small mb-1">Current Image:</p>
+                <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
+                    <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" width="100" class="img-thumbnail">
+                </a>
+            </div>
+            @endif
         </div>
         <button type="submit" class="btn btn-primary">Submit Request</button>
         <a href="{{ route('buyer.repairs.index') }}" class="btn btn-secondary">Cancel</a>

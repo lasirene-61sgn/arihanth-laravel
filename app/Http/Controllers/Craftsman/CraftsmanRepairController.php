@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Craftsman;
 use App\Http\Controllers\Controller;
 use App\Models\Repair;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CraftsmanRepairController extends Controller
 {
@@ -40,18 +41,37 @@ class CraftsmanRepairController extends Controller
         return back()->with('success', 'Repair order accepted and moved to In Process.');
     }
 
-    // Craftsman Marks Complete (Sends to Superadmin for Approval)
     public function markComplete(Request $request, Repair $repair)
     {
         $request->validate([
             'item_returned_by' => ['required', 'string', 'max:255'],
             'item_collected_by' => ['required', 'string', 'max:255'],
+            'craftsman_voucher_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'craftsman_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ]);
+
+        $voucherPath = $repair->craftsman_voucher_image;
+        if ($request->hasFile('craftsman_voucher_image')) {
+            if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+                Storage::disk('public')->delete($voucherPath);
+            }
+            $voucherPath = $request->file('craftsman_voucher_image')->store('repairs/vouchers', 'public');
+        }
+
+        $proofPath = $repair->craftsman_completion_proof_image;
+        if ($request->hasFile('craftsman_completion_proof_image')) {
+            if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+                Storage::disk('public')->delete($proofPath);
+            }
+            $proofPath = $request->file('craftsman_completion_proof_image')->store('repairs/proofs', 'public');
+        }
 
         $repair->update([
             'craftsman_status' => 'pending_approval',
             'item_returned_by' => $request->item_returned_by,
             'item_collected_by' => $request->item_collected_by,
+            'craftsman_voucher_image' => $voucherPath,
+            'craftsman_completion_proof_image' => $proofPath,
         ]);
 
         return back()->with('success', 'Repair marked as completed. Sent to Superadmin for approval.');

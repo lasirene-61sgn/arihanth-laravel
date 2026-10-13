@@ -18,6 +18,10 @@ class MessageAttachment extends Model
         'mime_type'
     ];
 
+    protected $appends = [
+        'full_url'
+    ];
+
     /**
      * Get the message that owns the attachment.
      */

@@ -5,7 +5,7 @@
     <h2 class="my-4">My Assigned Repairs & Samples</h2>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
     <!-- Craftsman Tabs -->
@@ -30,75 +30,114 @@
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
+                        <th>image</th>
                         <th>Date</th>
                         <th>Buyer</th>
                         <th>Product Name</th>
                         <th>Order No</th>
                         <th>Type</th>
+                        <th>Weight</th>
                         <th>Status</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($repairs as $repair)
-                        <tr>
-                            <td>{{ $repair->id }}</td>
-                            <td>{{ $repair->date }}</td>
-                            <td>{{ $repair->buyer->name ?? 'N/A' }}</td>
-                            <td>{{ $repair->product_name }}</td>
-                            <td>{{ $repair->order_number }}</td>
-                            <td><span class="badge bg-info text-dark">{{ ucfirst($repair->repair_or_sample) }}</span></td>
-                            <td>
-                                <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $repair->craftsman_status)) }}</span>
-                            </td>
-                            <td class="text-center">
-                                @if($repair->craftsman_status === 'pending_acceptance')
-                                    <form action="{{ route('craftsman.repairs.accept', $repair->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <button type="submit" class="btn btn-sm btn-success">Accept Order</button>
-                                    </form>
-                                @elseif($repair->craftsman_status === 'in_process')
-                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#completeModal{{ $repair->id }}">
-                                        Mark as Completed
-                                    </button>
-                                @else
-                                    <span class="text-muted">No Action Needed</span>
-                                @endif
-                            </td>
-                        </tr>
+                    <tr>
+                        <td>{{ $repair->id }}</td>
+                        <td>
+                            @if($repair->repair_image)
+                            <div class="mt-2">
+                                <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
+                                    <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" width="70" class="img-thumbnail">
+                                </a>
+                            </div>
+                            @else
+                            <span class="text-muted">No Image</span>
+                            @endif
+                        </td>
+                        <td>{{ $repair->date }}</td>
+                        <td>{{ $repair->buyer->name ?? 'N/A' }}</td>
+                        <td>{{ $repair->product_name }}</td>
+                        <td>{{ $repair->order_number }}</td>
+                        <td><span class="badge bg-info text-dark">{{ ucfirst($repair->repair_or_sample) }}</span></td>
+                        <td>{{ $repair->weight}}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $repair->craftsman_status)) }}</span>
+                        </td>
+                        <td class="text-center">
+                            @if($repair->craftsman_status === 'pending_acceptance')
+                            <form action="{{ route('craftsman.repairs.accept', $repair->id) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn btn-sm btn-success">Accept Order</button>
+                            </form>
+                            @elseif($repair->craftsman_status === 'in_process')
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#completeModal{{ $repair->id }}">
+                                Mark as Completed
+                            </button>
+                            @else
+                            <span class="text-muted">No Action Needed</span>
+                            @endif
+                        </td>
+                    </tr>
 
-                        <!-- Craftsman Complete Modal -->
-                        @if($repair->craftsman_status === 'in_process')
-                        <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Complete Order #{{ $repair->order_number }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <!-- Craftsman Complete Modal -->
+                    @if($repair->craftsman_status === 'in_process')
+                    <div class="modal fade" id="completeModal{{ $repair->id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form action="{{ route('craftsman.repairs.complete', $repair->id) }}" method="POST" enctype="multipart/form-data">
+                                    @csrf @method('PATCH')
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Complete Order #{{ $repair->order_number }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body text-start">
+                                        <!-- Display Weight & Original Repair Image -->
+                                        <div class="mb-3 p-2 bg-light rounded">
+                                            <p class="mb-1"><strong>Weight:</strong> {{ $repair->weight ?? 'N/A' }}</p>
+                                            @if($repair->repair_image)
+                                            <p class="mb-1"><strong>Original Repair Image:</strong></p>
+                                            <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
+                                                <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" width="80" class="img-thumbnail">
+                                            </a>
+                                            @endif
                                         </div>
-                                        <div class="modal-body text-start">
-                                            <div class="mb-3">
-                                                <label class="form-label">Item Returned By <span class="text-danger">*</span></label>
-                                                <input type="text" name="item_returned_by" class="form-control" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Item Collected By <span class="text-danger">*</span></label>
-                                                <input type="text" name="item_collected_by" class="form-control" required>
-                                            </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Item Returned By <span class="text-danger">*</span></label>
+                                            <input type="text" name="item_returned_by" class="form-control" required>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            <button type="submit" class="btn btn-success">Submit for Approval</button>
+                                        <div class="mb-3">
+                                            <label class="form-label">Item Collected By <span class="text-danger">*</span></label>
+                                            <input type="text" name="item_collected_by" class="form-control" required>
                                         </div>
-                                    </form>
-                                </div>
+
+                                        <!-- Craftsman Voucher Image (Nullable) -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Craftsman Voucher Image</label>
+                                            <input type="file" name="craftsman_voucher_image" class="form-control" accept="image/*">
+                                        </div>
+
+                                        <!-- Craftsman Completion Proof Image (Nullable) -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Craftsman Completion Proof Image</label>
+                                            <input type="file" name="craftsman_completion_proof_image" class="form-control" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-success">Submit Completion</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        @endif
+                    </div>
+                    @endif
                     @empty
-                        <tr><td colspan="8" class="text-center py-4 text-muted">No records found.</td></tr>
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No records found.</td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>

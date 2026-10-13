@@ -9,8 +9,20 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <form action="{{ route('super-admin.repairs.store') }}" method="POST">
+            <form action="{{ route('super-admin.repairs.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                <div class="mb-3">
+                    <label class="form-label">Repair Image</label>
+                    <input type="file" name="repair_image" class="form-control" accept="image/*">
+                    @if(isset($repair) && $repair->repair_image)
+                    <div class="mt-2">
+                        <p class="text-muted small mb-1">Current Image:</p>
+                        <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" width="100" class="img-thumbnail">
+                        </a>
+                    </div>
+                    @endif
+                </div>
                 @include('super-admin.repairs._form', ['buttonText' => 'Save Record'])
             </form>
         </div>

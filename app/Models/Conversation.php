@@ -20,18 +20,23 @@ class Conversation extends Model
         'last_message_at' => 'datetime',
     ];
 
-    public function messages()
-{
-    return $this->hasMany(Message::class);
-}
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class);
+    }
 
-public function sender()
-{
-    return $this->morphTo();
-}
+    public function sender(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
-public function receiver()
-{
-    return $this->morphTo();
-}
+    public function receiver(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function latestMessage()
+    {
+        return $this->hasOne(Message::class)->latestOfMany();
+    }
 }
