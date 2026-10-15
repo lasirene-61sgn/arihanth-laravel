@@ -7,6 +7,7 @@
         <a href="{{ route('super-admin.repairs.index') }}" class="btn btn-secondary">Back to List</a>
     </div>
 
+    <!-- Order Information Card -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Order Information</h5>
@@ -18,7 +19,7 @@
                     Status: {{ ucfirst($repair->status) }}
                 </span>
                 @if($repair->craftsman_status)
-                <span class="badge bg-secondary ms-1">Craftsman State: {{ str_replace('_', ' ', $repair->craftsman_status) }}</span>
+                    <span class="badge bg-secondary ms-1">Craftsman State: {{ str_replace('_', ' ', $repair->craftsman_status) }}</span>
                 @endif
             </div>
         </div>
@@ -32,7 +33,7 @@
 
             <div class="row mb-3">
                 <div class="col-md-3 fw-bold">Buyer Name:</div>
-                <div class="col-md-3">{{ $repair->buyer->name ?? 'N/A' }}</div>
+                <div class="col-md-3">{{ $repair->buyer->name ?? 'N/A' }} ({{ $repair->buyer->bp_code ?? '-' }})</div>
                 <div class="col-md-3 fw-bold">Product Name:</div>
                 <div class="col-md-3">{{ $repair->product_name }}</div>
             </div>
@@ -50,9 +51,9 @@
                 <div class="col-md-3 fw-bold">Assigned Craftsman:</div>
                 <div class="col-md-3">
                     @if($repair->craftman)
-                    <strong>{{ $repair->craftman->craftman_code }}</strong> - {{ $repair->craftman->business_name }}
+                        <strong>{{ $repair->craftman->craftman_code }}</strong> - {{ $repair->craftman->business_name }}
                     @else
-                    <span class="text-muted">Not Allocated</span>
+                        <span class="text-muted">Not Allocated</span>
                     @endif
                 </div>
             </div>
@@ -103,40 +104,75 @@
         </div>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-md-3 fw-bold">Repair Image:</div>
-        <div class="col-md-9">
-            @if($repair->repair_image)
-            <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
-                <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" class="img-thumbnail" style="max-height: 200px;">
-            </a>
-            @else
-            <span class="text-muted">No Image Uploaded</span>
-            @endif
+    <!-- Uploaded Images & Proofs Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Images, Vouchers & Completion Proofs</h5>
         </div>
-    </div>
+        <div class="card-body">
+            <!-- Initial Repair Image -->
+            <div class="row mb-4 pb-3 border-bottom">
+                <div class="col-md-3 fw-bold">Initial Repair Image:</div>
+                <div class="col-md-9">
+                    @if($repair->repair_image)
+                        <a href="{{ asset('storage/' . $repair->repair_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->repair_image) }}" alt="Repair Image" class="img-thumbnail" style="max-height: 150px;">
+                        </a>
+                    @else
+                        <span class="text-muted">Not Uploaded</span>
+                    @endif
+                </div>
+            </div>
 
-    <div class="row mb-3">
-        <div class="col-md-3 fw-bold">Craftsman Voucher Image:</div>
-        <div class="col-md-3">
-            @if($repair->craftsman_voucher_image)
-            <a href="{{ asset('storage/' . $repair->craftsman_voucher_image) }}" target="_blank">
-                <img src="{{ asset('storage/' . $repair->craftsman_voucher_image) }}" alt="Voucher Image" class="img-thumbnail" style="max-height: 120px;">
-            </a>
-            @else
-            <span class="text-muted">Not Uploaded</span>
-            @endif
-        </div>
+            <!-- Craftsman Images -->
+            <div class="row mb-4 pb-3 border-bottom">
+                <div class="col-md-3 fw-bold">Craftsman Voucher Image:</div>
+                <div class="col-md-3">
+                    @if($repair->craftsman_voucher_image)
+                        <a href="{{ asset('storage/' . $repair->craftsman_voucher_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->craftsman_voucher_image) }}" alt="Craftsman Voucher" class="img-thumbnail" style="max-height: 150px;">
+                        </a>
+                    @else
+                        <span class="text-muted">Not Uploaded</span>
+                    @endif
+                </div>
 
-        <div class="col-md-3 fw-bold">Completion Proof Image:</div>
-        <div class="col-md-3">
-            @if($repair->craftsman_completion_proof_image)
-            <a href="{{ asset('storage/' . $repair->craftsman_completion_proof_image) }}" target="_blank">
-                <img src="{{ asset('storage/' . $repair->craftsman_completion_proof_image) }}" alt="Proof Image" class="img-thumbnail" style="max-height: 120px;">
-            </a>
-            @else
-            <span class="text-muted">Not Uploaded</span>
-            @endif
+                <div class="col-md-3 fw-bold">Craftsman Completion Proof:</div>
+                <div class="col-md-3">
+                    @if($repair->craftsman_completion_proof_image)
+                        <a href="{{ asset('storage/' . $repair->craftsman_completion_proof_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->craftsman_completion_proof_image) }}" alt="Craftsman Proof" class="img-thumbnail" style="max-height: 150px;">
+                        </a>
+                    @else
+                        <span class="text-muted">Not Uploaded</span>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Buyer Images -->
+            <div class="row">
+                <div class="col-md-3 fw-bold">Buyer Voucher Image:</div>
+                <div class="col-md-3">
+                    @if($repair->buyer_voucher_image)
+                        <a href="{{ asset('storage/' . $repair->buyer_voucher_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->buyer_voucher_image) }}" alt="Buyer Voucher" class="img-thumbnail" style="max-height: 150px;">
+                        </a>
+                    @else
+                        <span class="text-muted">Not Uploaded</span>
+                    @endif
+                </div>
+
+                <div class="col-md-3 fw-bold">Buyer Completion Proof:</div>
+                <div class="col-md-3">
+                    @if($repair->buyer_completion_proof_image)
+                        <a href="{{ asset('storage/' . $repair->buyer_completion_proof_image) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $repair->buyer_completion_proof_image) }}" alt="Buyer Proof" class="img-thumbnail" style="max-height: 150px;">
+                        </a>
+                    @else
+                        <span class="text-muted">Not Uploaded</span>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>

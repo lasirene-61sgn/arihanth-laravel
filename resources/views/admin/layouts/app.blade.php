@@ -484,6 +484,19 @@
                         </a>
                     </li>
                     @endif
+
+                    @if(Auth::guard('admin')->user()->hasPermission('repair'))
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.repairs.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.repairs.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-qr-code-scan text-lg"></i>
+                                <span class="text-sm font-medium">Repair</span>
+                            </div>
+                        </a>
+                    </li>
+                    @endif
+
                     <li class="px-3 pt-4 pb-2">
                         <span class="px-4 text-[0.65rem] font-bold uppercase tracking-widest text-white/40">Product Management</span>
                     </li>

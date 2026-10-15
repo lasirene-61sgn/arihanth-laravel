@@ -55,6 +55,7 @@ use App\Http\Controllers\KeyUser\ProductController as KeyUserProductController;
 
 // Purchase Order Controllers
 use App\Http\Controllers\Admin\PurchaseOrderController as AdminPurchaseOrderController;
+use App\Http\Controllers\Admin\RepairController as AdminRepairController;
 use App\Http\Controllers\Buyer\BuyerMeetingController;
 use App\Http\Controllers\Buyer\BuyerRepairController;
 use App\Http\Controllers\Craftsman\CraftsmanMeetingController;
@@ -575,6 +576,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{user_id}/{user_type}', [App\Http\Controllers\Admin\FavoriteController::class, 'update'])->name('update');
             Route::delete('/{id}', [App\Http\Controllers\Admin\FavoriteController::class, 'destroy'])->name('destroy');
         });
+
+        Route::post('repairs/bulk-complete', [AdminRepairController::class, 'bulkComplete'])->name('repairs.bulk-complete');
+
+        // Standard CRUD Resource Routes
+        Route::resource('repairs', AdminRepairController::class);
+
+        // Workflow Status Routes
+        Route::patch('repairs/{repair}/accept', [AdminRepairController::class, 'accept'])->name('repairs.accept');
+        Route::patch('repairs/{repair}/reject', [AdminRepairController::class, 'reject'])->name('repairs.reject');
+        Route::patch('repairs/{repair}/allocate', [AdminRepairController::class, 'allocate'])->name('repairs.allocate');
+        Route::patch('repairs/{repair}/complete', [AdminRepairController::class, 'complete'])->name('repairs.complete');
+        Route::patch('repairs/{repair}/approve-completion', [AdminRepairController::class, 'approveCompletion'])->name('repairs.approve-completion');
+        Route::patch('repairs/{repair}/store-item-sent-by', [AdminRepairController::class, 'storeItemSentBy'])->name('repairs.store-item-sent-by');
+        Route::patch('repairs/{repair}/buyer-complete', [AdminRepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete');
 
         // Chat Routes
     });
@@ -1396,7 +1411,7 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
         });
 
         Route::resource('repairs', BuyerRepairController::class)->except(['show']);
-    Route::patch('repairs/{repair}/accept-completion', [BuyerRepairController::class, 'acceptCompletion'])->name('repairs.accept-completion');
+        Route::patch('repairs/{repair}/accept-completion', [BuyerRepairController::class, 'acceptCompletion'])->name('repairs.accept-completion');
 
         // Chat Routes for Buyers
     });

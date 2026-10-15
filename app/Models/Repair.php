@@ -30,6 +30,8 @@ class Repair extends Model
         'item_accepted_by',
         'craftsman_voucher_image',
         'craftsman_completion_proof_image',
+        'buyer_voucher_image',
+        'buyer_completion_proof_image',
         'repair_image',
         'completed_at',
     ];

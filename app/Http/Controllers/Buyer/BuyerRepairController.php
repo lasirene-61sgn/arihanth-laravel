@@ -150,17 +150,37 @@ class BuyerRepairController extends Controller
     }
 
     public function acceptCompletion(Request $request, Repair $repair)
-    {
-        $request->validate([
-            'item_accepted_by' => ['required', 'string', 'max:255'],
-        ]);
+{
+    $request->validate([
+        'item_accepted_by' => ['required', 'string', 'max:255'],
+        'buyer_voucher_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        'buyer_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+    ]);
 
-        $repair->update([
-            'status' => 'completed',
-            'item_accepted_by' => $request->item_accepted_by,
-            'completed_at' => now(),
-        ]);
-
-        return back()->with('success', 'Repair order accepted and marked as completed successfully.');
+    $voucherPath = $repair->buyer_voucher_image;
+    if ($request->hasFile('buyer_voucher_image')) {
+        if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+            Storage::disk('public')->delete($voucherPath);
+        }
+        $voucherPath = $request->file('buyer_voucher_image')->store('repairs/buyer_vouchers', 'public');
     }
+
+    $proofPath = $repair->buyer_completion_proof_image;
+    if ($request->hasFile('buyer_completion_proof_image')) {
+        if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+            Storage::disk('public')->delete($proofPath);
+        }
+        $proofPath = $request->file('buyer_completion_proof_image')->store('repairs/buyer_proofs', 'public');
+    }
+
+    $repair->update([
+        'status' => 'completed',
+        'item_accepted_by' => $request->item_accepted_by,
+        'buyer_voucher_image' => $voucherPath,
+        'buyer_completion_proof_image' => $proofPath,
+        'completed_at' => now(),
+    ]);
+
+    return back()->with('success', 'Repair order accepted and marked as completed successfully.');
+}
 }

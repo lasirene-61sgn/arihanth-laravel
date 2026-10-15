@@ -57,24 +57,6 @@ class RepairController extends Controller
         ));
     }
 
-    // Final Completion from Buyer Approval Tab
-    public function markBuyerCompleted(Request $request, Repair $repair)
-    {
-        $request->validate([
-            'item_sent_by' => ['required', 'string', 'max:255'],
-            'item_accepted_by' => ['required', 'string', 'max:255'],
-        ]);
-
-        $repair->update([
-            'status' => 'completed',
-            'item_sent_by' => $request->item_sent_by,
-            'item_accepted_by' => $request->item_accepted_by,
-            'completed_at' => now(),
-        ]);
-
-        return back()->with('success', 'Order marked as completed successfully and moved to Completed tab.');
-    }
-
     // Superadmin clicks Approve in Craftsman Approval -> Moves to Approval Tab (to fill Item Sent By)
     public function approveCompletion(Request $request, Repair $repair)
     {
@@ -271,14 +253,61 @@ class RepairController extends Controller
             ->with('success', 'Repair/Sample record updated successfully.');
     }
 
-    public function destroy(Repair $repair)
+    // Final Completion from Superadmin Buyer Approval Tab
+    public function markBuyerCompleted(Request $request, Repair $repair)
     {
-        // Delete associated image from storage if it exists
-        if ($repair->repair_image && Storage::disk('public')->exists($repair->repair_image)) {
-            Storage::disk('public')->delete($repair->repair_image);
+        $request->validate([
+            'item_sent_by' => ['required', 'string', 'max:255'],
+            'item_accepted_by' => ['required', 'string', 'max:255'],
+            'buyer_voucher_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'buyer_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ]);
+
+        $voucherPath = $repair->buyer_voucher_image;
+        if ($request->hasFile('buyer_voucher_image')) {
+            if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+                Storage::disk('public')->delete($voucherPath);
+            }
+            $voucherPath = $request->file('buyer_voucher_image')->store('repairs/buyer_vouchers', 'public');
         }
 
-        // Delete the database record
+        $proofPath = $repair->buyer_completion_proof_image;
+        if ($request->hasFile('buyer_completion_proof_image')) {
+            if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+                Storage::disk('public')->delete($proofPath);
+            }
+            $proofPath = $request->file('buyer_completion_proof_image')->store('repairs/buyer_proofs', 'public');
+        }
+
+        $repair->update([
+            'status' => 'completed',
+            'item_sent_by' => $request->item_sent_by,
+            'item_accepted_by' => $request->item_accepted_by,
+            'buyer_voucher_image' => $voucherPath,
+            'buyer_completion_proof_image' => $proofPath,
+            'completed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Order marked as completed successfully and moved to Completed tab.');
+    }
+
+    // Updated destroy method to clean up all 5 possible images
+    public function destroy(Repair $repair)
+    {
+        $imageFields = [
+            'repair_image',
+            'craftsman_voucher_image',
+            'craftsman_completion_proof_image',
+            'buyer_voucher_image',
+            'buyer_completion_proof_image',
+        ];
+
+        foreach ($imageFields as $field) {
+            if ($repair->$field && Storage::disk('public')->exists($repair->$field)) {
+                Storage::disk('public')->delete($repair->$field);
+            }
+        }
+
         $repair->delete();
 
         return redirect()->route('super-admin.repairs.index')
