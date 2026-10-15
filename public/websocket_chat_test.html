@@ -330,16 +330,13 @@
             </div>
 
             <div class="form-group">
-                <label>Reverb Host & Port</label>
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
-                    <input type="text" id="reverbHost" value="localhost">
-                    <input type="number" id="reverbPort" value="8080">
-                </div>
+                <label>Pusher App Key</label>
+                <input type="text" id="reverbKey" value="9bcfabd864b6ce776339">
             </div>
 
             <div class="form-group">
-                <label>Reverb App Key</label>
-                <input type="text" id="reverbKey" value="lffoipjc57ebkzslnfcc">
+                <label>Pusher Cluster</label>
+                <input type="text" id="pusherCluster" value="ap2">
             </div>
 
             <div class="form-group">
@@ -403,10 +400,9 @@
         }
 
         function loadDefaults() {
-            document.getElementById('apiHost').value = 'http://127.0.0.1:8000';
-            document.getElementById('reverbHost').value = 'localhost';
-            document.getElementById('reverbPort').value = '8080';
-            document.getElementById('reverbKey').value = 'lffoipjc57ebkzslnfcc';
+            document.getElementById('apiHost').value = window.location.origin;
+            document.getElementById('reverbKey').value = '9bcfabd864b6ce776339';
+            document.getElementById('pusherCluster').value = 'ap2';
         }
 
         function updateStatus(status, text) {
@@ -426,9 +422,8 @@
 
         function connect() {
             const apiHost = document.getElementById('apiHost').value.trim();
-            const wsHost = document.getElementById('reverbHost').value.trim();
-            const wsPort = parseInt(document.getElementById('reverbPort').value);
             const wsKey = document.getElementById('reverbKey').value.trim();
+            const cluster = document.getElementById('pusherCluster').value.trim();
             const token = document.getElementById('bearerToken').value.trim();
             const type = document.getElementById('channelType').value;
             const id = document.getElementById('channelId').value.trim();
@@ -444,16 +439,12 @@
             }
 
             updateStatus('connecting', 'Connecting...');
-            log(`Initializing connection to Reverb at ${wsHost}:${wsPort}...`);
+            log(`Initializing connection to Pusher Cloud (Cluster: ${cluster})...`);
 
-            // Configure Pusher client pointing to Laravel Reverb
+            // Configure official Pusher client
             pusher = new Pusher(wsKey, {
-                wsHost: wsHost,
-                wsPort: wsPort,
-                wssPort: wsPort,
-                forceTLS: false,
-                encrypted: false,
-                enabledTransports: ['ws', 'flash'],
+                cluster: cluster,
+                forceTLS: true,
                 authEndpoint: `${apiHost}/api/broadcasting/auth`,
                 auth: {
                     headers: {
@@ -464,8 +455,8 @@
             });
 
             pusher.connection.bind('connected', function() {
-                updateStatus('connected', 'Connected to Reverb');
-                log('Socket connected successfully!');
+                updateStatus('connected', 'Connected to Pusher');
+                log('Socket connected successfully to Pusher Cloud!');
                 subscribeToChannel(type, id);
             });
 

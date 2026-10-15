@@ -2169,6 +2169,45 @@ class ChatApiController extends Controller
      */
     public function getWebsocketConfig(Request $request)
     {
+        $broadcaster = config('broadcasting.default', env('BROADCAST_CONNECTION', 'pusher'));
+
+        if ($broadcaster === 'pusher') {
+            $appKey = config('broadcasting.connections.pusher.key', env('PUSHER_APP_KEY', '9bcfabd864b6ce776339'));
+            $cluster = config('broadcasting.connections.pusher.options.cluster', env('PUSHER_APP_CLUSTER', 'ap2'));
+
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'broadcaster'        => 'pusher',
+                    'is_running'         => true,
+                    'app_key'            => $appKey,
+                    'cluster'            => $cluster,
+                    'host'               => "ws-{$cluster}.pusher.com",
+                    'port'               => 443,
+                    'scheme'             => 'https',
+                    'use_tls'            => true,
+                    'ws_url'             => "wss://ws-{$cluster}.pusher.com:443/app/{$appKey}",
+                    'auth_endpoint'      => url('/api/broadcasting/auth'),
+                    'alt_auth_endpoint'  => url('/broadcasting/auth'),
+                    'channels'           => [
+                        'conversation_pattern' => 'private-conversation.{conversation_id}',
+                        'group_pattern'        => 'private-group.{chat_group_id}',
+                        'user_pattern'         => 'private-user.{user_type}.{user_id}',
+                    ],
+                    'events'             => [
+                        'message_sent'    => 'message.sent',
+                        'message_deleted' => 'message.deleted',
+                    ],
+                    'guide'              => [
+                        'flutter'     => 'Connect using pusher_channels_flutter package with apiKey and cluster.',
+                        'web'         => 'Connect using laravel-echo and pusher-js with broadcaster: "pusher".',
+                        'voice_video' => 'Connect to Agora RTC using /api/common/chat/agora-token for live audio/video calls.',
+                    ]
+                ]
+            ]);
+        }
+
+        // Reverb fallback
         $host = env('REVERB_HOST', '127.0.0.1');
         $port = (int) env('REVERB_PORT', 8080);
         $scheme = env('REVERB_SCHEME', 'http');
@@ -2189,7 +2228,7 @@ class ChatApiController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'broadcaster'        => config('broadcasting.default'),
+                'broadcaster'        => $broadcaster,
                 'is_running'         => $isRunning,
                 'app_key'            => $appKey,
                 'host'               => $host,
@@ -2200,7 +2239,7 @@ class ChatApiController extends Controller
                 'alt_auth_endpoint'  => url('/broadcasting/auth'),
                 'how_to_start'       => 'Run "php artisan reverb:start" on the server',
                 'guide'              => [
-                    'text_chat'  => 'Connect to WebSocket (Reverb) to listen to conversation.{id} and group.{id} channels for real-time text & media messages.',
+                    'text_chat'  => 'Connect to WebSocket to listen to conversation.{id} and group.{id} channels for real-time text & media messages.',
                     'voice_video'=> 'Connect to Agora RTC using /api/common/chat/agora-token for live audio/video calls.',
                 ]
             ]
