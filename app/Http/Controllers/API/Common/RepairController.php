@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Models\Repair;
 use App\Models\Buyer;
 use App\Models\Craftman;
 use App\Models\ProcessOwner;
-use App\Services\ImageWatermarkService;
+use App\Models\CraftsmanStaff;
+use App\Models\KeyUser;
+use App\Models\User;
 use App\Notifications\RepairAllocated;
 use App\Notifications\RepairCompleted;
 use Dompdf\Dompdf;
@@ -20,31 +23,79 @@ use Dompdf\Options;
 class RepairController extends Controller
 {
     // =========================================================================
-    // HELPERS — role detection
+    // HELPERS — Role Detection & Permissions
     // =========================================================================
 
     private function isAdmin($user): bool
     {
-        return in_array($user->role ?? '', ['super_admin', 'admin']);
+        if (!$user) return false;
+        return in_array($user->role ?? '', ['super_admin', 'admin'])
+            || $user instanceof ProcessOwner;
     }
 
     private function isCraftsman($user): bool
     {
-        return ($user->role ?? '') === 'craftsman' 
-            || $user instanceof \App\Models\Craftman
-            || $user instanceof \App\Models\CraftsmanStaff;
+        if (!$user) return false;
+        return ($user->role ?? '') === 'craftsman'
+            || $user instanceof Craftman
+            || $user instanceof CraftsmanStaff;
+    }
+
+    private function getCraftsmanCode($user): ?string
+    {
+        if (!$user) return null;
+        if ($user instanceof CraftsmanStaff) {
+            return $user->craftsman->craftman_code ?? ($user->craftman_code ?? null);
+        }
+        if ($user instanceof Craftman) {
+            return $user->craftman_code;
+        }
+        return $user->craftman_code ?? null;
+    }
+
+    private function isBuyerSide($user): bool
+    {
+        if (!$user) return false;
+        return $user instanceof Buyer
+            || $user instanceof KeyUser
+            || $user instanceof User
+            || ($user->role ?? '') === 'buyer';
+    }
+
+    private function getBuyerId($user): ?int
+    {
+        if (!$user) return null;
+        if ($user instanceof Buyer) {
+            return $user->id;
+        }
+        if (isset($user->bp_code)) {
+            $buyer = Buyer::where('bp_code', $user->bp_code)->first();
+            return $buyer ? $buyer->id : null;
+        }
+        if (isset($user->buyer_id)) {
+            return (int)$user->buyer_id;
+        }
+        return null;
+    }
+
+    private function getUserRole($user): string
+    {
+        if ($this->isAdmin($user)) return 'admin';
+        if ($this->isCraftsman($user)) return 'craftsman';
+        if ($this->isBuyerSide($user)) return 'buyer';
+        return 'guest';
     }
 
     private function checkPermission($user, $specificPermission = 'repair_view'): bool
     {
         if ($this->isAdmin($user)) return true;
-        if ($user instanceof \App\Models\Buyer) return true; 
+        if ($this->isBuyerSide($user)) return true;
 
-        if ($user instanceof \App\Models\CraftsmanStaff) {
-            return $user->hasPermission($specificPermission);
+        if ($user instanceof CraftsmanStaff) {
+            return method_exists($user, 'hasPermission') ? $user->hasPermission($specificPermission) : true;
         }
 
-        if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
+        if ($user instanceof Craftman || ($user->role ?? '') === 'craftsman') {
             return true;
         }
 
@@ -52,139 +103,155 @@ class RepairController extends Controller
             return $user->hasPermission('repairs');
         }
 
-        return true;
+        return false;
     }
 
-    private function isBuyerSide($user): bool
+    private function formatImageUrl(?string $path): ?string
     {
-        return $user instanceof \App\Models\Buyer
-            || $user instanceof \App\Models\KeyUser
-            || $user instanceof \App\Models\User
-            || ($user->role ?? '') === 'buyer';
+        if (!$path) return null;
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        if (str_starts_with($path, 'storage/')) {
+            return asset($path);
+        }
+        if (file_exists(public_path($path))) {
+            return asset($path);
+        }
+        return asset('storage/' . ltrim($path, '/'));
     }
 
-    /**
-     * Resolve buyer_id for buyer-side users
-     */
-    private function getBuyerId($user)
+    private function transformRepair(Repair $repair, $user): Repair
     {
-        if ($user instanceof \App\Models\Buyer) {
-            return $user->id;
-        }
-        // KeyUser and User belong to a Buyer via bp_code
-        if (isset($user->bp_code)) {
-            $buyer = Buyer::where('bp_code', $user->bp_code)->first();
-            return $buyer ? $buyer->id : null;
-        }
-        return null;
+        $repair->repair_image_url = $this->formatImageUrl($repair->repair_image);
+        $repair->craftsman_voucher_image_url = $this->formatImageUrl($repair->craftsman_voucher_image);
+        $repair->craftsman_completion_proof_image_url = $this->formatImageUrl($repair->craftsman_completion_proof_image);
+        $repair->buyer_voucher_image_url = $this->formatImageUrl($repair->buyer_voucher_image);
+        $repair->buyer_completion_proof_image_url = $this->formatImageUrl($repair->buyer_completion_proof_image);
+
+        $admin = $this->isAdmin($user);
+        $isBuyer = $this->isBuyerSide($user);
+        $isCraftsman = $this->isCraftsman($user);
+        $buyerId = $this->getBuyerId($user);
+        $craftsmanCode = $this->getCraftsmanCode($user);
+
+        $repair->permissions = [
+            'can_edit' => $admin || ($isBuyer && $repair->buyer_id == $buyerId && $repair->status === 'pending'),
+            'can_delete' => $admin || ($isBuyer && $repair->buyer_id == $buyerId && $repair->status === 'pending'),
+            'can_allocate' => $admin && in_array($repair->status, ['pending', 'received']),
+            'can_admin_accept' => $admin && $repair->status === 'pending',
+            'can_admin_reject' => $admin && in_array($repair->status, ['pending', 'allocated']),
+            'can_admin_approve_completion' => $admin && $repair->craftsman_status === 'pending_approval',
+            'can_admin_complete' => $admin && $repair->status !== 'completed',
+            'can_craftsman_accept' => $isCraftsman && $repair->craftman_code === $craftsmanCode && ($repair->craftsman_status === 'pending_acceptance' || is_null($repair->craftsman_status)),
+            'can_craftsman_complete' => $isCraftsman && $repair->craftman_code === $craftsmanCode && in_array($repair->craftsman_status, ['in_progress', 'pending_acceptance', 'accepted', null]),
+            'can_buyer_accept' => $isBuyer && $repair->buyer_id == $buyerId && $repair->craftsman_status === 'approved_by_superadmin' && $repair->status !== 'completed',
+        ];
+
+        return $repair;
     }
 
     // =========================================================================
-    // INDEX — with tabs + counts (Full logic)
+    // QUERY SCOPING & FILTERING
     // =========================================================================
 
-    public function index(Request $request)
+    private function scopeQueryByRole($query, $user)
     {
-        $user  = $request->user();
-        if (!$this->checkPermission($user, 'repair_view')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
+        if ($this->isAdmin($user)) {
+            return $query;
         }
+
+        if ($this->isCraftsman($user)) {
+            $craftsmanCode = $this->getCraftsmanCode($user);
+            return $query->where('craftman_code', $craftsmanCode);
+        }
+
+        if ($this->isBuyerSide($user)) {
+            $buyerId = $this->getBuyerId($user);
+            return $query->where('buyer_id', $buyerId);
+        }
+
+        return $query->whereRaw('1=0');
+    }
+
+    private function applyFilters($query, Request $request, $user)
+    {
         $admin = $this->isAdmin($user);
 
-        // ── Scope helper: applies buyer/craftman filter ──
-        $scopeFilter = function ($query) use ($user, $admin) {
-            if ($admin) return $query;
-            if ($this->isCraftsman($user)) {
-                return $query->where('allocated_craftsman_code', $user->craftman_code);
+        // Repair or Sample Filter
+        if ($request->filled('repair_or_sample')) {
+            $query->where('repair_or_sample', $request->repair_or_sample);
+        }
+
+        // Date-wise Filters (from_date / to_date / date)
+        if ($request->filled('from_date')) {
+            $query->whereDate('date', '>=', $request->from_date);
+        } elseif ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('date', '<=', $request->to_date);
+        } elseif ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->date_to);
+        }
+
+        if ($request->filled('date') && !$request->filled('from_date') && !$request->filled('date_from')) {
+            $query->whereDate('date', $request->date);
+        }
+
+        // Craftsman Filter (Admin / SuperAdmin)
+        if ($admin) {
+            if ($request->filled('craftsman_filter')) {
+                $query->where('craftman_code', $request->craftsman_filter);
+            } elseif ($request->filled('craftsman_code')) {
+                $query->where('craftman_code', $request->craftsman_code);
             }
-            if ($this->isBuyerSide($user)) {
-                $buyerId = $this->getBuyerId($user);
-                return $query->where('buyer_id', $buyerId);
+        }
+
+        // Buyer Filter (Admin / SuperAdmin)
+        if ($admin) {
+            if ($request->filled('buyer_filter')) {
+                $query->where('buyer_id', $request->buyer_filter);
+            } elseif ($request->filled('buyer_id')) {
+                $query->where('buyer_id', $request->buyer_id);
+            } elseif ($request->filled('bp_code')) {
+                $query->whereHas('buyer', function ($bq) use ($request) {
+                    $bq->where('bp_code', $request->bp_code);
+                });
             }
-            return $query->whereRaw('1=0'); // Default deny
-        };
-
-
-        // ── Base query ──
-        $perPage   = $request->get('per_page', 10);
-        $search    = $request->get('search');
-        $sortBy    = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-
-        if (!in_array($sortBy, ['id', 'repair_date', 'product_name', 'weight', 'status', 'created_at'])) {
-            $sortBy = 'created_at';
         }
 
-        $query = Repair::with(['buyer', 'craftsman']);
-        $scopeFilter($query);
-
-
-        // ── Search ──
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'LIKE', "%$search%")
-                    ->orWhere('repair_details', 'LIKE', "%$search%")
-                    ->orWhere('item_given_to', 'LIKE', "%$search%")
-                    ->orWhere('order_no', 'LIKE', "%$search%")
-                    ->orWhere('ref', 'LIKE', "%$search%")
-                    ->orWhere('allocated_craftsman_code', 'LIKE', "%$search%")
-                    ->orWhereHas('buyer', function ($bq) use ($search) {
-                        $bq->where('name', 'LIKE', "%$search%")
-                           ->orWhere('business_name', 'LIKE', "%$search%")
-                           ->orWhere('bp_code', 'LIKE', "%$search%");
-                    });
-            });
-        }
-
-        // ── Global Filter Alias (matching PO controller logic) ──
-        if ($request->filled('filter')) {
-            $f = $request->filter;
-            $query->where(function ($q) use ($f) {
-                $q->where('allocated_craftsman_code', $f)
-                    ->orWhere('product_name', 'LIKE', "%$f%")
-                    ->orWhere('order_no', 'LIKE', "%$f%")
-                    ->orWhere('ref', 'LIKE', "%$f%")
-                    ->orWhereHas('buyer', function ($bq) use ($f) {
-                        $bq->where('bp_code', $f)
-                           ->orWhere('name', 'LIKE', "%$f%");
-                    });
-            });
-        }
-
-        // ── Additional Filters ──
-        if ($request->filled('date_from')) {
-            $query->whereDate('repair_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('repair_date', '<=', $request->date_to);
-        }
-        if ($request->filled('product_name')) {
-            $query->where('product_name', 'LIKE', "%{$request->product_name}%");
-        }
+        // Explicit status filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->filled('weight')) {
-            $query->where('weight', $request->weight);
-        }
-        if ($request->filled('bp_code')) {
-            $buyer = \App\Models\Buyer::where('bp_code', $request->bp_code)->first();
-            if ($buyer) {
-                $query->where('buyer_id', $buyer->id);
-            } else {
-                $query->where('id', 0); // No results if code invalid
-            }
-        }
-        if ($admin && $request->filled('buyer_id')) {
-            $query->where('buyer_id', $request->buyer_id);
-        }
-        if ($admin && $request->filled('craftsman_code')) {
-            $query->where('allocated_craftsman_code', $request->craftsman_code);
+
+        // Keyword Search
+        $search = $request->get('search') ?: $request->get('q');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'LIKE', "%{$search}%")
+                  ->orWhere('product_name', 'LIKE', "%{$search}%")
+                  ->orWhere('reference_number', 'LIKE', "%{$search}%")
+                  ->orWhere('repair_details', 'LIKE', "%{$search}%")
+                  ->orWhere('craftman_code', 'LIKE', "%{$search}%")
+                  ->orWhereHas('buyer', function ($bq) use ($search) {
+                      $bq->where('business_name', 'LIKE', "%{$search}%")
+                         ->orWhere('name', 'LIKE', "%{$search}%")
+                         ->orWhere('bp_code', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('craftsman', function ($cq) use ($search) {
+                      $cq->where('business_name', 'LIKE', "%{$search}%")
+                         ->orWhere('name', 'LIKE', "%{$search}%")
+                         ->orWhere('craftman_code', 'LIKE', "%{$search}%");
+                  });
+            });
         }
 
-        // ── Selection by IDs ──
-        if ($request->filled('repair_ids')) {
-            $ids = $request->repair_ids;
+        // Selection by specific IDs
+        if ($request->filled('repair_ids') || $request->filled('ids')) {
+            $ids = $request->get('repair_ids') ?: $request->get('ids');
             if (is_string($ids)) {
                 $ids = explode(',', $ids);
             }
@@ -193,100 +260,208 @@ class RepairController extends Controller
             }
         }
 
-        $query->orderBy($sortBy, $sortOrder);
-
-        // ── Print (Full data JSON) ──
-        if ($request->has('print')) {
-            $repairs = $query->get();
-            // Resolve full image URLs
-            $repairs->transform(function ($repair) use ($user) {
-                if ($repair->image_proof) {
-                    $repair->image_proof_url = asset($repair->image_proof);
-                }
-                if ($this->isCraftsman($user)) {
-                    $repair->can_accept = $this->checkPermission($user, 'repair_accept');
-                    $repair->can_reject = $this->checkPermission($user, 'repair_reject');
-                }
-                return $repair;
-            });
-            return response()->json([
-                'success' => true,
-                'data'    => $repairs
-            ]);
-        }
-
-        // ── Paginated Response ──
-        $repairs = $query->paginate($perPage);
-        $repairs->getCollection()->transform(function ($repair) use ($user) {
-            if ($repair->image_proof) {
-                $repair->image_proof_url = asset($repair->image_proof);
-            }
-            if ($this->isCraftsman($user)) {
-                $repair->can_accept = $this->checkPermission($user, 'repair_accept');
-                $repair->can_reject = $this->checkPermission($user, 'repair_reject');
-            }
-            return $repair;
-        });
-
-        return response()->json([
-            'success' => true,
-            'data'    => $repairs
-        ]);
+        return $query;
     }
 
-    public function show(Request $request, $id)
+    // =========================================================================
+    // INDEX — Tabs-wise Listing & Counts for All 4 Panels
+    // =========================================================================
+
+    public function index(Request $request)
     {
-        $user   = $request->user();
+        $user = $request->user();
         if (!$this->checkPermission($user, 'repair_view')) {
             return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
         }
-        $admin  = $this->isAdmin($user);
-        $repair = Repair::with(['buyer', 'craftsman'])->find($id);
 
+        $role = $this->getUserRole($user);
+
+        // 1. Base scoped query with filters applied
+        $baseQuery = Repair::query();
+        $this->scopeQueryByRole($baseQuery, $user);
+        $this->applyFilters($baseQuery, $request, $user);
+
+        $counts = [];
+        $activeTab = $request->get('tab');
+
+        // 2. Tab definitions & counts based on Role
+        if ($role === 'admin') {
+            $activeTab = $activeTab ?: 'all';
+
+            $counts = [
+                'all'       => (clone $baseQuery)->count(),
+                'received'  => (clone $baseQuery)->where('status', 'pending')->count(),
+                'allocated' => (clone $baseQuery)->where('status', 'allocated')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
+                })->count(),
+                'completed' => (clone $baseQuery)->where(function ($q) {
+                    $q->where('craftsman_status', 'pending_approval')->orWhere('status', 'completed');
+                })->count(),
+            ];
+
+            // Apply selected tab condition to query
+            if ($activeTab === 'received') {
+                $baseQuery->where('status', 'pending');
+            } elseif ($activeTab === 'allocated') {
+                $baseQuery->where('status', 'allocated')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
+                });
+            } elseif ($activeTab === 'completed') {
+                $baseQuery->where(function ($q) {
+                    $q->where('craftsman_status', 'pending_approval')->orWhere('status', 'completed');
+                });
+            }
+        } elseif ($role === 'craftsman') {
+            $activeTab = $activeTab ?: 'assigned';
+
+            $counts = [
+                'assigned'  => (clone $baseQuery)->where('status', 'allocated')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', 'pending_acceptance');
+                })->count(),
+                'completed' => (clone $baseQuery)->where(function ($q) {
+                    $q->whereIn('craftsman_status', ['completed', 'pending_approval', 'approved_by_superadmin'])
+                      ->orWhere('status', 'completed');
+                })->count(),
+                'all'       => (clone $baseQuery)->count(),
+            ];
+
+            if ($activeTab === 'completed') {
+                $baseQuery->where(function ($q) {
+                    $q->whereIn('craftsman_status', ['completed', 'pending_approval', 'approved_by_superadmin'])
+                      ->orWhere('status', 'completed');
+                });
+            } elseif ($activeTab === 'all') {
+                // all assigned to this craftsman
+            } else { // default 'assigned'
+                $baseQuery->where('status', 'allocated')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', 'pending_acceptance');
+                });
+            }
+        } elseif ($role === 'buyer') {
+            $activeTab = $activeTab ?: 'active';
+
+            $counts = [
+                'active'    => (clone $baseQuery)->where('status', '!=', 'completed')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
+                })->count(),
+                'approval'  => (clone $baseQuery)->where('craftsman_status', 'approved_by_superadmin')
+                    ->whereNotNull('item_sent_by')
+                    ->where('status', '!=', 'completed')->count(),
+                'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
+                'all'       => (clone $baseQuery)->count(),
+            ];
+
+            if ($activeTab === 'approval') {
+                $baseQuery->where('craftsman_status', 'approved_by_superadmin')
+                    ->whereNotNull('item_sent_by')
+                    ->where('status', '!=', 'completed');
+            } elseif ($activeTab === 'completed') {
+                $baseQuery->where('status', 'completed');
+            } elseif ($activeTab === 'all') {
+                // all for this buyer
+            } else { // default 'active'
+                $baseQuery->where('status', '!=', 'completed')->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
+                });
+            }
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'date');
+        $sortOrder = strtolower($request->get('sort_order', 'desc'));
+        if (!in_array($sortBy, ['id', 'date', 'order_number', 'product_name', 'weight', 'status', 'created_at'])) {
+            $sortBy = 'date';
+        }
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+
+        $baseQuery->with(['buyer', 'craftsman'])->orderBy($sortBy, $sortOrder);
+
+        // Print export (Full unpaginated data)
+        if ($request->has('print')) {
+            $repairs = $baseQuery->get();
+            $repairs->transform(fn($repair) => $this->transformRepair($repair, $user));
+            return response()->json([
+                'success'    => true,
+                'role'       => $role,
+                'active_tab' => $activeTab,
+                'counts'     => $counts,
+                'data'       => $repairs,
+            ]);
+        }
+
+        // Paginated Response
+        $perPage = (int)$request->get('per_page', 15);
+        $repairs = $baseQuery->paginate($perPage);
+        $repairs->getCollection()->transform(fn($repair) => $this->transformRepair($repair, $user));
+
+        return response()->json([
+            'success'    => true,
+            'role'       => $role,
+            'active_tab' => $activeTab,
+            'counts'     => $counts,
+            'data'       => $repairs,
+        ]);
+    }
+
+    // =========================================================================
+    // SHOW — Single Repair Details
+    // =========================================================================
+
+    public function show(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->checkPermission($user, 'repair_view')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
+        }
+
+        $repair = Repair::with(['buyer', 'craftsman'])->find($id);
         if (!$repair) {
             return response()->json(['success' => false, 'message' => 'Repair not found'], 404);
         }
 
-        // Role-based check
+        $admin = $this->isAdmin($user);
         if (!$admin) {
-            if ($this->isCraftsman($user) && $repair->allocated_craftsman_code !== $user->craftman_code) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            if ($this->isCraftsman($user) && $repair->craftman_code !== $this->getCraftsmanCode($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized – not assigned to you'], 403);
             }
-            if ($this->isBuyerSide($user) && $repair->buyer_id !== $this->getBuyerId($user)) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            if ($this->isBuyerSide($user) && (int)$repair->buyer_id !== (int)$this->getBuyerId($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized – not your order'], 403);
             }
         }
 
-        if ($repair->image_proof) {
-            $repair->image_proof_url = asset($repair->image_proof);
-        }
-
-        if ($this->isCraftsman($user)) {
-            $repair->can_accept = $this->checkPermission($user, 'repair_accept');
-            $repair->can_reject = $this->checkPermission($user, 'repair_reject');
-        }
-
-        return response()->json(['success' => true, 'data' => $repair]);
+        return response()->json([
+            'success' => true,
+            'data'    => $this->transformRepair($repair, $user)
+        ]);
     }
+
+    // =========================================================================
+    // STORE — Create Repair Order (Buyer & Admin)
+    // =========================================================================
 
     public function store(Request $request)
     {
         $user = $request->user();
 
+        // Craftsmen cannot create repairs
+        if ($this->isCraftsman($user) && !$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Craftsmen cannot create repair requests.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
-            'buyer_id'       => 'nullable|exists:buyers,id',
-            'bp_code'        => 'nullable|exists:buyers,bp_code',
-            'product_name'   => 'required|string|max:255',
-            'weight'         => 'nullable|numeric|min:0',
-            'repair_details' => 'nullable|string',
-            'sample_details' => 'nullable|string',
-            'item_given_to'  => 'nullable|string|max:255',
-            'image_proof'    => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'order_no' => 'nullable|string',
-            'repair' => 'nullable|string',
-            'ref' => 'nullable|string',
-            'notes' => 'nullable',
-            'repair_date'    => 'nullable|date',
+            'date'             => ['required', 'date'],
+            'product_name'     => ['required', 'string', 'max:255'],
+            'order_number'     => ['required', 'string', 'max:255', 'unique:repairs,order_number'],
+            'repair_or_sample' => ['required', 'in:repair,sample'],
+            'weight'           => ['nullable', 'numeric'],
+            'repair_details'   => ['nullable', 'string'],
+            'repair_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'buyer_id'         => ['nullable', 'exists:buyers,id'],
+            'bp_code'          => ['nullable', 'exists:buyers,bp_code'],
+            'notes'            => ['nullable', 'string'],
+            'reference_number' => ['nullable', 'string'],
         ]);
 
         if ($validator->fails()) {
@@ -294,325 +469,688 @@ class RepairController extends Controller
         }
 
         $imagePath = null;
-        if ($request->hasFile('image_proof')) {
-            $image     = $request->file('image_proof');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('images/repairs'), $imageName);
-            $imagePath = 'images/repairs/' . $imageName;
+        if ($request->hasFile('repair_image')) {
+            $imagePath = $request->file('repair_image')->store('repairs', 'public');
+        }
 
-            // Optional: Watermark
-            try {
-                $watermarkService = new ImageWatermarkService();
-                $watermarkService->addWatermark($imagePath, true);
-            } catch (\Exception $e) {
-                Log::error('Failed to add watermark to repair image: ' . $e->getMessage());
+        // Determine Buyer ID
+        $buyerId = null;
+        if ($this->isAdmin($user)) {
+            if ($request->filled('buyer_id')) {
+                $buyerId = $request->buyer_id;
+            } elseif ($request->filled('bp_code')) {
+                $buyer = Buyer::where('bp_code', $request->bp_code)->first();
+                $buyerId = $buyer ? $buyer->id : null;
             }
-        }
-
-        $buyerId = $request->buyer_id;
-
-        // If bp_code is provided, resolve buyer_id from it
-        if (!$buyerId && $request->filled('bp_code')) {
-            $buyer = Buyer::where('bp_code', $request->bp_code)->first();
-            $buyerId = $buyer ? $buyer->id : null;
-        }
-
-        if (!$buyerId && $this->isBuyerSide($user)) {
+        } else {
             $buyerId = $this->getBuyerId($user);
         }
 
+        if (!$buyerId) {
+            return response()->json(['success' => false, 'message' => 'Unable to determine buyer account.'], 422);
+        }
+
+        $buyer = Buyer::find($buyerId);
+        $deliveredBy = $buyer ? ($buyer->business_name ?? $buyer->name) : 'Buyer';
+
         $repair = Repair::create([
-            'buyer_id'       => $buyerId,
-            'repair_date'    => $request->repair_date ?? now()->toDateString(),
-            'product_name'   => $request->product_name,
-            'weight'         => $request->weight,
-            'repair_details' => $request->repair_details,
-            'sample_details' => $request->sample_details,
-            'item_given_to'  => $request->item_given_to,
-            'image_proof'    => $imagePath,
-            'order_no' =>$request->order_no,
-            'repair' => $request->repair,
-            'ref' => $request->ref,
-            'notes' => $request->notes,
-            'status'         => 'Pending',
+            'date'             => $request->date,
+            'buyer_id'         => $buyerId,
+            'product_name'     => $request->product_name,
+            'order_number'     => $request->order_number,
+            'repair_or_sample' => $request->repair_or_sample,
+            'weight'           => $request->weight,
+            'repair_details'   => $request->repair_details,
+            'repair_image'     => $imagePath,
+            'reference_number' => $request->reference_number,
+            'notes'            => $request->notes,
+            'item_delivered_by'=> $deliveredBy,
+            'item_received_by' => 'Pending',
+            'status'           => 'pending',
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Repair created successfully', 'data' => $repair], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair order created successfully.',
+            'data'    => $this->transformRepair($repair->load(['buyer', 'craftsman']), $user),
+        ], 201);
     }
+
+    // =========================================================================
+    // UPDATE — Edit Repair Order (Buyer: Pending only, Admin: Always, Craftsman: No edit)
+    // =========================================================================
 
     public function update(Request $request, $id)
     {
-        $user   = $request->user();
-        $admin  = $this->isAdmin($user);
+        $user = $request->user();
+        $admin = $this->isAdmin($user);
         $repair = Repair::find($id);
 
         if (!$repair) {
             return response()->json(['success' => false, 'message' => 'Repair not found'], 404);
         }
 
-        // Only Admin or the Buyer who created it can update
-        if (!$admin && (!$this->isBuyerSide($user) || $repair->buyer_id !== $this->getBuyerId($user))) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        // Rule: Craftsman does NOT have edit option
+        if ($this->isCraftsman($user) && !$admin) {
+            return response()->json(['success' => false, 'message' => 'Craftsmen are not permitted to edit repairs.'], 403);
+        }
+
+        // Rule: Buyer can only edit if status is still pending and it belongs to them
+        if (!$admin) {
+            if ($this->isBuyerSide($user)) {
+                if ((int)$repair->buyer_id !== (int)$this->getBuyerId($user)) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized – not your order.'], 403);
+                }
+                if ($repair->status !== 'pending') {
+                    return response()->json(['success' => false, 'message' => 'You can only edit orders that are still pending.'], 403);
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+            }
         }
 
         $validator = Validator::make($request->all(), [
-            'buyer_id'       => 'nullable|exists:buyers,id',
-            'bp_code'        => 'nullable|exists:buyers,bp_code',
-            'product_name'   => 'required|string|max:255',
-            'weight'         => 'nullable|numeric|min:0',
-            'repair_details' => 'nullable|string',
-            'sample_details' => 'nullable|string',
-            'item_given_to'  => 'nullable|string|max:255',
-            'image_proof'    => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'order_no' => 'nullable|string',
-            'repair' => 'nullable|string',
-            'ref' => 'nullable|string',
-            'notes' => 'nullable',
-            'repair_date'    => 'nullable|date',
+            'date'             => ['required', 'date'],
+            'product_name'     => ['required', 'string', 'max:255'],
+            'order_number'     => ['required', 'string', 'max:255', 'unique:repairs,order_number,' . $repair->id],
+            'repair_or_sample' => ['required', 'in:repair,sample'],
+            'weight'           => ['nullable', 'numeric'],
+            'repair_details'   => ['nullable', 'string'],
+            'repair_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'reference_number' => ['nullable', 'string'],
+            'notes'            => ['nullable', 'string'],
+            'craftman_code'    => ['nullable', 'exists:craftmen,craftman_code'],
+            'status'           => ['nullable', 'string'],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->only(['product_name', 'weight', 'repair_details', 'sample_details', 'item_given_to', 'repair_date', 'order_no', 'repair', 'ref', 'notes']);
-
-        $buyerId = $request->buyer_id;
-        if (!$buyerId && $request->filled('bp_code')) {
-            $buyer = Buyer::where('bp_code', $request->bp_code)->first();
-            $buyerId = $buyer ? $buyer->id : null;
-        }
-
-        if ($buyerId) {
-            $data['buyer_id'] = $buyerId;
-        }
-
-        if ($request->hasFile('image_proof')) {
-            // Delete old image if exists
-            if ($repair->image_proof && file_exists(public_path($repair->image_proof))) {
-                @unlink(public_path($repair->image_proof));
+        $imagePath = $repair->repair_image;
+        if ($request->hasFile('repair_image')) {
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
             }
+            $imagePath = $request->file('repair_image')->store('repairs', 'public');
+        }
 
-            $image     = $request->file('image_proof');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('images/repairs'), $imageName);
-            $data['image_proof'] = 'images/repairs/' . $imageName;
+        $updateData = [
+            'date'             => $request->date,
+            'product_name'     => $request->product_name,
+            'order_number'     => $request->order_number,
+            'repair_or_sample' => $request->repair_or_sample,
+            'weight'           => $request->weight,
+            'repair_details'   => $request->repair_details,
+            'repair_image'     => $imagePath,
+            'reference_number' => $request->reference_number ?? $repair->reference_number,
+            'notes'            => $request->notes ?? $repair->notes,
+        ];
 
-            // Watermark
-            try {
-                $watermarkService = new ImageWatermarkService();
-                $watermarkService->addWatermark($data['image_proof'], true);
-            } catch (\Exception $e) {
-                Log::error('Failed to add watermark to updated repair image: ' . $e->getMessage());
+        if ($admin) {
+            if ($request->filled('craftman_code')) {
+                $updateData['craftman_code'] = $request->craftman_code;
+            }
+            if ($request->filled('status')) {
+                $updateData['status'] = $request->status;
+            }
+            if ($request->filled('buyer_id')) {
+                $updateData['buyer_id'] = $request->buyer_id;
             }
         }
 
-        $repair->update($data);
+        $repair->update($updateData);
 
-        return response()->json(['success' => true, 'message' => 'Repair updated successfully', 'data' => $repair]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair order updated successfully.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
     }
+
+    // =========================================================================
+    // DESTROY — Delete Repair Order (Buyer: Pending only, Admin: Always)
+    // =========================================================================
 
     public function destroy(Request $request, $id)
     {
-        $user   = $request->user();
-        $admin  = $this->isAdmin($user);
+        $user = $request->user();
+        $admin = $this->isAdmin($user);
         $repair = Repair::find($id);
 
         if (!$repair) {
             return response()->json(['success' => false, 'message' => 'Repair not found'], 404);
         }
 
-        if (!$admin && (!$this->isBuyerSide($user) || $repair->buyer_id !== $this->getBuyerId($user))) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if ($this->isCraftsman($user) && !$admin) {
+            return response()->json(['success' => false, 'message' => 'Craftsmen cannot delete repair requests.'], 403);
         }
 
-        if ($repair->image_proof && file_exists(public_path($repair->image_proof))) {
-            @unlink(public_path($repair->image_proof));
+        if (!$admin) {
+            if ($this->isBuyerSide($user)) {
+                if ((int)$repair->buyer_id !== (int)$this->getBuyerId($user)) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized – not your order.'], 403);
+                }
+                if ($repair->status !== 'pending') {
+                    return response()->json(['success' => false, 'message' => 'You can only delete orders that are still pending.'], 403);
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+            }
+        }
+
+        if ($repair->repair_image && Storage::disk('public')->exists($repair->repair_image)) {
+            Storage::disk('public')->delete($repair->repair_image);
         }
 
         $repair->delete();
 
-        return response()->json(['success' => true, 'message' => 'Repair deleted successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair order deleted successfully.'
+        ]);
     }
 
     // =========================================================================
-    // ACTIONS
+    // WORKFLOW ACTIONS
     // =========================================================================
 
+    /**
+     * Accept Repair
+     * - Admin accepts pending repair -> status = 'received'
+     * - Craftsman accepts assigned order -> craftsman_status = 'in_progress'
+     */
     public function accept(Request $request, $id)
     {
         $user = $request->user();
-        if ($this->isCraftsman($user) && !$this->checkPermission($user, 'repair_accept')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no repair accept permission'], 403);
-        }
         $repair = Repair::findOrFail($id);
-        $repair->update(['status' => 'Accepted']);
-        return response()->json(['success' => true, 'message' => 'Repair accepted']);
+
+        if ($this->isAdmin($user)) {
+            $repair->update([
+                'status'           => 'received',
+                'item_received_by' => $user->name ?? 'Admin',
+            ]);
+            return response()->json(['success' => true, 'message' => 'Repair order accepted by admin.']);
+        }
+
+        if ($this->isCraftsman($user)) {
+            if ($repair->craftman_code !== $this->getCraftsmanCode($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized – not assigned to you.'], 403);
+            }
+            $repair->update(['craftsman_status' => 'in_progress']);
+            return response()->json(['success' => true, 'message' => 'Repair order accepted and in progress.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
     }
 
+    /**
+     * Reject Repair
+     * - Admin rejects repair or craftsman's completion
+     * - Craftsman rejects assigned order
+     */
     public function reject(Request $request, $id)
     {
         $user = $request->user();
-        if ($this->isCraftsman($user) && !$this->checkPermission($user, 'repair_reject')) {
-            return response()->json(['success' => false, 'message' => 'Forbidden – no repair reject permission'], 403);
-        }
-        $isAdmin = $this->isAdmin($user);
         $repair = Repair::findOrFail($id);
+        $reason = $request->input('reject_reason') ?: $request->input('reason', 'Rejected');
 
-        // If Admin is rejecting a Craftsman's completion
-        if ($isAdmin && $repair->status === 'Craftsman_Completed') {
+        if ($this->isAdmin($user)) {
+            if ($repair->craftsman_status === 'pending_approval') {
+                $repair->update([
+                    'craftsman_status' => 'in_progress',
+                    'notes'            => ($repair->notes ? $repair->notes . "\n" : '') . "Completion rejected by admin: " . $reason,
+                ]);
+                return response()->json(['success' => true, 'message' => 'Craftsman completion rejected and returned to craftsman.']);
+            }
+
             $repair->update([
-                'status'           => 'Allocated', // Send back to allocated
-                'craftsman_status' => 'Pending',   // Reset craftsman status
-                'reject_reason'    => $request->reject_reason,
+                'status' => 'rejected',
+                'notes'  => ($repair->notes ? $repair->notes . "\n" : '') . "Rejected: " . $reason,
             ]);
-            return response()->json(['success' => true, 'message' => 'Repair completion rejected. Sent back to craftsman.']);
+            return response()->json(['success' => true, 'message' => 'Repair order rejected by admin.']);
         }
 
-        $repair->update([
-            'status'        => 'Rejected_by_Admin',
-            'reject_reason' => $request->reject_reason,
-        ]);
-        return response()->json(['success' => true, 'message' => 'Repair rejected']);
+        if ($this->isCraftsman($user)) {
+            if ($repair->craftman_code !== $this->getCraftsmanCode($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized – not assigned to you.'], 403);
+            }
+            $repair->update([
+                'craftsman_status' => 'rejected',
+                'notes'            => ($repair->notes ? $repair->notes . "\n" : '') . "Craftsman rejected: " . $reason,
+            ]);
+            return response()->json(['success' => true, 'message' => 'Repair order rejected by craftsman.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
     }
 
+    /**
+     * Allocate Repair to Craftsman (Admin / SuperAdmin)
+     */
     public function allocate(Request $request, $id)
     {
-        $request->validate([
-            'craftsman_code'   => 'required|exists:craftmen,craftman_code',
-            'allocation_notes' => 'nullable|string',
+        $user = $request->user();
+        if (!$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – admin only.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'craftman_code'    => ['required', 'string', 'exists:craftmen,craftman_code'],
+            'item_sent_by'     => ['nullable', 'string', 'max:255'],
+            'allocation_notes' => ['nullable', 'string'],
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
 
         $repair = Repair::findOrFail($id);
         $repair->update([
-            'status'                   => 'Allocated',
-            'allocated_craftsman_code' => $request->craftsman_code,
-            'craftsman_status'         => 'Pending',
-            'allocation_notes'         => $request->allocation_notes,
+            'craftman_code'    => $request->craftman_code,
+            'status'           => 'allocated',
+            'craftsman_status' => 'pending_acceptance',
+            'item_sent_by'     => $request->item_sent_by ?? $repair->item_sent_by,
+            'notes'            => $request->allocation_notes ?? $repair->notes,
         ]);
 
-        // Notify Craftsman
-        $craftsman = Craftman::where('craftman_code', $request->craftsman_code)->first();
+        // Notify craftsman if notification class exists
+        $craftsman = Craftman::where('craftman_code', $request->craftman_code)->first();
         if ($craftsman && method_exists($craftsman, 'notify')) {
-            $craftsman->notify(new RepairAllocated($repair));
+            try {
+                $craftsman->notify(new RepairAllocated($repair));
+            } catch (\Exception $e) {
+                Log::warning('Could not notify craftsman: ' . $e->getMessage());
+            }
         }
 
-        return response()->json(['success' => true, 'message' => 'Repair allocated']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair order allocated to craftsman successfully.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
     }
 
+    /**
+     * Complete Repair
+     * - Craftsman marks complete with proof images -> craftsman_status = 'pending_approval'
+     * - Admin marks fully completed -> status = 'completed'
+     */
     public function complete(Request $request, $id)
     {
         $user = $request->user();
         $repair = Repair::findOrFail($id);
 
-        // If Craftsman marks as done
+        // Craftsman completion submission
         if ($this->isCraftsman($user)) {
-            $repair->update([
-                'status'           => 'Craftsman_Completed',
-                'craftsman_status' => 'Completed'
-            ]);
-            return response()->json(['success' => true, 'message' => 'Repair marked as completed by craftsman. Waiting for admin approval.']);
-        }
-
-        // If Admin marks as fully done
-        if ($this->isAdmin($user)) {
-            $repair->update(['status' => 'Completed']);
-            
-            // Notify Buyer
-            if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
-                $repair->buyer->notify(new RepairCompleted($repair));
+            if ($repair->craftman_code !== $this->getCraftsmanCode($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized – not assigned to you.'], 403);
             }
-            
-            return response()->json(['success' => true, 'message' => 'Repair fully completed by admin.']);
+
+            $validator = Validator::make($request->all(), [
+                'item_collected_by'                => ['required', 'string', 'max:255'],
+                'item_returned_by'                 => ['required', 'string', 'max:255'],
+                'craftsman_voucher_image'          => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+                'craftsman_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            }
+
+            $voucherPath = $repair->craftsman_voucher_image;
+            if ($request->hasFile('craftsman_voucher_image')) {
+                if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+                    Storage::disk('public')->delete($voucherPath);
+                }
+                $voucherPath = $request->file('craftsman_voucher_image')->store('repairs/vouchers', 'public');
+            }
+
+            $proofPath = $repair->craftsman_completion_proof_image;
+            if ($request->hasFile('craftsman_completion_proof_image')) {
+                if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+                    Storage::disk('public')->delete($proofPath);
+                }
+                $proofPath = $request->file('craftsman_completion_proof_image')->store('repairs/proofs', 'public');
+            }
+
+            $repair->update([
+                'craftsman_status'                 => 'pending_approval',
+                'item_collected_by'                => $request->item_collected_by,
+                'item_returned_by'                 => $request->item_returned_by,
+                'craftsman_voucher_image'          => $voucherPath,
+                'craftsman_completion_proof_image' => $proofPath,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repair completion submitted for admin approval.',
+                'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+            ]);
         }
 
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-    }
+        // Admin complete
+        if ($this->isAdmin($user)) {
+            $repair->update([
+                'status'       => 'completed',
+                'completed_at' => now(),
+            ]);
 
-    public function buyerAccept(Request $request, $id)
-    {
-        $user = $request->user();
-        $repair = Repair::findOrFail($id);
+            if ($repair->buyer && method_exists($repair->buyer, 'notify')) {
+                try {
+                    $repair->buyer->notify(new RepairCompleted($repair));
+                } catch (\Exception $e) {
+                    Log::warning('Could not notify buyer: ' . $e->getMessage());
+                }
+            }
 
-        if (!$this->isBuyerSide($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            return response()->json([
+                'success' => true,
+                'message' => 'Repair order fully completed by admin.',
+                'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+            ]);
         }
 
-        $repair->update(['status' => 'Buyer_Accepted']);
-        return response()->json(['success' => true, 'message' => 'Repair accepted by buyer']);
-    }
-
-    public function buyerReject(Request $request, $id)
-    {
-        $user = $request->user();
-        $repair = Repair::findOrFail($id);
-
-        if (!$this->isBuyerSide($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        $repair->update([
-            'status' => 'Buyer_Rejected',
-            'reject_reason' => $request->reject_reason
-        ]);
-        return response()->json(['success' => true, 'message' => 'Repair rejected by buyer']);
+        return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
     }
 
     /**
-     * Generate PDF for repairs
+     * Approve Completion (Admin / SuperAdmin approves craftsman completion)
      */
+    public function approveCompletion(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – admin only.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'item_sent_by' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $repair = Repair::findOrFail($id);
+        $repair->update([
+            'craftsman_status' => 'approved_by_superadmin',
+            'item_sent_by'     => $request->item_sent_by,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Craftsman completion approved. Ready for buyer collection/delivery.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
+    }
+
+    /**
+     * Store Item Sent By (Admin / SuperAdmin)
+     */
+    public function storeItemSentBy(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – admin only.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'item_sent_by' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $repair = Repair::findOrFail($id);
+        $repair->update(['item_sent_by' => $request->item_sent_by]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item sent by recorded successfully.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
+    }
+
+    /**
+     * Mark Buyer Completed (Admin / SuperAdmin records collection & delivery)
+     */
+    public function markBuyerCompleted(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – admin only.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'item_collected_by' => ['required', 'string', 'max:255'],
+            'item_returned_by'  => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $repair = Repair::findOrFail($id);
+        $repair->update([
+            'status'            => 'completed',
+            'item_collected_by' => $request->item_collected_by,
+            'item_returned_by'  => $request->item_returned_by,
+            'completed_at'      => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair marked as completed for buyer.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
+    }
+
+    /**
+     * Buyer Accept Completion (Buyer confirms delivery & uploads proofs)
+     */
+    public function buyerAccept(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->isBuyerSide($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized – buyer only.'], 403);
+        }
+
+        $repair = Repair::findOrFail($id);
+        if ((int)$repair->buyer_id !== (int)$this->getBuyerId($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized – not your order.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'item_accepted_by'              => ['required', 'string', 'max:255'],
+            'buyer_voucher_image'          => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+            'buyer_completion_proof_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $voucherPath = $repair->buyer_voucher_image;
+        if ($request->hasFile('buyer_voucher_image')) {
+            if ($voucherPath && Storage::disk('public')->exists($voucherPath)) {
+                Storage::disk('public')->delete($voucherPath);
+            }
+            $voucherPath = $request->file('buyer_voucher_image')->store('repairs/buyer_vouchers', 'public');
+        }
+
+        $proofPath = $repair->buyer_completion_proof_image;
+        if ($request->hasFile('buyer_completion_proof_image')) {
+            if ($proofPath && Storage::disk('public')->exists($proofPath)) {
+                Storage::disk('public')->delete($proofPath);
+            }
+            $proofPath = $request->file('buyer_completion_proof_image')->store('repairs/buyer_proofs', 'public');
+        }
+
+        $repair->update([
+            'status'                       => 'completed',
+            'item_accepted_by'             => $request->item_accepted_by,
+            'buyer_voucher_image'          => $voucherPath,
+            'buyer_completion_proof_image' => $proofPath,
+            'completed_at'                 => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair order accepted and marked as completed successfully.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
+    }
+
+    /**
+     * Buyer Reject Completion (Buyer rejects repair completion)
+     */
+    public function buyerReject(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$this->isBuyerSide($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized – buyer only.'], 403);
+        }
+
+        $repair = Repair::findOrFail($id);
+        if ((int)$repair->buyer_id !== (int)$this->getBuyerId($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized – not your order.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'reject_reason' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $repair->update([
+            'craftsman_status' => 'rejected_by_buyer',
+            'notes'            => ($repair->notes ? $repair->notes . "\n" : '') . "Buyer rejected completion: " . $request->reject_reason,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Repair completion rejected by buyer.',
+            'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
+        ]);
+    }
+
+    /**
+     * Bulk Complete (Admin / SuperAdmin)
+     */
+    public function bulkComplete(Request $request)
+    {
+        $user = $request->user();
+        if (!$this->isAdmin($user)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – admin only.'], 403);
+        }
+
+        $ids = $request->get('repair_ids') ?: $request->get('ids');
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['success' => false, 'message' => 'No repair IDs provided.'], 422);
+        }
+
+        $count = Repair::whereIn('id', $ids)->update([
+            'status'       => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} repairs successfully marked as completed."
+        ]);
+    }
+
+    // =========================================================================
+    // HELPERS — Dropdowns for Craftsmen & Buyers
+    // =========================================================================
+
+    public function helpers(Request $request)
+    {
+        $user = $request->user();
+        $admin = $this->isAdmin($user);
+
+        $craftsmen = Craftman::select('id', 'craftman_code', 'business_name', 'name')
+            ->orderBy('craftman_code')
+            ->get();
+
+        $buyers = [];
+        if ($admin) {
+            $buyers = Buyer::select('id', 'bp_code', 'business_name', 'name')
+                ->orderBy('bp_code')
+                ->get();
+        } elseif ($this->isBuyerSide($user)) {
+            $buyerId = $this->getBuyerId($user);
+            $buyers = Buyer::where('id', $buyerId)
+                ->select('id', 'bp_code', 'business_name', 'name')
+                ->get();
+        }
+
+        return response()->json([
+            'success'   => true,
+            'craftsmen' => $craftsmen,
+            'buyers'    => $buyers,
+            'types'     => [
+                ['value' => 'repair', 'label' => 'Repair'],
+                ['value' => 'sample', 'label' => 'Sample'],
+            ],
+        ]);
+    }
+
+    public function getBuyers(Request $request)
+    {
+        $user = $request->user();
+        if ($this->isAdmin($user)) {
+            $buyers = Buyer::select('id', 'bp_code', 'business_name', 'name')
+                ->orderBy('bp_code')
+                ->get();
+            return response()->json(['success' => true, 'data' => $buyers]);
+        }
+
+        if ($this->isBuyerSide($user)) {
+            $buyerId = $this->getBuyerId($user);
+            $buyer = Buyer::where('id', $buyerId)->select('id', 'bp_code', 'business_name', 'name')->first();
+            return response()->json(['success' => true, 'data' => $buyer ? [$buyer] : []]);
+        }
+
+        return response()->json(['success' => true, 'data' => []]);
+    }
+
+    public function getCraftsmen(Request $request)
+    {
+        $craftsmen = Craftman::select('id', 'craftman_code', 'business_name', 'name')
+            ->orderBy('craftman_code')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $craftsmen]);
+    }
+
+    // =========================================================================
+    // GENERATE PDF — PDF Export for Repairs
+    // =========================================================================
+
     public function generatePdf(Request $request)
     {
         $user = $request->user();
         if (!$this->checkPermission($user, 'repair_view')) {
             return response()->json(['success' => false, 'message' => 'Forbidden – no repair permission'], 403);
         }
-        $admin = $this->isAdmin($user);
 
         $query = Repair::with(['buyer', 'craftsman']);
+        $this->scopeQueryByRole($query, $user);
+        $this->applyFilters($query, $request, $user);
 
-        // ── Apply same scope filter ──
-        if (!$admin) {
-            if ($this->isCraftsman($user)) {
-                $query->where('allocated_craftsman_code', $user->craftman_code);
-            } elseif ($this->isBuyerSide($user)) {
-                $buyerId = $this->getBuyerId($user);
-                $query->where('buyer_id', $buyerId);
-            } else {
-                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
-            }
-        }
-
-        // ── Filter by IDs ──
-        if ($request->filled('repair_ids')) {
-            $ids = is_string($request->repair_ids) ? explode(',', $request->repair_ids) : $request->repair_ids;
-            $query->whereIn('id', $ids);
-        } elseif ($request->filled('ids')) {
-            $ids = is_string($request->ids) ? explode(',', $request->ids) : $request->ids;
-            $query->whereIn('id', $ids);
-        }
-
-        // ── Additional Filters (mirror index) ──
-        if ($request->filled('date_from')) {
-            $query->whereDate('repair_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('repair_date', '<=', $request->date_to);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($admin && $request->filled('buyer_id')) {
-            $query->where('buyer_id', $request->buyer_id);
-        }
-        if ($admin && $request->filled('craftsman_code')) {
-            $query->where('allocated_craftsman_code', $request->craftsman_code);
-        }
-
-        $repairs = $query->latest()->get();
+        $repairs = $query->latest('date')->get();
 
         if ($repairs->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'No repairs found'], 404);
+            return response()->json(['success' => false, 'message' => 'No repairs found matching criteria.'], 404);
         }
 
         try {
@@ -627,7 +1165,7 @@ class RepairController extends Controller
             $dompdf->render();
 
             $filename = count($repairs) === 1
-                ? "Repair_Report_" . $repairs->first()->id . ".pdf"
+                ? "Repair_Report_" . ($repairs->first()->order_number ?: $repairs->first()->id) . ".pdf"
                 : "Repairs_Report_" . now()->format('Ymd_His') . ".pdf";
 
             return response($dompdf->output())
@@ -636,7 +1174,7 @@ class RepairController extends Controller
                 ->header('Access-Control-Expose-Headers', 'Content-Disposition');
         } catch (\Exception $e) {
             Log::error('Repair PDF Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to generate PDF'], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
         }
     }
 }

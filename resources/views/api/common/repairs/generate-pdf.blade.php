@@ -81,12 +81,13 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>ID</th>
+                <th>Order No</th>
                 <th>Date</th>
+                <th>Type</th>
                 <th>Buyer</th>
                 <th>Product Name</th>
                 <th>Weight</th>
-                <th>Repair Details</th>
+                <th>Details</th>
                 <th>Status</th>
                 <th>Craftsman</th>
             </tr>
@@ -95,18 +96,19 @@
             @foreach($repairs as $index => $repair)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>#{{ $repair->id }}</td>
-                <td>{{ \Carbon\Carbon::parse($repair->repair_date)->format('d M Y') }}</td>
-                <td>{{ $repair->buyer ? $repair->buyer->business_name : 'N/A' }}</td>
+                <td>{{ $repair->order_number ?? '#' . $repair->id }}</td>
+                <td>{{ \Carbon\Carbon::parse($repair->date ?? $repair->created_at)->format('d M Y') }}</td>
+                <td><span style="text-transform: capitalize;">{{ $repair->repair_or_sample ?? 'Repair' }}</span></td>
+                <td>{{ $repair->buyer ? ($repair->buyer->business_name ?? $repair->buyer->name) : 'N/A' }}</td>
                 <td>{{ $repair->product_name }}</td>
                 <td>{{ $repair->weight ?? '0' }}</td>
-                <td>{{ $repair->repair_details }}</td>
+                <td>{{ $repair->repair_details ?? '-' }}</td>
                 <td>
                     <span class="status">
                         {{ str_replace('_', ' ', $repair->status) }}
                     </span>
                 </td>
-                <td>{{ $repair->craftsman ? $repair->craftsman->name : ($repair->allocated_craftsman_code ?? 'Not Allocated') }}</td>
+                <td>{{ $repair->craftsman ? ($repair->craftsman->business_name ?? $repair->craftsman->name) : ($repair->craftman_code ?? 'Not Allocated') }}</td>
             </tr>
             @endforeach
         </tbody>

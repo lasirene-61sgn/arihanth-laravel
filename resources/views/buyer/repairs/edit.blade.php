@@ -3,8 +3,13 @@
 @section('content')
 <div class="container px-4 my-4">
     <h2>Edit Repair / Sample Request (#{{ $repair->order_number }})</h2>
-    <form action="{{ route('buyer.repairs.update', $repair->id) }}" method="POST" enctype="multipart/form-data" class="mt-3">
+    <form action="{{ route('buyer.repairs.update', array_merge(['repair' => $repair->id], request()->query())) }}" method="POST" enctype="multipart/form-data" class="mt-3">
         @csrf @method('PUT')
+        @foreach(request()->query() as $key => $val)
+            @if(!in_array($key, ['_token', '_method']) && is_string($val))
+                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+            @endif
+        @endforeach
         <div class="mb-3">
             <label class="form-label">Date <span class="text-danger">*</span></label>
             <input type="date" name="date" class="form-control" value="{{ $repair->date }}" required>
@@ -45,7 +50,7 @@
             @endif
         </div>
         <button type="submit" class="btn btn-primary">Update Request</button>
-        <a href="{{ route('buyer.repairs.index') }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ route('buyer.repairs.index', request()->query()) }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 @endsection

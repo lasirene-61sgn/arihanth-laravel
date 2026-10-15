@@ -407,16 +407,24 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
 
     // --- Repairs ---
     Route::get('/repairs', [\App\Http\Controllers\API\Common\RepairController::class, 'index'])->name('repairs.index');
+    Route::get('/repairs/helpers', [\App\Http\Controllers\API\Common\RepairController::class, 'helpers'])->name('repairs.helpers');
+    Route::get('/repairs/helpers/buyers', [\App\Http\Controllers\API\Common\RepairController::class, 'getBuyers'])->name('repairs.helpers.buyers');
+    Route::get('/repairs/helpers/craftsmen', [\App\Http\Controllers\API\Common\RepairController::class, 'getCraftsmen'])->name('repairs.helpers.craftsmen');
     Route::get('/repairs/generate-pdf', [\App\Http\Controllers\API\Common\RepairController::class, 'generatePdf'])->name('repairs.generate-pdf');
+    Route::post('/repairs/bulk-complete', [\App\Http\Controllers\API\Common\RepairController::class, 'bulkComplete'])->name('repairs.bulk-complete');
     Route::post('/repairs', [\App\Http\Controllers\API\Common\RepairController::class, 'store'])->name('repairs.store');
     Route::get('/repairs/{id}', [\App\Http\Controllers\API\Common\RepairController::class, 'show'])->name('repairs.show')->where('id', '[0-9]+');
     Route::post('/repairs/{id}', [\App\Http\Controllers\API\Common\RepairController::class, 'update'])->name('repairs.update')->where('id', '[0-9]+');
+    Route::put('/repairs/{id}', [\App\Http\Controllers\API\Common\RepairController::class, 'update'])->name('repairs.update.put')->where('id', '[0-9]+');
     Route::delete('/repairs/{id}', [\App\Http\Controllers\API\Common\RepairController::class, 'destroy'])->name('repairs.destroy')->where('id', '[0-9]+');
     // Actions
     Route::post('/repairs/{id}/accept', [\App\Http\Controllers\API\Common\RepairController::class, 'accept'])->name('repairs.accept')->where('id', '[0-9]+');
     Route::post('/repairs/{id}/reject', [\App\Http\Controllers\API\Common\RepairController::class, 'reject'])->name('repairs.reject')->where('id', '[0-9]+');
     Route::post('/repairs/{id}/allocate', [\App\Http\Controllers\API\Common\RepairController::class, 'allocate'])->name('repairs.allocate')->where('id', '[0-9]+');
     Route::post('/repairs/{id}/complete', [\App\Http\Controllers\API\Common\RepairController::class, 'complete'])->name('repairs.complete')->where('id', '[0-9]+');
+    Route::post('/repairs/{id}/approve-completion', [\App\Http\Controllers\API\Common\RepairController::class, 'approveCompletion'])->name('repairs.approve-completion')->where('id', '[0-9]+');
+    Route::post('/repairs/{id}/store-item-sent-by', [\App\Http\Controllers\API\Common\RepairController::class, 'storeItemSentBy'])->name('repairs.store-item-sent-by')->where('id', '[0-9]+');
+    Route::post('/repairs/{id}/buyer-complete', [\App\Http\Controllers\API\Common\RepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete')->where('id', '[0-9]+');
     Route::post('/repairs/{id}/buyer-accept', [\App\Http\Controllers\API\Common\RepairController::class, 'buyerAccept'])->name('repairs.buyer-accept')->where('id', '[0-9]+');
     Route::post('/repairs/{id}/buyer-reject', [\App\Http\Controllers\API\Common\RepairController::class, 'buyerReject'])->name('repairs.buyer-reject')->where('id', '[0-9]+');
 

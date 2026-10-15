@@ -24,7 +24,11 @@ class RepairController extends Controller
         } elseif ($tab === 'accepted') {
             $query->where('status', 'accepted');
         } elseif ($tab === 'allocated') {
-            $query->where('status', 'allocated')->where('craftsman_status', '!=', 'pending_approval');
+            $query->where('status', 'allocated')
+                  ->where(function ($q) {
+                      $q->whereNull('craftsman_status')
+                        ->orWhere('craftsman_status', '!=', 'pending_approval');
+                  });
         } elseif ($tab === 'craftsman_approval') {
             $query->where('craftsman_status', 'pending_approval');
         } elseif ($tab === 'approval') {
@@ -38,8 +42,51 @@ class RepairController extends Controller
             $query->where('status', 'rejected');
         }
 
-        $repairs = $query->latest()->paginate(15);
-        $craftsmen = Craftman::all();
+        // Craftsman filter
+        if ($request->filled('craftsman_filter')) {
+            $query->where('craftman_code', $request->craftsman_filter);
+        }
+
+        // Buyer filter
+        if ($request->filled('buyer_filter')) {
+            $buyerVal = $request->buyer_filter;
+            $query->where(function ($q) use ($buyerVal) {
+                $q->where('buyer_id', $buyerVal)
+                  ->orWhereHas('buyer', function ($bq) use ($buyerVal) {
+                      $bq->where('bp_code', $buyerVal);
+                  });
+            });
+        }
+
+        // Repair or Sample filter
+        if ($request->filled('repair_or_sample')) {
+            $query->where('repair_or_sample', $request->repair_or_sample);
+        }
+
+        // Date-wise filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('date', '<=', $request->to_date);
+        }
+        if ($request->filled('date') && !$request->filled('from_date') && !$request->filled('to_date')) {
+            $query->whereDate('date', $request->date);
+        }
+
+        // General search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('product_name', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
+            });
+        }
+
+        $repairs = $query->latest()->paginate(15)->withQueryString();
+        $craftsmen = Craftman::orderBy('craftman_code')->get();
+        $buyers = Buyer::orderBy('bp_code')->get();
 
         $returnedNames = Repair::whereNotNull('item_returned_by')->distinct()->pluck('item_returned_by');
         $collectedNames = Repair::whereNotNull('item_collected_by')->distinct()->pluck('item_collected_by');
@@ -50,6 +97,7 @@ class RepairController extends Controller
             'repairs',
             'tab',
             'craftsmen',
+            'buyers',
             'returnedNames',
             'collectedNames',
             'sentNames',
@@ -180,7 +228,8 @@ class RepairController extends Controller
 
         $repair->update([
             'status' => 'allocated',
-            'craftman_code' => $request->craftman_code
+            'craftman_code' => $request->craftman_code,
+            'craftsman_status' => 'pending_acceptance',
         ]);
 
         return back()->with('success', 'Repair order allocated to craftman successfully.');
@@ -249,7 +298,11 @@ class RepairController extends Controller
         // Update the record
         $repair->update($validatedData);
 
-        return redirect()->route('super-admin.repairs.index')
+        $redirectParams = array_filter($request->only([
+            'tab', 'page', 'craftsman_filter', 'buyer_filter', 'repair_or_sample', 'from_date', 'to_date', 'date', 'search'
+        ]), fn($v) => !is_null($v) && $v !== '');
+
+        return redirect()->route('super-admin.repairs.index', $redirectParams)
             ->with('success', 'Repair/Sample record updated successfully.');
     }
 
@@ -292,7 +345,7 @@ class RepairController extends Controller
     }
 
     // Updated destroy method to clean up all 5 possible images
-    public function destroy(Repair $repair)
+    public function destroy(Request $request, Repair $repair)
     {
         $imageFields = [
             'repair_image',
@@ -310,7 +363,11 @@ class RepairController extends Controller
 
         $repair->delete();
 
-        return redirect()->route('super-admin.repairs.index')
+        $redirectParams = array_filter($request->only([
+            'tab', 'page', 'craftsman_filter', 'buyer_filter', 'repair_or_sample', 'from_date', 'to_date', 'date', 'search'
+        ]), fn($v) => !is_null($v) && $v !== '');
+
+        return redirect()->route('super-admin.repairs.index', $redirectParams)
             ->with('success', 'Repair/Sample record deleted successfully.');
     }
 }

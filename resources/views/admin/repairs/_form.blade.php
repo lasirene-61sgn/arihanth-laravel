@@ -116,6 +116,6 @@
     <!-- Submit Button -->
     <div class="col-12 mt-4">
         <button type="submit" class="btn btn-success">{{ $buttonText }}</button>
-        <a href="{{ route('admin.repairs.index') }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ route('admin.repairs.index', request()->query()) }}" class="btn btn-secondary">Cancel</a>
     </div>
 </div>

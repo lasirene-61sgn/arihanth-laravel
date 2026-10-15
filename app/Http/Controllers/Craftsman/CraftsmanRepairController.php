@@ -11,16 +11,22 @@ class CraftsmanRepairController extends Controller
 {
     public function index(Request $request)
     {
-        // Assuming you store authenticated craftsman code in session or auth user
-        // e.g., $craftmanCode = auth()->user()->craftman_code; or session('craftman_code');
-        $craftmanCode = session('craftman_code', 'CA001'); // Replace with your auth logic
+        $craftmanCode = session('craftman_code', 'CA001');
+        if (auth()->guard('craftsman')->check()) {
+            $craftmanCode = auth()->guard('craftsman')->user()->craftman_code;
+        } elseif (auth()->check() && isset(auth()->user()->craftman_code)) {
+            $craftmanCode = auth()->user()->craftman_code;
+        }
 
         $tab = $request->get('tab', 'assigned'); // assigned, in_process, pending_approval, completed
 
         $query = Repair::with('buyer')->where('craftman_code', $craftmanCode);
 
         if ($tab === 'assigned') {
-            $query->where('status', 'allocated')->where('craftsman_status', 'pending_acceptance');
+            $query->where('status', 'allocated')->where(function ($q) {
+                $q->whereNull('craftsman_status')
+                  ->orWhere('craftsman_status', 'pending_acceptance');
+            });
         } elseif ($tab === 'in_process') {
             $query->where('status', 'allocated')->where('craftsman_status', 'in_process');
         } elseif ($tab === 'pending_approval') {
@@ -29,7 +35,33 @@ class CraftsmanRepairController extends Controller
             $query->where('status', 'completed');
         }
 
-        $repairs = $query->latest()->paginate(15);
+        // Repair or Sample filter
+        if ($request->filled('repair_or_sample')) {
+            $query->where('repair_or_sample', $request->repair_or_sample);
+        }
+
+        // Date-wise filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('date', '<=', $request->to_date);
+        }
+        if ($request->filled('date') && !$request->filled('from_date') && !$request->filled('to_date')) {
+            $query->whereDate('date', $request->date);
+        }
+
+        // General search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('product_name', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
+            });
+        }
+
+        $repairs = $query->latest()->paginate(15)->withQueryString();
 
         return view('craftsman.repairs.index', compact('repairs', 'tab'));
     }

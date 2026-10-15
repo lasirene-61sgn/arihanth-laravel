@@ -30,7 +30,33 @@ class BuyerRepairController extends Controller
             $query->where('status', 'completed');
         }
 
-        $repairs = $query->latest()->paginate(15);
+        // Repair or Sample filter
+        if ($request->filled('repair_or_sample')) {
+            $query->where('repair_or_sample', $request->repair_or_sample);
+        }
+
+        // Date-wise filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('date', '<=', $request->to_date);
+        }
+        if ($request->filled('date') && !$request->filled('from_date') && !$request->filled('to_date')) {
+            $query->whereDate('date', $request->date);
+        }
+
+        // General search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('product_name', 'like', "%{$search}%")
+                  ->orWhere('reference_number', 'like', "%{$search}%");
+            });
+        }
+
+        $repairs = $query->latest()->paginate(15)->withQueryString();
 
         return view('buyer.repairs.index', compact('repairs', 'tab', 'currentBuyer'));
     }
@@ -129,12 +155,14 @@ class BuyerRepairController extends Controller
             'repair_image' => $imagePath,
         ]);
 
-        return redirect()->route('buyer.repairs.index')->with('success', 'Repair order updated successfully.');
+        $redirectParams = array_filter($request->only([
+            'tab', 'page', 'repair_or_sample', 'from_date', 'to_date', 'date', 'search'
+        ]), fn($v) => !is_null($v) && $v !== '');
+
+        return redirect()->route('buyer.repairs.index', $redirectParams)->with('success', 'Repair order updated successfully.');
     }
 
-
-
-    public function destroy(Repair $repair)
+    public function destroy(Request $request, Repair $repair)
     {
         if ($repair->status !== 'pending') {
             return redirect()->route('buyer.repairs.index')->with('error', 'You can only delete orders that are still pending.');
@@ -146,7 +174,11 @@ class BuyerRepairController extends Controller
 
         $repair->delete();
 
-        return redirect()->route('buyer.repairs.index')->with('success', 'Repair order deleted successfully.');
+        $redirectParams = array_filter($request->only([
+            'tab', 'page', 'repair_or_sample', 'from_date', 'to_date', 'date', 'search'
+        ]), fn($v) => !is_null($v) && $v !== '');
+
+        return redirect()->route('buyer.repairs.index', $redirectParams)->with('success', 'Repair order deleted successfully.');
     }
 
     public function acceptCompletion(Request $request, Repair $repair)

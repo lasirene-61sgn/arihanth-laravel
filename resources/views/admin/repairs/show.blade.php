@@ -4,7 +4,7 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center my-4">
         <h2 class="mb-0">Repair & Sample Details (#{{ $repair->order_number }})</h2>
-        <a href="{{ route('admin.repairs.index') }}" class="btn btn-secondary">Back to List</a>
+        <a href="{{ route('admin.repairs.index', request()->query()) }}" class="btn btn-secondary">Back to List</a>
     </div>
 
     <!-- Order Information Card -->
