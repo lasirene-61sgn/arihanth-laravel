@@ -902,12 +902,25 @@ class ChatApiController extends Controller
             $conversation->update(['last_message_at' => now()]);
         }
 
+        $targetSummary = $this->formatUserSummary($target);
         return response()->json([
-            'success' => true,
-            'message' => 'Conversation initialized successfully.',
-            'data'    => [
+            'success'         => true,
+            'message'         => 'Conversation initialized successfully.',
+            'id'              => (int) $conversation->id,
+            'conversation_id' => (int) $conversation->id,
+            'is_group'        => false,
+            'chat_type'       => 'direct',
+            'channel_name'    => 'private-conversation.' . $conversation->id,
+            'partner'         => $targetSummary,
+            'user'            => $targetSummary,
+            'data'            => [
                 'id'              => (int) $conversation->id,
-                'partner'         => $this->formatUserSummary($target),
+                'conversation_id' => (int) $conversation->id,
+                'is_group'        => false,
+                'chat_type'       => 'direct',
+                'channel_name'    => 'private-conversation.' . $conversation->id,
+                'partner'         => $targetSummary,
+                'user'            => $targetSummary,
                 'last_message_at' => optional($conversation->last_message_at)->toISOString(),
                 'initial_message' => $initialMessage ? $this->formatMessageSummary($initialMessage) : null,
             ]
@@ -1737,10 +1750,28 @@ class ChatApiController extends Controller
         }
 
         // Return group with full details
+        $groupFresh = $group->fresh(['participants.user', 'creator']);
+        $groupSummary = $this->formatGroupSummary($groupFresh);
         return response()->json([
-            'success' => true,
-            'message' => 'Chat group created successfully.',
-            'data'    => $this->formatGroupSummary($group->fresh(['participants.user', 'creator']))
+            'success'         => true,
+            'message'         => 'Chat group created successfully.',
+            'id'              => (int) $group->id,
+            'conversation_id' => (int) $group->id,
+            'chat_group_id'   => (int) $group->id,
+            'is_group'        => true,
+            'chat_type'       => 'group',
+            'channel_name'    => 'private-conversation.' . $group->id,
+            'name'            => $group->name,
+            'group'           => $groupSummary,
+            'data'            => array_merge([
+                'id'              => (int) $group->id,
+                'conversation_id' => (int) $group->id,
+                'chat_group_id'   => (int) $group->id,
+                'is_group'        => true,
+                'chat_type'       => 'group',
+                'channel_name'    => 'private-conversation.' . $group->id,
+                'name'            => $group->name,
+            ], $groupSummary)
         ], 201);
     }
 
@@ -1764,9 +1795,27 @@ class ChatApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized to view this group.'], 403);
         }
 
+        $groupSummary = $this->formatGroupSummary($group, $user, true);
+
         return response()->json([
-            'success' => true,
-            'data'    => $this->formatGroupSummary($group, $user, true)
+            'success'         => true,
+            'id'              => (int) $group->id,
+            'conversation_id' => (int) $group->id,
+            'chat_group_id'   => (int) $group->id,
+            'is_group'        => true,
+            'chat_type'       => 'group',
+            'channel_name'    => 'private-conversation.' . $group->id,
+            'name'            => $group->name,
+            'group'           => $groupSummary,
+            'data'            => array_merge([
+                'id'              => (int) $group->id,
+                'conversation_id' => (int) $group->id,
+                'chat_group_id'   => (int) $group->id,
+                'is_group'        => true,
+                'chat_type'       => 'group',
+                'channel_name'    => 'private-conversation.' . $group->id,
+                'name'            => $group->name,
+            ], $groupSummary)
         ]);
     }
 
