@@ -29,7 +29,7 @@ class RepairController extends Controller
     private function isAdmin($user): bool
     {
         if (!$user) return false;
-        return in_array($user->role ?? '', ['super_admin', 'admin'])
+        return in_array($user->role ?? '', ['super_admin', 'admin', 'process_owner'])
             || $user instanceof ProcessOwner;
     }
 
@@ -68,11 +68,11 @@ class RepairController extends Controller
         if ($user instanceof Buyer) {
             return $user->id;
         }
-        if (isset($user->bp_code)) {
+        if (!empty($user->bp_code)) {
             $buyer = Buyer::where('bp_code', $user->bp_code)->first();
-            return $buyer ? $buyer->id : null;
+            if ($buyer) return $buyer->id;
         }
-        if (isset($user->buyer_id)) {
+        if (!empty($user->buyer_id)) {
             return (int)$user->buyer_id;
         }
         return null;
@@ -84,6 +84,48 @@ class RepairController extends Controller
         if ($this->isCraftsman($user)) return 'craftsman';
         if ($this->isBuyerSide($user)) return 'buyer';
         return 'guest';
+    }
+
+    /**
+     * Define proper tabs for SuperAdmin, Craftsman, and Buyer matching web panels
+     */
+    private function getTabsForRole(string $role, array $counts = []): array
+    {
+        if ($role === 'admin') {
+            return [
+                ['key' => 'new',                'label' => 'New Orders (Pending)',     'count' => $counts['new'] ?? 0],
+                ['key' => 'accepted',           'label' => 'Accepted',                 'count' => $counts['accepted'] ?? 0],
+                ['key' => 'allocated',          'label' => 'Allocated to Craftman',    'count' => $counts['allocated'] ?? 0],
+                ['key' => 'craftsman_approval', 'label' => 'Craftsman Approval',       'count' => $counts['craftsman_approval'] ?? 0],
+                ['key' => 'approval',           'label' => 'Approval',                 'count' => $counts['approval'] ?? 0],
+                ['key' => 'buyer_approval',     'label' => 'Buyer Approval',           'count' => $counts['buyer_approval'] ?? 0],
+                ['key' => 'completed',          'label' => 'Completed',                'count' => $counts['completed'] ?? 0],
+                ['key' => 'rejected',           'label' => 'Rejected',                 'count' => $counts['rejected'] ?? 0],
+                ['key' => 'all',                'label' => 'All Records',              'count' => $counts['all'] ?? 0],
+            ];
+        }
+
+        if ($role === 'craftsman') {
+            return [
+                ['key' => 'assigned',         'label' => 'New Assigned',                  'count' => $counts['assigned'] ?? 0],
+                ['key' => 'in_process',        'label' => 'In Process',                    'count' => $counts['in_process'] ?? 0],
+                ['key' => 'pending_approval',  'label' => 'Pending Superadmin Approval',   'count' => $counts['pending_approval'] ?? 0],
+                ['key' => 'completed',         'label' => 'Completed',                    'count' => $counts['completed'] ?? 0],
+                ['key' => 'all',               'label' => 'All Orders',                   'count' => $counts['all'] ?? 0],
+            ];
+        }
+
+        // Buyer role (includes both high-level active/approval and granular status tabs)
+        return [
+            ['key' => 'active',    'label' => 'In Progress / Active',  'count' => $counts['active'] ?? 0],
+            ['key' => 'approval',  'label' => 'Pending Acceptance',    'count' => $counts['approval'] ?? 0],
+            ['key' => 'completed', 'label' => 'Completed',             'count' => $counts['completed'] ?? 0],
+            ['key' => 'new',       'label' => 'New Orders (Pending)',  'count' => $counts['new'] ?? 0],
+            ['key' => 'accepted',  'label' => 'Accepted',              'count' => $counts['accepted'] ?? 0],
+            ['key' => 'allocated', 'label' => 'Allocated',             'count' => $counts['allocated'] ?? 0],
+            ['key' => 'rejected',  'label' => 'Rejected',              'count' => $counts['rejected'] ?? 0],
+            ['key' => 'all',       'label' => 'All Orders',            'count' => $counts['all'] ?? 0],
+        ];
     }
 
     private function checkPermission($user, $specificPermission = 'repair_view'): bool
@@ -222,8 +264,8 @@ class RepairController extends Controller
             }
         }
 
-        // Explicit status filter
-        if ($request->filled('status')) {
+        // Explicit status filter (only when tab is not provided)
+        if ($request->filled('status') && !$request->filled('tab')) {
             $query->where('status', $request->status);
         }
 
@@ -284,89 +326,139 @@ class RepairController extends Controller
         $counts = [];
         $activeTab = $request->get('tab');
 
-        // 2. Tab definitions & counts based on Role
+        // 2. Tab definitions & counts based on Role (matching website panels)
         if ($role === 'admin') {
-            $activeTab = $activeTab ?: 'all';
-
             $counts = [
-                'all'       => (clone $baseQuery)->count(),
-                'received'  => (clone $baseQuery)->where('status', 'pending')->count(),
-                'allocated' => (clone $baseQuery)->where('status', 'allocated')->where(function ($q) {
-                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
-                })->count(),
-                'completed' => (clone $baseQuery)->where(function ($q) {
-                    $q->where('craftsman_status', 'pending_approval')->orWhere('status', 'completed');
-                })->count(),
+                'all'                => (clone $baseQuery)->count(),
+                'new'                => (clone $baseQuery)->whereIn('status', ['pending', 'Pending'])->count(),
+                'accepted'           => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted'])->count(),
+                'allocated'          => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
+                                          $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
+                                      })->count(),
+                'craftsman_approval' => (clone $baseQuery)->where('craftsman_status', 'pending_approval')->count(),
+                'approval'           => (clone $baseQuery)->where('craftsman_status', 'approved_by_superadmin')->whereNull('item_sent_by')->count(),
+                'buyer_approval'     => (clone $baseQuery)->where('craftsman_status', 'approved_by_superadmin')->whereNotNull('item_sent_by')->whereNotIn('status', ['completed', 'Completed'])->count(),
+                'completed'          => (clone $baseQuery)->whereIn('status', ['completed', 'Completed'])->count(),
+                'rejected'           => (clone $baseQuery)->whereIn('status', ['rejected', 'Rejected'])->count(),
             ];
+
+            // Backward compatibility alias
+            $counts['received'] = $counts['new'];
+
+            // Normalize activeTab
+            $activeTab = match ($activeTab) {
+                'pending', 'received'                     => 'new',
+                'craftsman-approval'                      => 'craftsman_approval',
+                'buyer-approval'                          => 'buyer_approval',
+                default                                   => ($activeTab ?: 'new')
+            };
 
             // Apply selected tab condition to query
-            if ($activeTab === 'received') {
-                $baseQuery->where('status', 'pending');
+            if ($activeTab === 'new') {
+                $baseQuery->whereIn('status', ['pending', 'Pending']);
+            } elseif ($activeTab === 'accepted') {
+                $baseQuery->whereIn('status', ['accepted', 'Accepted']);
             } elseif ($activeTab === 'allocated') {
-                $baseQuery->where('status', 'allocated')->where(function ($q) {
+                $baseQuery->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
                     $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
                 });
+            } elseif ($activeTab === 'craftsman_approval') {
+                $baseQuery->where('craftsman_status', 'pending_approval');
+            } elseif ($activeTab === 'approval') {
+                $baseQuery->where('craftsman_status', 'approved_by_superadmin')->whereNull('item_sent_by');
+            } elseif ($activeTab === 'buyer_approval') {
+                $baseQuery->where('craftsman_status', 'approved_by_superadmin')->whereNotNull('item_sent_by')->whereNotIn('status', ['completed', 'Completed']);
+            } elseif ($activeTab === 'completed') {
+                $baseQuery->whereIn('status', ['completed', 'Completed']);
+            } elseif ($activeTab === 'rejected') {
+                $baseQuery->whereIn('status', ['rejected', 'Rejected']);
+            } // if 'all', return all records
+
+        } elseif ($role === 'craftsman') {
+            $counts = [
+                'all'              => (clone $baseQuery)->count(),
+                'assigned'         => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
+                                        $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['pending_acceptance', 'allocated', 'Pending', 'pending']);
+                                    })->count(),
+                'in_process'       => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->where('craftsman_status', 'in_process')->count(),
+                'pending_approval' => (clone $baseQuery)->where('craftsman_status', 'pending_approval')->count(),
+                'completed'        => (clone $baseQuery)->where(function ($q) {
+                                        $q->whereIn('status', ['completed', 'Completed'])
+                                          ->orWhereIn('craftsman_status', ['completed', 'Completed', 'approved_by_superadmin']);
+                                    })->count(),
+            ];
+
+            // Normalize activeTab
+            $activeTab = match ($activeTab) {
+                'new', 'new_assigned', 'new-assigned'     => 'assigned',
+                'in-process'                              => 'in_process',
+                'pending-approval'                        => 'pending_approval',
+                default                                   => ($activeTab ?: 'assigned')
+            };
+
+            // Apply selected tab condition to query
+            if ($activeTab === 'assigned') {
+                $baseQuery->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['pending_acceptance', 'allocated', 'Pending', 'pending']);
+                });
+            } elseif ($activeTab === 'in_process') {
+                $baseQuery->whereIn('status', ['allocated', 'Allocated'])->where('craftsman_status', 'in_process');
+            } elseif ($activeTab === 'pending_approval') {
+                $baseQuery->where('craftsman_status', 'pending_approval');
             } elseif ($activeTab === 'completed') {
                 $baseQuery->where(function ($q) {
-                    $q->where('craftsman_status', 'pending_approval')->orWhere('status', 'completed');
+                    $q->whereIn('status', ['completed', 'Completed'])
+                      ->orWhereIn('craftsman_status', ['completed', 'Completed', 'approved_by_superadmin']);
                 });
-            }
-        } elseif ($role === 'craftsman') {
-            $activeTab = $activeTab ?: 'assigned';
+            } // if 'all', return all records
 
-            $counts = [
-                'assigned'  => (clone $baseQuery)->where('status', 'allocated')->where(function ($q) {
-                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', 'pending_acceptance');
-                })->count(),
-                'completed' => (clone $baseQuery)->where(function ($q) {
-                    $q->whereIn('craftsman_status', ['completed', 'pending_approval', 'approved_by_superadmin'])
-                      ->orWhere('status', 'completed');
-                })->count(),
-                'all'       => (clone $baseQuery)->count(),
-            ];
-
-            if ($activeTab === 'completed') {
-                $baseQuery->where(function ($q) {
-                    $q->whereIn('craftsman_status', ['completed', 'pending_approval', 'approved_by_superadmin'])
-                      ->orWhere('status', 'completed');
-                });
-            } elseif ($activeTab === 'all') {
-                // all assigned to this craftsman
-            } else { // default 'assigned'
-                $baseQuery->where('status', 'allocated')->where(function ($q) {
-                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', 'pending_acceptance');
-                });
-            }
         } elseif ($role === 'buyer') {
-            $activeTab = $activeTab ?: 'active';
-
             $counts = [
-                'active'    => (clone $baseQuery)->where('status', '!=', 'completed')->where(function ($q) {
-                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
-                })->count(),
-                'approval'  => (clone $baseQuery)->where('craftsman_status', 'approved_by_superadmin')
-                    ->whereNotNull('item_sent_by')
-                    ->where('status', '!=', 'completed')->count(),
-                'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
                 'all'       => (clone $baseQuery)->count(),
+                'active'    => (clone $baseQuery)->whereNotIn('status', ['completed', 'Completed'])->where(function ($q) {
+                                $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
+                            })->count(),
+                'approval'  => (clone $baseQuery)->where('craftsman_status', 'approved_by_superadmin')
+                                ->whereNotNull('item_sent_by')
+                                ->whereNotIn('status', ['completed', 'Completed'])->count(),
+                'completed' => (clone $baseQuery)->whereIn('status', ['completed', 'Completed'])->count(),
+                'new'       => (clone $baseQuery)->whereIn('status', ['pending', 'Pending'])->count(),
+                'accepted'  => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted'])->count(),
+                'allocated' => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->count(),
+                'rejected'  => (clone $baseQuery)->whereIn('status', ['rejected', 'Rejected'])->count(),
             ];
 
-            if ($activeTab === 'approval') {
+            // Normalize activeTab
+            $activeTab = match ($activeTab) {
+                'in_progress', 'in-progress'              => 'active',
+                'pending_acceptance', 'pending-acceptance'=> 'approval',
+                'pending'                                 => 'new',
+                default                                   => ($activeTab ?: 'active')
+            };
+
+            // Apply selected tab condition to query
+            if ($activeTab === 'active') {
+                $baseQuery->whereNotIn('status', ['completed', 'Completed'])->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
+                });
+            } elseif ($activeTab === 'approval') {
                 $baseQuery->where('craftsman_status', 'approved_by_superadmin')
                     ->whereNotNull('item_sent_by')
-                    ->where('status', '!=', 'completed');
+                    ->whereNotIn('status', ['completed', 'Completed']);
             } elseif ($activeTab === 'completed') {
-                $baseQuery->where('status', 'completed');
-            } elseif ($activeTab === 'all') {
-                // all for this buyer
-            } else { // default 'active'
-                $baseQuery->where('status', '!=', 'completed')->where(function ($q) {
-                    $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'approved_by_superadmin');
-                });
-            }
+                $baseQuery->whereIn('status', ['completed', 'Completed']);
+            } elseif ($activeTab === 'new') {
+                $baseQuery->whereIn('status', ['pending', 'Pending']);
+            } elseif ($activeTab === 'accepted') {
+                $baseQuery->whereIn('status', ['accepted', 'Accepted']);
+            } elseif ($activeTab === 'allocated') {
+                $baseQuery->whereIn('status', ['allocated', 'Allocated']);
+            } elseif ($activeTab === 'rejected') {
+                $baseQuery->whereIn('status', ['rejected', 'Rejected']);
+            } // if 'all', return all records
         }
 
-        // Sorting
+        // 3. Sorting
         $sortBy = $request->get('sort_by', 'date');
         $sortOrder = strtolower($request->get('sort_order', 'desc'));
         if (!in_array($sortBy, ['id', 'date', 'order_number', 'product_name', 'weight', 'status', 'created_at'])) {
@@ -378,7 +470,9 @@ class RepairController extends Controller
 
         $baseQuery->with(['buyer', 'craftsman'])->orderBy($sortBy, $sortOrder);
 
-        // Print export (Full unpaginated data)
+        $tabs = $this->getTabsForRole($role, $counts);
+
+        // 4. Print export (Full unpaginated data)
         if ($request->has('print')) {
             $repairs = $baseQuery->get();
             $repairs->transform(fn($repair) => $this->transformRepair($repair, $user));
@@ -387,11 +481,12 @@ class RepairController extends Controller
                 'role'       => $role,
                 'active_tab' => $activeTab,
                 'counts'     => $counts,
+                'tabs'       => $tabs,
                 'data'       => $repairs,
             ]);
         }
 
-        // Paginated Response
+        // 5. Paginated Response
         $perPage = (int)$request->get('per_page', 15);
         $repairs = $baseQuery->paginate($perPage);
         $repairs->getCollection()->transform(fn($repair) => $this->transformRepair($repair, $user));
@@ -401,6 +496,7 @@ class RepairController extends Controller
             'role'       => $role,
             'active_tab' => $activeTab,
             'counts'     => $counts,
+            'tabs'       => $tabs,
             'data'       => $repairs,
         ]);
     }
@@ -452,9 +548,9 @@ class RepairController extends Controller
 
         $validator = Validator::make($request->all(), [
             'date'             => ['required', 'date'],
-            'product_name'     => ['required', 'string', 'max:255'],
-            'order_number'     => ['required', 'string', 'max:255', 'unique:repairs,order_number'],
-            'repair_or_sample' => ['required', 'in:repair,sample'],
+            'product_name'     => ['nullable', 'string', 'max:255'],
+            'order_number'     => ['nullable', 'string', 'max:255', 'unique:repairs,order_number'],
+            'repair_or_sample' => ['required', 'string'],
             'weight'           => ['nullable', 'numeric'],
             'repair_details'   => ['nullable', 'string'],
             'repair_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
@@ -475,14 +571,17 @@ class RepairController extends Controller
 
         // Determine Buyer ID
         $buyerId = null;
-        if ($this->isAdmin($user)) {
-            if ($request->filled('buyer_id')) {
-                $buyerId = $request->buyer_id;
-            } elseif ($request->filled('bp_code')) {
-                $buyer = Buyer::where('bp_code', $request->bp_code)->first();
-                $buyerId = $buyer ? $buyer->id : null;
-            }
-        } else {
+        if ($request->filled('buyer_id')) {
+            $buyerId = (int)$request->buyer_id;
+        } elseif ($request->filled('bp_code')) {
+            $buyer = Buyer::where('bp_code', $request->bp_code)->first();
+            $buyerId = $buyer ? $buyer->id : null;
+        } elseif ($request->filled('buyer')) {
+            $buyerId = is_array($request->buyer) ? ($request->buyer['id'] ?? null) : $request->buyer;
+        }
+
+        // Fallback to logged-in user's buyer account if not provided in the request
+        if (!$buyerId) {
             $buyerId = $this->getBuyerId($user);
         }
 
@@ -1076,6 +1175,7 @@ class RepairController extends Controller
     {
         $user = $request->user();
         $admin = $this->isAdmin($user);
+        $role = $this->getUserRole($user);
 
         $craftsmen = Craftman::select('id', 'craftman_code', 'business_name', 'name')
             ->orderBy('craftman_code')
@@ -1095,6 +1195,8 @@ class RepairController extends Controller
 
         return response()->json([
             'success'   => true,
+            'role'      => $role,
+            'tabs'      => $this->getTabsForRole($role),
             'craftsmen' => $craftsmen,
             'buyers'    => $buyers,
             'types'     => [

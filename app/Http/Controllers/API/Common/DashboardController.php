@@ -25,7 +25,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         // SuperAdmin/Admin - Global statistics
-        if (in_array($user->role ?? '', ['super_admin', 'admin'])) {
+        if (in_array($user->role ?? '', ['super_admin', 'admin', 'process_owner']) || $user instanceof \App\Models\ProcessOwner) {
             return $this->getSuperAdminStats();
         }
 
@@ -88,7 +88,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * SuperAdmin dashboard statistics - All counts globally
+     * SuperAdmin dashboard statistics - All counts globally (New orders for the 4 order types)
      */
     private function getSuperAdminStats()
     {
@@ -100,15 +100,15 @@ class DashboardController extends Controller
                 'totalBusinessPartners' => Buyer::count() + Craftman::count(),
                 'totalBuyers' => Buyer::count(),
                 'totalCraftsmen' => Craftman::count(),
-                'totalWorkOrders' => WorkOrder::count(),
+                'totalWorkOrders' => WorkOrder::where('status', 'new')->count(),
                 'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
                 'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
                 'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
-                'totalPurchaseOrders' => PurchaseOrder::count(),
-                'totalRepairs' => Repair::count(),
+                'totalPurchaseOrders' => PurchaseOrder::whereIn('status', ['created', 'pending'])->whereNull('allocated_craftsman_code')->count(),
+                'totalRepairs' => Repair::whereIn('status', ['pending', 'Pending'])->count(),
                 'totalUsers' => User::count(),
                 'totalKeyUsers' => KeyUser::count(),
-                'totalStockOrders' => StockOrder::count(),
+                'totalStockOrders' => StockOrder::whereIn('status', ['pending', 'Pending'])->count(),
                 'brand_logo_url' => null,
 
                 // Work Order status breakdown
@@ -120,30 +120,31 @@ class DashboardController extends Controller
                 'rejectedOrders' => WorkOrder::where('status', '!=', 'new')->where('craftsman_status', 'rejected')->count(),
 
                 // Purchase Order status breakdown
-                'pendingPurchaseOrders' => PurchaseOrder::where('status', 'pending')->count(),
+                'pendingPurchaseOrders' => PurchaseOrder::whereIn('status', ['created', 'pending'])->whereNull('allocated_craftsman_code')->count(),
                 'approvedPurchaseOrders' => PurchaseOrder::where('status', 'approved')->count(),
                 'rejectedPurchaseOrders' => PurchaseOrder::where('status', 'rejected')->count(),
 
                 // Repair status breakdown
-                'pendingRepairs' => Repair::where('status', 'Pending')->count(),
-                'acceptedRepairs' => Repair::where('status', 'Accepted')->count(),
-                'allocatedRepairs' => Repair::where('status', 'Allocated')->count(),
-                'completedRepairs' => Repair::whereIn('status', ['Completed', 'Buyer_Accepted'])->count(),
+                'pendingRepairs' => Repair::whereIn('status', ['pending', 'Pending'])->count(),
+                'acceptedRepairs' => Repair::whereIn('status', ['accepted', 'Accepted'])->count(),
+                'allocatedRepairs' => Repair::whereIn('status', ['allocated', 'Allocated'])->count(),
+                'completedRepairs' => Repair::whereIn('status', ['Completed', 'completed', 'Buyer_Accepted', 'buyer_accepted'])->count(),
 
                 // Stock Order status breakdown
-                'pendingStockOrders' => StockOrder::where('status', 'Pending')->count(),
-                'allocatedStockOrders' => StockOrder::where('status', 'Allocated')->count(),
-                'completedStockOrders' => StockOrder::where('status', 'Completed')->count(),
+                'pendingStockOrders' => StockOrder::whereIn('status', ['pending', 'Pending'])->count(),
+                'allocatedStockOrders' => StockOrder::whereIn('status', ['allocated', 'Allocated'])->count(),
+                'completedStockOrders' => StockOrder::whereIn('status', ['completed', 'Completed'])->count(),
             ]
         ]);
     }
 
     /**
-     * Craftsman dashboard statistics
+     * Craftsman dashboard statistics - Allocated orders only for the 4 order types
      */
     private function getCraftsmanStats($user)
     {
         $craftsmanCode = $user instanceof CraftsmanStaff ? ($user->craftsman->craftman_code ?? null) : $user->craftman_code;
+        $craftsmanId = $user instanceof CraftsmanStaff ? ($user->craftsman_id ?? ($user->craftsman->id ?? $user->id)) : $user->id;
 
         return response()->json([
             'success' => true,
@@ -151,13 +152,22 @@ class DashboardController extends Controller
                 'role' => $user instanceof CraftsmanStaff ? 'craftsman_staff' : 'craftsman',
                 'permissions' => array_values(array_unique(array_merge(['work_order', 'global_search'], is_array($p = ($user instanceof CraftsmanStaff ? $user->getMappedPermissionsArray() : ($user->permissions ?? []))) ? $p : (is_string($p) ? (json_decode($p, true) ?? []) : [])))),
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
-                'totalWorkOrders' => WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->count(),
-                'totalPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->count(),
-                'totalRepairs' => Repair::where('allocated_craftsman_code', $craftsmanCode)->count(),
+                'totalWorkOrders' => WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->where('status', 'allocated')->whereNotIn('craftsman_status', ['in_process', 'rejected', 'completed'])->count(),
+                'totalPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->where(function ($q) {
+                    $q->where('craftsman_status', 'allocated')
+                      ->orWhere(function ($sub) {
+                          $sub->where('status', 'created')->whereNotNull('allocated_craftsman_code');
+                      });
+                })->whereNotIn('craftsman_status', ['in_process', 'rejected', 'completed'])->count(),
+                'totalRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
+                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                })->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['pending_acceptance', 'allocated']);
+                })->count(),
                 'totalProducts' => Product::where('bp_code', $craftsmanCode)->count(),
                 'totalDesigns' => Product::where('bp_code', $craftsmanCode)->where('design_status', 'Accepted')->count(),
                 'totalCatalogues' => Product::where('bp_code', $craftsmanCode)->where('design_status', 'Accepted')->whereNotNull('design_code')->count(),
-                'totalStockOrders' => StockOrder::where('craftsman_id', $user->id)->count(),
+                'totalStockOrders' => StockOrder::where('craftsman_id', $craftsmanId)->whereIn('status', ['Allocated', 'allocated'])->count(),
 
                 // Work Order status breakdown
                 'newOrders' => WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->where('status', 'new')->count(),
@@ -167,22 +177,34 @@ class DashboardController extends Controller
                 'rejectedOrders' => WorkOrder::where('allocated_craftsman_bp_code', $craftsmanCode)->where('status', '!=', 'new')->where('craftsman_status', 'rejected')->count(),
 
                 // Purchase Order status breakdown
-                'pendingPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->where('status', 'pending')->count(),
-                'approvedPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->where('status', 'approved')->count(),
+                'pendingPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->where(function ($q) {
+                    $q->where('craftsman_status', 'allocated')
+                      ->orWhere('status', 'created');
+                })->count(),
+                'approvedPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->whereIn('status', ['approved', 'in_process', 'completed'])->count(),
 
                 // Repair status breakdown
-                'pendingRepairs' => Repair::where('allocated_craftsman_code', $craftsmanCode)->where('craftsman_status', 'Pending')->count(),
-                'completedRepairs' => Repair::where('allocated_craftsman_code', $craftsmanCode)->where('craftsman_status', 'Completed')->count(),
+                'pendingRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
+                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                })->where(function ($q) {
+                    $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['Pending', 'pending', 'pending_acceptance', 'allocated']);
+                })->count(),
+                'completedRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
+                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                })->where(function ($q) {
+                    $q->whereIn('craftsman_status', ['Completed', 'completed', 'pending_approval', 'approved_by_superadmin'])->orWhereIn('status', ['Completed', 'completed']);
+                })->count(),
             ]
         ]);
     }
 
     /**
-     * Buyer dashboard statistics
+     * Buyer dashboard statistics - New orders only for the 4 order types
      */
     private function getBuyerStats($user)
     {
         $bpCode = $user->bp_code;
+        $buyerId = $user instanceof Buyer ? $user->id : (Buyer::where('bp_code', $bpCode)->value('id') ?? $user->id);
 
         $rawPerms = $user->permissions ?? [];
         $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
@@ -197,9 +219,10 @@ class DashboardController extends Controller
                 'totalProducts' => Product::where('bp_code', $bpCode)->count(),
                 'totalDesigns' => Product::where('bp_code', $bpCode)->where('design_status', 'Accepted')->count(),
                 'totalCatalogues' => Product::where('bp_code', $bpCode)->where('design_status', 'Accepted')->whereNotNull('design_code')->count(),
-                'totalWorkOrders' => WorkOrder::where('bp_code', $bpCode)->count(),
-                'totalRepairs' => Repair::where('buyer_id', $user->id)->count(),
-                'totalStockOrders' => StockOrder::where('buyer_id', $user->id)->count(),
+                'totalWorkOrders' => WorkOrder::where('bp_code', $bpCode)->where('status', 'new')->count(),
+                'totalPurchaseOrders' => PurchaseOrder::where('creator_type', 'buyer')->where('created_by', $user->id)->whereIn('status', ['created', 'pending'])->count(),
+                'totalRepairs' => Repair::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
+                'totalStockOrders' => StockOrder::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
 
                 // Work Order status breakdown
                 'newOrders' => WorkOrder::where('bp_code', $bpCode)->where('status', 'new')->count(),
@@ -209,8 +232,14 @@ class DashboardController extends Controller
                 'rejectedOrders' => WorkOrder::where('bp_code', $bpCode)->where('status', '!=', 'new')->where('craftsman_status', 'rejected')->count(),
 
                 // Repair status breakdown
-                'pendingRepairs' => Repair::where('buyer_id', $user->id)->where('craftsman_status', 'Pending')->count(),
-                'completedRepairs' => Repair::where('buyer_id', $user->id)->where('craftsman_status', 'Completed')->count(),
+                'pendingRepairs' => Repair::where('buyer_id', $buyerId)->where(function ($q) {
+                    $q->whereIn('status', ['pending', 'Pending'])
+                      ->orWhereIn('craftsman_status', ['Pending', 'pending']);
+                })->count(),
+                'completedRepairs' => Repair::where('buyer_id', $buyerId)->where(function ($q) {
+                    $q->whereIn('status', ['Completed', 'completed'])
+                      ->orWhereIn('craftsman_status', ['Completed', 'completed']);
+                })->count(),
             ]
         ]);
     }
@@ -221,6 +250,8 @@ class DashboardController extends Controller
     private function getKeyUserStats($user)
     {
         $userCode = $user->user_code;
+        $bpCode = $user->bp_code;
+        $buyerId = Buyer::where('bp_code', $bpCode)->value('id') ?? $user->id;
 
         $rawPerms = $user->permissions ?? [];
         $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
@@ -232,7 +263,10 @@ class DashboardController extends Controller
                 'role' => 'key_user',
                 'permissions' => $permissions,
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
-                'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->count(),
+                'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->where('status', 'new')->count(),
+                'totalPurchaseOrders' => PurchaseOrder::where('creator_type', 'key_user')->where('created_by', $user->id)->whereIn('status', ['created', 'pending'])->count(),
+                'totalRepairs' => Repair::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
+                'totalStockOrders' => StockOrder::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
                 'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
                 'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
                 'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
@@ -253,6 +287,8 @@ class DashboardController extends Controller
     private function getUserStats($user)
     {
         $userCode = $user->user_code;
+        $bpCode = $user->bp_code;
+        $buyerId = Buyer::where('bp_code', $bpCode)->value('id') ?? $user->id;
 
         $rawPerms = $user->permissions ?? [];
         $perms = is_string($rawPerms) ? (json_decode($rawPerms, true) ?? []) : (is_array($rawPerms) ? $rawPerms : []);
@@ -264,7 +300,10 @@ class DashboardController extends Controller
                 'role' => 'user',
                 'permissions' => $permissions,
                 'brand_logo_url' => !empty($user->brand_logo) ? asset('storage/' . $user->brand_logo) : null,
-                'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->count(),
+                'totalWorkOrders' => WorkOrder::where('creator_user_code', $userCode)->where('status', 'new')->count(),
+                'totalPurchaseOrders' => PurchaseOrder::where('creator_type', 'user')->where('created_by', $user->id)->whereIn('status', ['created', 'pending'])->count(),
+                'totalRepairs' => Repair::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
+                'totalStockOrders' => StockOrder::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
                 'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
                 'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
                 'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),

@@ -67,6 +67,7 @@ use App\Http\Controllers\Public\RegistrationController as PublicRegistrationCont
 use App\Http\Controllers\SuperAdmin\NewUpdatesController;
 use App\Http\Controllers\SuperAdmin\RegistrationController as SuperAdminRegistrationController;
 use App\Http\Controllers\SuperAdmin\RepairController;
+use App\Http\Controllers\SuperAdmin\UpdateAllController;
 
 Route::get('/ajlogo.svg', function () {
     $path = public_path('images/ajlogo.svg');
@@ -963,6 +964,8 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::patch('repairs/{repair}/store-item-sent-by', [RepairController::class, 'storeItemSentBy'])->name('repairs.store-item-sent-by');
         Route::patch('repairs/{repair}/buyer-complete', [RepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete');
     });
+
+    Route::resource('update', UpdateAllController::class);
 });
 
 

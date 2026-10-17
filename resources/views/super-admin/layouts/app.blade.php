@@ -66,7 +66,7 @@
                         <span>{{ __('messages.dashboard') }}</span>
                     </a>
                 </li>
-                
+
                 <!-- Global Search -->
                 <li>
                     <a href="{{ route('super-admin.global-search') }}"
@@ -103,7 +103,7 @@
                                     {{ __('messages.overview') }}
                                 </a>
                             </li>
-                    
+
                             <li>
                                 <a href="{{ route('super-admin.business-partner.buyer') }}"
                                     class="tw-flex tw-items-center tw-justify-between tw-py-2 tw-text-[13px] tw-no-underline tw-transition-all hover:tw-text-white {{ request()->routeIs('super-admin.business-partner.buyer') ? 'tw-text-white tw-font-bold' : 'tw-text-white/60' }}">
@@ -172,8 +172,9 @@
                 ['perm' => 'design', 'route' => 'super-admin.design.index', 'icon' => 'bi-palette', 'label' => __('messages.design'), 'count' => $sidebarCounts['designsCount']],
                 ['perm' => 'catalogue', 'route' => 'super-admin.catalogue.index', 'icon' => 'bi-book', 'label' => __('messages.catalogue'), 'count' => $sidebarCounts['cataloguesCount']],
                 ['perm' => 'design', 'route' => 'super-admin.favorites.index', 'icon' => 'bi-heart', 'label' => 'Favorites', 'count' => null],
-                ['perm' => 'repairs', 'route' => 'super-admin.repairs.index', 'icon' => 'bi-reapir', 'label' => 'Repairs/Samples', 'count' => null],
-                ['perm' => 'updates', 'route' => 'super-admin.updates.index', 'icon' => 'bi-heart', 'label' => 'Updates', 'count' => null],
+                ['perm' => 'repairs', 'route' => 'super-admin.repairs.index', 'icon' => 'bi-tools', 'label' => 'Repair', 'count' => null],
+                ['perm' => 'update', 'route' => 'super-admin.update.index', 'icon' => 'bi-globe', 'label' => 'Webiste Update', 'count' => null],
+                ['perm' => 'updates', 'route' => 'super-admin.updates.index', 'icon' => 'bi-phone', 'label' => 'App Updates', 'count' => null],
                 ];
                 @endphp
 
@@ -200,7 +201,7 @@
                         <span>Craftsman Production</span>
                     </a>
                 </li>
-               
+
             </ul>
         </div>
 
@@ -259,7 +260,7 @@
                 </div>
                 <div class="tw-flex tw-items-center tw-gap-4">
 
-                   
+
                     <!-- Meetings Icon Dropdown -->
                     <div class="tw-relative dropdown">
                         <button class="tw-text-white/80 hover:tw-text-white tw-transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
@@ -268,25 +269,27 @@
                         <ul class="dropdown-menu dropdown-menu-end tw-shadow-2xl tw-border-0 tw-rounded-xl tw-mt-2" aria-labelledby="meetingsDropdown">
                             <li class="tw-px-4 tw-py-2 tw-text-xs tw-font-bold tw-uppercase tw-tracking-widest tw-text-gray-500 tw-border-b tw-border-gray-100">Latest Meetings</li>
                             @forelse($latestMeetings as $meeting)
-                                <li>
-                                    <a class="dropdown-item tw-flex tw-flex-col tw-gap-1 tw-py-2 tw-px-4 hover:tw-bg-gray-50 tw-transition-colors" href="{{ route('super-admin.meetings.index') }}">
-                                        <span class="tw-font-bold tw-text-sm tw-text-gray-800">
-                                            {{ $meeting->participant ? ($meeting->participant->name ?? $meeting->participant->full_name) : 'N/A' }}
-                                        </span>
-                                        <span class="tw-text-xs tw-text-gray-500">
-                                            {{ \Carbon\Carbon::parse($meeting->scheduled_at)->format('d M, h:i A') }}
-                                        </span>
-                                        @if($meeting->started_at)
-                                            <span class="tw-text-xs tw-text-green-600 tw-font-bold tw-flex tw-items-center tw-gap-1">
-                                                <span class="tw-w-2 tw-h-2 tw-bg-green-600 tw-rounded-full tw-inline-block"></span> Active
-                                            </span>
-                                        @endif
-                                    </a>
-                                </li>
+                            <li>
+                                <a class="dropdown-item tw-flex tw-flex-col tw-gap-1 tw-py-2 tw-px-4 hover:tw-bg-gray-50 tw-transition-colors" href="{{ route('super-admin.meetings.index') }}">
+                                    <span class="tw-font-bold tw-text-sm tw-text-gray-800">
+                                        {{ $meeting->participant ? ($meeting->participant->name ?? $meeting->participant->full_name) : 'N/A' }}
+                                    </span>
+                                    <span class="tw-text-xs tw-text-gray-500">
+                                        {{ \Carbon\Carbon::parse($meeting->scheduled_at)->format('d M, h:i A') }}
+                                    </span>
+                                    @if($meeting->started_at)
+                                    <span class="tw-text-xs tw-text-green-600 tw-font-bold tw-flex tw-items-center tw-gap-1">
+                                        <span class="tw-w-2 tw-h-2 tw-bg-green-600 tw-rounded-full tw-inline-block"></span> Active
+                                    </span>
+                                    @endif
+                                </a>
+                            </li>
                             @empty
-                                <li><span class="dropdown-item tw-px-4 tw-py-3 tw-text-sm tw-text-gray-500">No recent meetings</span></li>
+                            <li><span class="dropdown-item tw-px-4 tw-py-3 tw-text-sm tw-text-gray-500">No recent meetings</span></li>
                             @endforelse
-                            <li><hr class="dropdown-divider tw-my-0"></li>
+                            <li>
+                                <hr class="dropdown-divider tw-my-0">
+                            </li>
                             <li>
                                 <a class="dropdown-item tw-text-center tw-py-2 tw-text-sm tw-font-bold tw-text-maroon hover:tw-bg-maroon/5 tw-transition-colors" href="{{ route('super-admin.meetings.index') }}">
                                     View All Meetings
@@ -338,77 +341,85 @@
 
     {{-- FCM Web Push: Register super-admin browser & save token to DB --}}
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-      import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import {
+            getMessaging,
+            getToken,
+            onMessage
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
 
-      const firebaseConfig = {
-          apiKey: "AIzaSyD6y5IeHzbDKJJhBoWRaB8q-GsulGVARS4",
-          authDomain: "arihanth-1938c.firebaseapp.com",
-          databaseURL: "https://arihanth-1938c-default-rtdb.firebaseio.com",
-          projectId: "arihanth-1938c",
-          storageBucket: "arihanth-1938c.firebasestorage.app",
-          messagingSenderId: "601146486892",
-          appId: "1:601146486892:web:47c5b8e9a8d84b491aa849"
-      };
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6y5IeHzbDKJJhBoWRaB8q-GsulGVARS4",
+            authDomain: "arihanth-1938c.firebaseapp.com",
+            databaseURL: "https://arihanth-1938c-default-rtdb.firebaseio.com",
+            projectId: "arihanth-1938c",
+            storageBucket: "arihanth-1938c.firebasestorage.app",
+            messagingSenderId: "601146486892",
+            appId: "1:601146486892:web:47c5b8e9a8d84b491aa849"
+        };
 
-      const app = initializeApp(firebaseConfig, 'super-admin-messaging');
-      const VAPID_KEY = '{{ env("FIREBASE_VAPID_KEY", "") }}';
+        const app = initializeApp(firebaseConfig, 'super-admin-messaging');
+        const VAPID_KEY = '{{ env("FIREBASE_VAPID_KEY", "") }}';
 
-      async function registerSuperAdminFcmToken() {
-          // Skip silently if VAPID key is not configured
-          if (!VAPID_KEY || VAPID_KEY === 'your_vapid_key_here' || VAPID_KEY.length < 20) {
-              console.info('FCM: VAPID key not configured — skipping web push registration.');
-              console.info('FCM: Get key from: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates');
-              return;
-          }
+        async function registerSuperAdminFcmToken() {
+            // Skip silently if VAPID key is not configured
+            if (!VAPID_KEY || VAPID_KEY === 'your_vapid_key_here' || VAPID_KEY.length < 20) {
+                console.info('FCM: VAPID key not configured — skipping web push registration.');
+                console.info('FCM: Get key from: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates');
+                return;
+            }
 
-          try {
-              if (!('serviceWorker' in navigator)) {
-                  console.warn('FCM: Service workers not supported.');
-                  return;
-              }
+            try {
+                if (!('serviceWorker' in navigator)) {
+                    console.warn('FCM: Service workers not supported.');
+                    return;
+                }
 
-              const messaging = getMessaging(app);
-              const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                const messaging = getMessaging(app);
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
-              const permission = await Notification.requestPermission();
-              if (permission !== 'granted') {
-                  console.warn('FCM: Notification permission denied.');
-                  return;
-              }
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    console.warn('FCM: Notification permission denied.');
+                    return;
+                }
 
-              const token = await getToken(messaging, {
-                  serviceWorkerRegistration: registration,
-                  vapidKey: VAPID_KEY
-              });
+                const token = await getToken(messaging, {
+                    serviceWorkerRegistration: registration,
+                    vapidKey: VAPID_KEY
+                });
 
-              if (!token) {
-                  console.warn('FCM: Could not retrieve registration token.');
-                  return;
-              }
+                if (!token) {
+                    console.warn('FCM: Could not retrieve registration token.');
+                    return;
+                }
 
-              await fetch('{{ route("super-admin.fcm-token.save") }}', {
-                  method: 'POST',
-                  headers: {
-                      'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json'
-                  },
-                  body: JSON.stringify({ token })
-              });
+                await fetch('{{ route("super-admin.fcm-token.save") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token
+                    })
+                });
 
-              console.log('FCM: Super-admin browser token registered ✓');
+                console.log('FCM: Super-admin browser token registered ✓');
 
-              onMessage(messaging, (payload) => {
-                  console.log('FCM foreground message (super-admin):', payload);
-              });
+                onMessage(messaging, (payload) => {
+                    console.log('FCM foreground message (super-admin):', payload);
+                });
 
-          } catch (err) {
-              console.warn('FCM web push registration skipped:', err.message);
-          }
-      }
+            } catch (err) {
+                console.warn('FCM web push registration skipped:', err.message);
+            }
+        }
 
-      window.addEventListener('load', registerSuperAdminFcmToken);
+        window.addEventListener('load', registerSuperAdminFcmToken);
     </script>
 
     <script>
