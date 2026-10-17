@@ -145,10 +145,13 @@ class GlobalSearchController extends Controller
 
             // Repairs (Only allocated to this Craftsman)
             if ($canAccess('repair') && isset($matchedItems[Repair::class])) {
-                $repairs = Repair::where('allocated_craftsman_code', $craftsmanCode)
+                $repairs = Repair::where(function($q) use ($craftsmanCode, $craftsmanId) {
+                        $q->where('craftman_code', $craftsmanCode);
+                        if ($craftsmanId) $q->orWhere('craftsman_id', $craftsmanId);
+                    })
                     ->whereIn('id', $matchedItems[Repair::class])
                     ->get();
-                $addResults('Repairs', $repairs, 'craftsman.repairs.show', 'id', 'order_no');
+                $addResults('Repairs', $repairs, 'craftsman.repairs.show', 'id', 'order_number');
             }
 
             // Purchase Orders (Only allocated to this Craftsman)
@@ -224,14 +227,17 @@ class GlobalSearchController extends Controller
 
             // Repairs (Only allocated to this Craftsman)
             if ($canAccess('repair')) {
-                $repairs = Repair::where('allocated_craftsman_code', $craftsmanCode)
+                $repairs = Repair::where(function($q) use ($craftsmanCode, $craftsmanId) {
+                        $q->where('craftman_code', $craftsmanCode);
+                        if ($craftsmanId) $q->orWhere('craftsman_id', $craftsmanId);
+                    })
                     ->where(function($q) use ($query) {
-                        $q->where('order_no', 'LIKE', "%{$query}%")
+                        $q->where('order_number', 'LIKE', "%{$query}%")
                             ->orWhere('product_name', 'LIKE', "%{$query}%")
                             ->orWhere('repair_details', 'LIKE', "%{$query}%")
                             ->orWhere('notes', 'LIKE', "%{$query}%");
                     })->limit(20)->get();
-                $addResults('Repairs', $repairs, 'craftsman.repairs.show', 'id', 'order_no');
+                $addResults('Repairs', $repairs, 'craftsman.repairs.show', 'id', 'order_number');
             }
 
             // Purchase Orders (Only allocated to this Craftsman)

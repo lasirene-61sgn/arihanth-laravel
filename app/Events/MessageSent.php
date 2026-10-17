@@ -46,6 +46,8 @@ class MessageSent implements ShouldBroadcastNow
 
         if ($this->message->chat_group_id) {
             $channels[] = new PrivateChannel('group.' . $this->message->chat_group_id);
+            // Frontend unifies listening under private-conversation.{id}
+            $channels[] = new PrivateChannel('conversation.' . $this->message->chat_group_id);
         }
 
         return $channels;
@@ -89,28 +91,122 @@ class MessageSent implements ShouldBroadcastNow
         }
 
         $attachments = $this->message->attachments->map(function ($att) {
+            $streamUrl = $att->stream_url ?? url('/api/common/chat/media/' . $att->id . '/stream');
             return [
-                'id'        => (int) $att->id,
-                'file_name' => $att->file_name,
-                'file_path' => $att->file_path,
-                'file_type' => $att->file_type,
-                'mime_type' => $att->mime_type,
-                'full_url'  => $att->full_url,
+                'id'         => (int) $att->id,
+                'file_name'  => $att->file_name,
+                'file_path'  => $att->file_path,
+                'file_type'  => $att->file_type,
+                'mime_type'  => $att->mime_type ?: ($att->file_type === 'audio' ? 'audio/mp4' : 'application/octet-stream'),
+                'full_url'   => $att->full_url,
+                'stream_url' => $streamUrl,
             ];
         })->values()->toArray();
 
+        // Location detection (Live Location / Shared Google Maps Location)
+        $isLocation = false;
+        $latitude = null;
+        $longitude = null;
+        $mapUrl = null;
+        $isLiveLocation = false;
+
+        $rawBody = (string) $this->message->body;
+        if (preg_match('/(?:maps\.google\.com\/(?:maps)?\?q=|@)(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', $rawBody, $locMatches)) {
+            $isLocation = true;
+            $latitude = (float) $locMatches[1];
+            $longitude = (float) $locMatches[2];
+            $mapUrl = "https://maps.google.com/?q={$latitude},{$longitude}";
+            $isLiveLocation = str_contains(strtolower($rawBody), 'live');
+        } elseif (preg_match('/^location:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', trim($rawBody), $locMatches)) {
+            $isLocation = true;
+            $latitude = (float) $locMatches[1];
+            $longitude = (float) $locMatches[2];
+            $mapUrl = "https://maps.google.com/?q={$latitude},{$longitude}";
+            $isLiveLocation = false;
+        }
+
+        $audioAtt = $this->message->attachments->firstWhere('file_type', 'audio');
+        $videoAtt = $this->message->attachments->firstWhere('file_type', 'video');
+        $imageAtt = $this->message->attachments->firstWhere('file_type', 'image');
+        $docAtt   = $this->message->attachments->firstWhere('file_type', 'document');
+
+        $primaryAtt = $audioAtt ?? $videoAtt ?? $imageAtt ?? $docAtt;
+
+        if ($isLocation) {
+            $mediaType = $isLiveLocation ? 'live_location' : 'location';
+        } else {
+            $mediaType = $primaryAtt ? $primaryAtt->file_type : 'text';
+        }
+
+        $audioUrl = $audioAtt ? ($audioAtt->stream_url ?? $audioAtt->full_url) : null;
+        $videoUrl = $videoAtt ? ($videoAtt->stream_url ?? $videoAtt->full_url) : null;
+        $imageUrl = $imageAtt ? $imageAtt->full_url : null;
+        $fileUrl  = $docAtt ? $docAtt->full_url : null;
+
+        $mediaUrl = null;
+        if ($isLocation) {
+            $mediaUrl = $mapUrl;
+        } elseif ($primaryAtt) {
+            $mediaUrl = ($primaryAtt->file_type === 'audio' || $primaryAtt->file_type === 'video')
+                ? ($primaryAtt->stream_url ?? $primaryAtt->full_url)
+                : $primaryAtt->full_url;
+        }
+
+        $body = $this->message->body;
+        if ($isLocation) {
+            $body = $mapUrl;
+        } elseif ($primaryAtt) {
+            $currentTrimmed = trim((string)$body);
+            $fileName = trim((string)$primaryAtt->file_name);
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            $shouldReplaceWithUrl = empty($currentTrimmed) || ($currentTrimmed === $fileName);
+            if (!$shouldReplaceWithUrl && !empty($ext) && str_ends_with(strtolower($currentTrimmed), '.' . $ext) && !str_contains($currentTrimmed, ' ') && !str_starts_with($currentTrimmed, 'http')) {
+                $shouldReplaceWithUrl = true;
+            }
+
+            if ($shouldReplaceWithUrl) {
+                $body = $mediaUrl;
+            }
+        }
+
         return [
-            'id'              => (int) $this->message->id,
-            'conversation_id' => $this->message->conversation_id ? (int) $this->message->conversation_id : null,
-            'chat_group_id'   => $this->message->chat_group_id ? (int) $this->message->chat_group_id : null,
-            'sender_id'       => (int) $this->message->sender_id,
-            'sender_type'     => $this->message->sender_type,
-            'sender_name'     => $senderName,
-            'sender_code'     => $senderCode,
-            'sender_avatar'   => $senderAvatar,
-            'body'            => $this->message->body,
-            'attachments'     => $attachments,
-            'created_at'      => optional($this->message->created_at)->toISOString() ?? now()->toISOString(),
+            'id'               => (int) $this->message->id,
+            'conversation_id'  => $this->message->conversation_id ? (int) $this->message->conversation_id : ($this->message->chat_group_id ? (int) $this->message->chat_group_id : null),
+            'chat_group_id'    => $this->message->chat_group_id ? (int) $this->message->chat_group_id : null,
+            'is_group'         => !empty($this->message->chat_group_id),
+            'chat_type'        => !empty($this->message->chat_group_id) ? 'group' : 'direct',
+            'sender_id'        => (int) $this->message->sender_id,
+            'sender_type'      => $this->message->sender_type,
+            'sender_name'      => $senderName,
+            'sender_code'      => $senderCode,
+            'sender_avatar'    => $senderAvatar,
+            'body'             => $body,
+            'text'             => $body,
+            'message'          => $body,
+            'content'          => $body,
+            'media_type'       => $mediaType,
+            'media_url'        => $mediaUrl,
+            'audio_url'        => $audioUrl,
+            'audio_stream_url' => $audioAtt ? ($audioAtt->stream_url ?? null) : null,
+            'video_url'        => $videoUrl,
+            'image_url'        => $imageUrl,
+            'document_url'     => $fileUrl,
+            'file_url'         => $fileUrl,
+            'file_name'        => $primaryAtt ? $primaryAtt->file_name : null,
+            'mime_type'        => $primaryAtt ? ($primaryAtt->mime_type ?: ($primaryAtt->file_type === 'audio' ? 'audio/mp4' : null)) : null,
+            'is_live_location' => $isLiveLocation,
+            'latitude'         => $latitude,
+            'longitude'        => $longitude,
+            'map_url'          => $mapUrl,
+            'location'         => $isLocation ? [
+                'latitude'  => $latitude,
+                'longitude' => $longitude,
+                'map_url'   => $mapUrl,
+                'is_live'   => $isLiveLocation,
+            ] : null,
+            'attachments'      => $attachments,
+            'created_at'       => optional($this->message->created_at)->toISOString() ?? now()->toISOString(),
         ];
     }
 }

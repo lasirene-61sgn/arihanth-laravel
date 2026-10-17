@@ -335,6 +335,10 @@ Route::prefix('craftsman')->name('api.craftsman.')->group(function () {
     });
 });
 
+// Public media streaming routes for chat audio & video (supports iOS AVPlayer HTTP 206 Byte-Range streaming & ngrok)
+Route::match(['get', 'head'], '/common/chat/media/{id}/stream', [\App\Http\Controllers\API\Common\ChatApiController::class, 'streamMedia'])->name('api.common.chat.media.stream');
+Route::match(['get', 'head'], '/common/chat/media/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'streamMedia'])->name('api.common.chat.media.show');
+
 // ============================================================================
 // COMMON API ROUTES (Unified for all 5 panels — role-based filtering inside)
 // ============================================================================
@@ -549,14 +553,11 @@ Route::prefix('common')->name('api.common.')->middleware(['auth:sanctum'])->grou
     Route::post('/chat/conversations/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'sendConversationMessage'])->name('chat.conversations.send');
     Route::delete('/chat/conversations/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'deleteConversation'])->name('chat.conversations.delete');
 
-    // Chat Groups (Buyer -> only their Key Users; Craftsman -> only their Staff + Admin/SuperAdmin)
-    Route::get('/chat/groups', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroups'])->name('chat.groups');
+    // Chat Groups (Creation, Details & Management - Groups list is unified inside /chat/recent-chats)
     Route::post('/chat/groups', [\App\Http\Controllers\API\Common\ChatApiController::class, 'createGroup'])->name('chat.groups.create');
     Route::get('/chat/groups/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroupDetails'])->name('chat.groups.show');
     Route::post('/chat/groups/{id}/participants', [\App\Http\Controllers\API\Common\ChatApiController::class, 'addGroupParticipants'])->name('chat.groups.add-participants');
     Route::delete('/chat/groups/{id}/participants/{participantId}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'removeGroupParticipant'])->name('chat.groups.remove-participant');
-    Route::get('/chat/groups/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'getGroupMessages'])->name('chat.groups.messages');
-    Route::post('/chat/groups/{id}/messages', [\App\Http\Controllers\API\Common\ChatApiController::class, 'sendGroupMessage'])->name('chat.groups.send');
     Route::delete('/chat/groups/{id}', [\App\Http\Controllers\API\Common\ChatApiController::class, 'deleteGroup'])->name('chat.groups.delete');
 
     // Message Actions

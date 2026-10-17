@@ -19,7 +19,8 @@ class MessageAttachment extends Model
     ];
 
     protected $appends = [
-        'full_url'
+        'full_url',
+        'stream_url'
     ];
 
     /**
@@ -36,6 +37,31 @@ class MessageAttachment extends Model
      */
     public function getFullUrlAttribute()
     {
+        if (empty($this->file_path)) {
+            return null;
+        }
+
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
         return asset('storage/' . $this->file_path);
+    }
+
+    /**
+     * Accessor to get the dedicated HTTP 206 byte-range streaming URL for iOS AVPlayer / Web Audio.
+     * Usage: $attachment->stream_url
+     */
+    public function getStreamUrlAttribute()
+    {
+        if (empty($this->file_path)) {
+            return null;
+        }
+
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
+        return url('/api/common/chat/media/' . $this->id . '/stream');
     }
 }

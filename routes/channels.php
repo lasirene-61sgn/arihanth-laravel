@@ -3,19 +3,16 @@
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Broadcast;
 
-// Allow both Session-based web guards and Token-based Sanctum API guard (for iOS / mobile apps)
-Broadcast::routes(['middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
-Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum']]);
-
 $allowedGuards = ['sanctum', 'web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff'];
+
+// Allow both Session-based web guards and Token-based Sanctum API guard (for iOS / mobile apps / Flutter)
+Broadcast::routes(['middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+Broadcast::routes(['prefix' => 'api/common', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+Broadcast::routes(['prefix' => 'api/common/chat', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
 
 Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
     if (!$user) {
-        return false;
-    }
-
-    $conversation = Conversation::find($conversationId);
-    if (!$conversation) {
         return false;
     }
 
@@ -28,17 +25,35 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
         return true;
     }
 
+    $conversation = Conversation::find($conversationId);
     $userClass = get_class($user);
     $userId = (int) $user->id;
 
-    // Compare both ID and model class type
-    $isSender = ((int) $conversation->sender_id === $userId) && 
-                (!isset($conversation->sender_type) || $conversation->sender_type === $userClass);
+    if ($conversation) {
+        $senderMatches = ((int) $conversation->sender_id === $userId) && 
+            (!isset($conversation->sender_type) || $conversation->sender_type === $userClass || strtolower(class_basename($conversation->sender_type)) === strtolower(class_basename($userClass)));
 
-    $isReceiver = ((int) $conversation->receiver_id === $userId) && 
-                  (!isset($conversation->receiver_type) || $conversation->receiver_type === $userClass);
+        $receiverMatches = ((int) $conversation->receiver_id === $userId) && 
+            (!isset($conversation->receiver_type) || $conversation->receiver_type === $userClass || strtolower(class_basename($conversation->receiver_type)) === strtolower(class_basename($userClass)));
 
-    return $isSender || $isReceiver;
+        if ($senderMatches || $receiverMatches) {
+            return true;
+        }
+
+        // If this is a direct conversation and user is not a participant, deny access immediately
+        return false;
+    }
+
+    // If no direct conversation exists with this ID, check if it refers to a ChatGroup
+    $group = \App\Models\ChatGroup::find($conversationId);
+    if ($group) {
+        if ($group->hasParticipant($user)) return true;
+        if ((int)$group->creator_id === $userId && strtolower(class_basename($group->creator_type)) === strtolower(class_basename($userClass))) {
+            return true;
+        }
+    }
+
+    return false;
 }, ['guards' => $allowedGuards]);
 
 Broadcast::channel('group.{chatGroupId}', function ($user, $chatGroupId) {
@@ -56,16 +71,12 @@ Broadcast::channel('group.{chatGroupId}', function ($user, $chatGroupId) {
     $group = \App\Models\ChatGroup::find($chatGroupId);
     if (!$group) return false;
     
-    // Global admin group: Allow any ProcessOwner admin
-    if ($group->is_global_admin_group) {
-        return $user instanceof \App\Models\ProcessOwner && in_array($user->role, ['admin', 'super_admin']);
+    if ($group->hasParticipant($user)) return true;
+    if ((int)$group->creator_id === (int)$user->id && strtolower(class_basename($group->creator_type)) === strtolower(class_basename($user))) {
+        return true;
     }
 
-    // Otherwise, check participants table
-    return \App\Models\ChatGroupParticipant::where('chat_group_id', $chatGroupId)
-        ->where('user_id', $user->id)
-        ->where('user_type', get_class($user))
-        ->exists();
+    return false;
 }, ['guards' => $allowedGuards]);
 
 Broadcast::channel('user.{type}.{id}', function ($user, $type, $id) {
@@ -73,6 +84,7 @@ Broadcast::channel('user.{type}.{id}', function ($user, $type, $id) {
     $typeMap = [
         'buyer'           => \App\Models\Buyer::class,
         'craftsman'       => \App\Models\Craftman::class,
+        'craftman'        => \App\Models\Craftman::class,
         'craftsman_staff' => \App\Models\CraftsmanStaff::class,
         'admin'           => \App\Models\ProcessOwner::class,
         'super-admin'     => \App\Models\ProcessOwner::class,

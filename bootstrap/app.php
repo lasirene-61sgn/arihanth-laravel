@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->validateCsrfTokens(except: [
+            'broadcasting/auth',
+            'api/*',
+        ]);
         // Run SetLocale on every web request so the session locale is applied
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,

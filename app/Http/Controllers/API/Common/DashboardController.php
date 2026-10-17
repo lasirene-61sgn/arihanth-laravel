@@ -159,8 +159,11 @@ class DashboardController extends Controller
                           $sub->where('status', 'created')->whereNotNull('allocated_craftsman_code');
                       });
                 })->whereNotIn('craftsman_status', ['in_process', 'rejected', 'completed'])->count(),
-                'totalRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
-                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                'totalRepairs' => Repair::where(function ($q) use ($craftsmanCode, $craftsmanId) {
+                    $q->where('craftman_code', $craftsmanCode);
+                    if ($craftsmanId) {
+                        $q->orWhere('craftsman_id', $craftsmanId);
+                    }
                 })->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
                     $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['pending_acceptance', 'allocated']);
                 })->count(),
@@ -184,13 +187,19 @@ class DashboardController extends Controller
                 'approvedPurchaseOrders' => PurchaseOrder::where('allocated_craftsman_code', $craftsmanCode)->whereIn('status', ['approved', 'in_process', 'completed'])->count(),
 
                 // Repair status breakdown
-                'pendingRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
-                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                'pendingRepairs' => Repair::where(function ($q) use ($craftsmanCode, $craftsmanId) {
+                    $q->where('craftman_code', $craftsmanCode);
+                    if ($craftsmanId) {
+                        $q->orWhere('craftsman_id', $craftsmanId);
+                    }
                 })->where(function ($q) {
                     $q->whereNull('craftsman_status')->orWhereIn('craftsman_status', ['Pending', 'pending', 'pending_acceptance', 'allocated']);
                 })->count(),
-                'completedRepairs' => Repair::where(function ($q) use ($craftsmanCode) {
-                    $q->where('craftman_code', $craftsmanCode)->orWhere('allocated_craftsman_code', $craftsmanCode);
+                'completedRepairs' => Repair::where(function ($q) use ($craftsmanCode, $craftsmanId) {
+                    $q->where('craftman_code', $craftsmanCode);
+                    if ($craftsmanId) {
+                        $q->orWhere('craftsman_id', $craftsmanId);
+                    }
                 })->where(function ($q) {
                     $q->whereIn('craftsman_status', ['Completed', 'completed', 'pending_approval', 'approved_by_superadmin'])->orWhereIn('status', ['Completed', 'completed']);
                 })->count(),

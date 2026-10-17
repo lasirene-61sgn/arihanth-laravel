@@ -223,53 +223,38 @@ class ChatApiController extends Controller
             });
         }
 
-        // Apply Role Isolation with Buyer-Craftsman communication enabled:
+        // Apply Strict Role Isolation:
+        // - Super Admin & Admin: Can contact anyone across the platform
+        // - Buyer: Can ONLY see their own Key Users + Admins/Superadmins (NO Craftsmen, NO Craftsman Staff, NO other Buyers)
+        // - Craftsman: Can ONLY see their own Craftsman Staff + Admins/Superadmins (NO other Craftsmen, NO Buyers, NO Key Users)
+        // - Key User: Can ONLY see their parent Buyer + fellow Key Users under same bp_code + Admins/Superadmins
+        // - Craftsman Staff: Can ONLY see their parent Craftsman + fellow Staff under same craftsman_id + Admins/Superadmins
         if ($isAdmin) {
             // Super Admin & Admin can contact anyone across the platform
             $adminQuery->where('id', '!=', $user->id);
         } elseif ($user instanceof Buyer) {
-            // Buyer: their own Key Users + Craftsmen (with chat permissions) + Admins
+            // Buyer: their own Key Users + Admins/Superadmins ONLY
             $buyerQuery->whereRaw('0 = 1');
-            $craftsmanQuery->where(function ($q) {
-                $q->whereNull('permissions')
-                  ->orWhereJsonContains('permissions', 'chat')
-                  ->orWhereJsonContains('permissions', 'messages');
-            });
+            $craftsmanQuery->whereRaw('0 = 1');
             $staffQuery->whereRaw('0 = 1');
             $keyUserQuery->where('bp_code', $user->bp_code);
         } elseif ($user instanceof KeyUser) {
-            // Key User: their parent Buyer + fellow Key Users under same BP code + Craftsmen + Admins
+            // Key User: their parent Buyer + fellow Key Users under same BP code + Admins/Superadmins ONLY
             $buyerQuery->where('bp_code', $user->bp_code);
-            $craftsmanQuery->where(function ($q) {
-                $q->whereNull('permissions')
-                  ->orWhereJsonContains('permissions', 'chat')
-                  ->orWhereJsonContains('permissions', 'messages');
-            });
+            $craftsmanQuery->whereRaw('0 = 1');
             $staffQuery->whereRaw('0 = 1');
             $keyUserQuery->where('bp_code', $user->bp_code)->where('id', '!=', $user->id);
         } elseif ($user instanceof Craftman) {
-            // Craftsman: their own staff + Buyers (with chat permissions) + Key Users + Admins
-            $buyerQuery->where(function ($q) {
-                $q->whereNull('permissions')
-                  ->orWhereJsonContains('permissions', 'chat')
-                  ->orWhereJsonContains('permissions', 'messages');
-            });
+            // Craftsman: their own staff + Admins/Superadmins ONLY
+            $buyerQuery->whereRaw('0 = 1');
+            $keyUserQuery->whereRaw('0 = 1');
             $craftsmanQuery->whereRaw('0 = 1');
-            $keyUserQuery->where(function ($q) {
-                $q->whereNull('permissions')
-                  ->orWhereJsonContains('permissions', 'chat')
-                  ->orWhereJsonContains('permissions', 'messages');
-            });
             $staffQuery->where('craftsman_id', $user->id);
         } elseif ($user instanceof CraftsmanStaff) {
-            // Staff: their parent Craftsman + fellow staff + Buyers + Admins
-            $buyerQuery->where(function ($q) {
-                $q->whereNull('permissions')
-                  ->orWhereJsonContains('permissions', 'chat')
-                  ->orWhereJsonContains('permissions', 'messages');
-            });
-            $craftsmanQuery->where('id', $user->craftsman_id);
+            // Staff: their parent Craftsman + fellow staff under same workshop + Admins/Superadmins ONLY
+            $buyerQuery->whereRaw('0 = 1');
             $keyUserQuery->whereRaw('0 = 1');
+            $craftsmanQuery->where('id', $user->craftsman_id);
             $staffQuery->where('craftsman_id', $user->craftsman_id)->where('id', '!=', $user->id);
         } else {
             // Generic user: only Admins
@@ -390,42 +375,61 @@ class ChatApiController extends Controller
      *   - GET /api/common/chat/conversations
      */
     public function getRecentChats(Request $request)
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
-        }
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+    }
 
-        if (!$this->hasChatPermission($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
-            ], 403);
-        }
+    if (!$this->hasChatPermission($user)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
+        ], 403);
+    }
 
-        $search = trim((string) $request->input('search', ''));
-        $page = max(1, (int) $request->input('page', 1));
-        $perPage = max(1, min(100, (int) $request->input('per_page', 15)));
-        $unreadOnly = filter_var($request->input('unread_only', false), FILTER_VALIDATE_BOOLEAN);
-        $typeFilter = strtolower(trim((string) $request->input('type', 'all')));
+    $search = trim((string) $request->input('search', ''));
+    $page = max(1, (int) $request->input('page', 1));
+    $perPage = max(1, min(100, (int) $request->input('per_page', 15)));
+    $unreadOnly = filter_var($request->input('unread_only', false), FILTER_VALIDATE_BOOLEAN);
+    $typeFilter = strtolower(trim((string) $request->input('type', 'all')));
 
-        // Fetch all conversations for the logged in user
+    $filteredDirectChats = [];
+    $totalDirectUnread = 0;
+
+    // 1. Process Direct 1-to-1 Conversations (unless user specifically asked for only groups)
+    if ($typeFilter !== 'groups' && $typeFilter !== 'group') {
         $conversations = Conversation::where(function ($q) use ($user) {
-            $q->where('sender_id', $user->id)->where('sender_type', get_class($user));
-        })->orWhere(function ($q) use ($user) {
-            $q->where('receiver_id', $user->id)->where('receiver_type', get_class($user));
-        })
-        ->with(['sender', 'receiver', 'latestMessage.attachments'])
-        ->orderByDesc('last_message_at')
-        ->orderByDesc('updated_at')
-        ->get();
+                $q->where('sender_id', $user->id)->where('sender_type', get_class($user));
+            })->orWhere(function ($q) use ($user) {
+                $q->where('receiver_id', $user->id)->where('receiver_type', get_class($user));
+            })
+            ->with(['sender', 'receiver', 'latestMessage.attachments'])
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
+            ->get();
 
-        $conversationIds = $conversations->pluck('id')->toArray();
+        // Deduplicate conversations by partner first to prevent duplicate rows & inflated counts
+        $uniqueConversations = [];
+        $seenPartnerKeys = [];
+        foreach ($conversations as $c) {
+            $isSender = ($c->sender_id == $user->id && $c->sender_type == get_class($user));
+            $partner = $isSender ? $c->receiver : $c->sender;
+            if (!$partner) {
+                continue;
+            }
+            $partnerKey = get_class($partner) . ':' . $partner->id;
+            if (isset($seenPartnerKeys[$partnerKey])) {
+                continue; // Skip duplicate conversation record with the same partner
+            }
+            $seenPartnerKeys[$partnerKey] = true;
+            $uniqueConversations[] = $c;
+        }
 
-        // Calculate global unread count for current user
-        $totalUnreadCount = 0;
-        if (!empty($conversationIds)) {
-            $totalUnreadCount = (int) Message::whereIn('conversation_id', $conversationIds)
+        $uniqueConversationIds = array_map(fn($c) => $c->id, $uniqueConversations);
+
+        if (!empty($uniqueConversationIds)) {
+            $totalDirectUnread = (int) Message::whereIn('conversation_id', $uniqueConversationIds)
                 ->where(function ($q) use ($user) {
                     $q->where('sender_id', '!=', $user->id)
                       ->orWhere('sender_type', '!=', get_class($user));
@@ -434,15 +438,17 @@ class ChatApiController extends Controller
                 ->count();
         }
 
-        $filteredChats = [];
-
-        foreach ($conversations as $c) {
+        foreach ($uniqueConversations as $c) {
             $isSender = ($c->sender_id == $user->id && $c->sender_type == get_class($user));
             $partner = $isSender ? $c->receiver : $c->sender;
+            if (!$partner) {
+                continue;
+            }
+
             $partnerSummary = $this->formatUserSummary($partner);
 
             // Filter by role/type if requested
-            if ($typeFilter !== 'all' && $typeFilter !== '') {
+            if ($typeFilter !== 'all' && $typeFilter !== '' && $typeFilter !== 'direct' && $typeFilter !== 'conversations') {
                 $pType = strtolower($partnerSummary['type'] ?? '');
                 if ($typeFilter === 'admins' || $typeFilter === 'admin') {
                     if (!in_array($pType, ['admin', 'super_admin', 'superadmin', 'process_owner'])) continue;
@@ -483,40 +489,187 @@ class ChatApiController extends Controller
             }
 
             $recentMessageData = $c->latestMessage ? $this->formatMessageSummary($c->latestMessage) : null;
+            $sortTime = $c->last_message_at ? $c->last_message_at->timestamp : ($c->updated_at ? $c->updated_at->timestamp : 0);
 
-            $filteredChats[] = [
-                'id'              => (int) $c->id,
-                'conversation_id' => (int) $c->id,
-                'partner'         => $partnerSummary,
-                'recent_message'  => $recentMessageData,
-                'latest_message'  => $recentMessageData,
-                'unread_count'    => (int) $unreadCount,
-                'last_message_at' => optional($c->last_message_at)->toISOString(),
-                'created_at'      => optional($c->created_at)->toISOString(),
+            $filteredDirectChats[] = [
+                'unique_id'         => 'direct_' . $c->id,
+                'id'                => (int) $c->id,
+                'conversation_id'   => (int) $c->id,
+                'is_group'          => false,
+                'chat_type'         => 'direct',
+                'channel_name'      => 'private-conversation.' . $c->id,
+                'name'              => $partnerSummary['name'] ?? '',
+                'avatar_url'        => $partnerSummary['avatar_url'] ?? null,
+                'partner'           => $partnerSummary,
+                'last_message'      => $recentMessageData,
+                'unread_count'      => (int) $unreadCount,
+                'last_message_at'   => optional($c->last_message_at)->toISOString(),
+                'created_at'        => optional($c->created_at)->toISOString(),
+                '_sort_time'        => $sortTime,
             ];
         }
-
-        // Apply pagination
-        $total = count($filteredChats);
-        $lastPage = (int) max(1, ceil($total / $perPage));
-        $offset = ($page - 1) * $perPage;
-        $paginatedData = array_slice($filteredChats, $offset, $perPage);
-
-        return response()->json([
-            'success'            => true,
-            'total_unread_count' => (int) $totalUnreadCount,
-            'data'               => $paginatedData,
-            'pagination'         => [
-                'current_page' => $page,
-                'per_page'     => $perPage,
-                'total'        => $total,
-                'last_page'    => $lastPage,
-                'from'         => $total > 0 ? $offset + 1 : 0,
-                'to'           => min($total, $page * $perPage),
-                'has_more'     => $page < $lastPage,
-            ],
-        ]);
     }
+
+    // 2. Process Chat Groups (included in all, or when requested via type=groups)
+    $filteredGroups = [];
+    $totalGroupUnread = 0;
+
+    $allowedGroupTypes = ['all', 'groups', 'group', ''];
+    if (in_array($typeFilter, $allowedGroupTypes)) {
+        $isSuperAdmin = $this->isSuperAdmin($user);
+
+        if ($isSuperAdmin && $request->boolean('all')) {
+            $groups = ChatGroup::with(['creator', 'participants.user', 'latestMessage.attachments'])
+                ->orderByDesc('updated_at')
+                ->get();
+        } else {
+            $groupIds = ChatGroupParticipant::where('user_id', $user->id)
+                ->where('user_type', get_class($user))
+                ->pluck('chat_group_id')
+                ->toArray();
+
+            $createdGroupIds = ChatGroup::where('creator_id', $user->id)
+                ->where('creator_type', get_class($user))
+                ->pluck('id')
+                ->toArray();
+
+            $allGroupIds = array_unique(array_merge($groupIds, $createdGroupIds));
+            $groupQuery = ChatGroup::whereIn('id', $allGroupIds);
+
+            if ($user instanceof ProcessOwner) {
+                $groupQuery->orWhere('is_global_admin_group', true);
+            }
+
+            $groups = $groupQuery->with(['creator', 'participants.user', 'latestMessage.attachments'])
+                ->orderByDesc('updated_at')
+                ->get();
+        }
+
+        $seenGroupIds = [];
+        foreach ($groups as $g) {
+            if (isset($seenGroupIds[$g->id])) {
+                continue;
+            }
+            $seenGroupIds[$g->id] = true;
+
+            // Search filter on group
+            if ($search !== '') {
+                $searchLower = strtolower($search);
+                $nameMatch = str_contains(strtolower($g->name ?? ''), $searchLower);
+                $msgMatch = $g->latestMessage && str_contains(strtolower($g->latestMessage->body ?? ''), $searchLower);
+                if (!$nameMatch && !$msgMatch) {
+                    continue;
+                }
+            }
+
+            $unreadCount = Message::where('chat_group_id', $g->id)
+                ->where(function ($q) use ($user) {
+                    $q->where('sender_id', '!=', $user->id)
+                      ->orWhere('sender_type', '!=', get_class($user));
+                })
+                ->where('is_read', false)
+                ->count();
+
+            if ($unreadOnly && $unreadCount === 0) {
+                continue;
+            }
+
+            $totalGroupUnread += (int) $unreadCount;
+            $recentMessageData = $g->latestMessage ? $this->formatMessageSummary($g->latestMessage) : null;
+            $lastActivityAt = $g->latestMessage ? $g->latestMessage->created_at : $g->updated_at;
+            $sortTime = $lastActivityAt ? $lastActivityAt->timestamp : ($g->updated_at ? $g->updated_at->timestamp : 0);
+
+            $groupSummary = [
+                'unique_id'          => 'group_' . $g->id,
+                'id'                 => (int) $g->id,
+                'conversation_id'    => (int) $g->id,
+                'chat_group_id'      => (int) $g->id,
+                'is_group'           => true,
+                'chat_type'          => 'group',
+                'channel_name'       => 'private-conversation.' . $g->id,
+                'name'               => $g->name,
+                'avatar_url'         => $g->avatar ?? null,
+                'partner'            => [
+                    'id'         => (int) $g->id,
+                    'name'       => $g->name,
+                    'avatar_url' => $g->avatar ?? null,
+                    'type'       => 'group',
+                    'badge'      => 'Group',
+                ],
+                'creator'            => $this->formatUserSummary($g->creator),
+                'participants_count' => (int) $g->participants->count(),
+                'last_message'       => $recentMessageData,
+                'unread_count'       => (int) $unreadCount,
+                'last_message_at'    => optional($lastActivityAt)->toISOString(),
+                'updated_at'         => optional($g->updated_at)->toISOString(),
+                'created_at'         => optional($g->created_at)->toISOString(),
+                '_sort_time'         => $sortTime,
+            ];
+
+            $filteredGroups[] = $groupSummary;
+        }
+    }
+
+    // 3. Unify, sort and paginate
+    if ($typeFilter === 'groups' || $typeFilter === 'group') {
+        $unifiedChats = $filteredGroups;
+    } elseif ($typeFilter === 'direct' || $typeFilter === 'conversations') {
+        $unifiedChats = $filteredDirectChats;
+    } else {
+        $unifiedChats = array_merge($filteredDirectChats, $filteredGroups);
+    }
+
+    // Strictly deduplicate unified chats by unique_id
+    $dedupedUnified = [];
+    $seenKeys = [];
+    foreach ($unifiedChats as $item) {
+        $key = $item['unique_id'] ?? (($item['is_group'] ? 'group_' : 'direct_') . $item['id']);
+        if (!isset($seenKeys[$key])) {
+            $seenKeys[$key] = true;
+            $dedupedUnified[] = $item;
+        }
+    }
+    $unifiedChats = $dedupedUnified;
+
+    usort($unifiedChats, fn($a, $b) => ($b['_sort_time'] ?? 0) <=> ($a['_sort_time'] ?? 0));
+
+    // Strip temporary _sort_time key
+    foreach ($unifiedChats as &$item) {
+        unset($item['_sort_time']);
+    }
+    unset($item);
+
+    $cleanGroups = array_map(function ($g) {
+        unset($g['_sort_time']);
+        return $g;
+    }, $filteredGroups);
+
+    $cleanDirect = array_map(function ($d) {
+        unset($d['_sort_time']);
+        return $d;
+    }, $filteredDirectChats);
+
+    $total = count($unifiedChats);
+    $lastPage = (int) max(1, ceil($total / $perPage));
+    $offset = ($page - 1) * $perPage;
+    $paginatedData = array_slice($unifiedChats, $offset, $perPage);
+    $totalUnreadCount = $totalDirectUnread + $totalGroupUnread;
+
+    return response()->json([
+        'success'            => true,
+        'total_unread_count' => (int) $totalUnreadCount,
+        'data'               => $paginatedData,
+        'pagination'         => [
+            'current_page' => $page,
+            'per_page'     => $perPage,
+            'total'        => $total,
+            'last_page'    => $lastPage,
+            'from'         => $total > 0 ? $offset + 1 : 0,
+            'to'           => min($total, $page * $perPage),
+            'has_more'     => $page < $lastPage,
+        ],
+    ]);
+}
 
     /**
      * Backward-compatible aliases
@@ -532,12 +685,130 @@ class ChatApiController extends Controller
     }
 
     /**
-     * Start or fetch existing direct 1-to-1 conversation.
+     * Start or fetch existing direct 1-to-1 conversation or chat group.
+     * Unified endpoint: gracefully handles both direct chats and groups by ID, target_type or flags.
      */
     public function startConversation(Request $request)
     {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        // Auto-decode JSON if Content-Type was omitted in Postman/Client
+        $rawContent = $request->getContent();
+        if (!empty($rawContent)) {
+            $json = json_decode($rawContent, true);
+            if (is_array($json)) {
+                $request->merge($json);
+            }
+        }
+
+        $typeParam = strtolower(trim((string)($request->input('target_type') ?? $request->input('recipient_type') ?? $request->input('type') ?? $request->input('chat_type') ?? '')));
+        $isGroupFlag = $request->boolean('is_group') || in_array($typeParam, ['group', 'groups']);
+
+        // 1. Resolve Group if chat_group_id is given, or if marked as group
+        $groupId = $request->input('chat_group_id') ?? $request->input('group_id');
+        if (!$groupId && $isGroupFlag) {
+            $groupId = $request->input('target_id') ?? $request->input('id') ?? $request->input('conversation_id');
+        }
+
+        // If no explicit group flag, check if given ID belongs to a ChatGroup
+        if (!$groupId && $request->filled('conversation_id')) {
+            $possibleGroup = ChatGroup::find($request->input('conversation_id'));
+            if ($possibleGroup) {
+                $groupId = $possibleGroup->id;
+                $isGroupFlag = true;
+            }
+        }
+        if (!$groupId && $request->filled('id') && empty($typeParam)) {
+            $possibleGroup = ChatGroup::find($request->input('id'));
+            if ($possibleGroup) {
+                $groupId = $possibleGroup->id;
+                $isGroupFlag = true;
+            }
+        }
+
+        if ($groupId && ($isGroupFlag || ChatGroup::where('id', $groupId)->exists())) {
+            $group = ChatGroup::with(['creator', 'participants.user', 'latestMessage.attachments'])->find($groupId);
+            if (!$group) {
+                return response()->json(['success' => false, 'message' => "Chat Group #{$groupId} not found."], 404);
+            }
+
+            if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized - You are not a member of this chat group.'], 403);
+            }
+
+            $groupSummary = $this->formatGroupSummary($group, $user, true);
+            $partnerObj = [
+                'id'         => (int) $group->id,
+                'name'       => $group->name,
+                'avatar_url' => $group->avatar ?? null,
+                'type'       => 'group',
+                'badge'      => 'Group',
+            ];
+
+            return response()->json([
+                'success'         => true,
+                'message'         => 'Group conversation fetched successfully.',
+                'is_group'        => true,
+                'chat_type'       => 'group',
+                'id'              => (int) $group->id,
+                'conversation_id' => (int) $group->id,
+                'chat_group_id'   => (int) $group->id,
+                'partner'         => $partnerObj,
+                'data'            => array_merge([
+                    'id'              => (int) $group->id,
+                    'conversation_id' => (int) $group->id,
+                    'chat_group_id'   => (int) $group->id,
+                    'is_group'        => true,
+                    'chat_type'       => 'group',
+                    'name'            => $group->name,
+                    'partner'         => $partnerObj,
+                ], $groupSummary)
+            ], 200);
+        }
+
+        // 2. Check if an existing direct conversation ID was passed
+        $convId = $request->input('conversation_id') ?? ($request->filled('id') && empty($typeParam) ? $request->input('id') : null);
+        if ($convId) {
+            $existingConv = Conversation::with(['sender', 'receiver', 'latestMessage.attachments'])->find($convId);
+            if ($existingConv) {
+                $isParticipant = ($existingConv->sender_id == $user->id && $existingConv->sender_type == get_class($user))
+                    || ($existingConv->receiver_id == $user->id && $existingConv->receiver_type == get_class($user))
+                    || $this->isSuperAdmin($user);
+
+                if ($isParticipant) {
+                    $partner = ($existingConv->sender_id == $user->id && $existingConv->sender_type == get_class($user))
+                        ? $existingConv->receiver
+                        : $existingConv->sender;
+                    $partnerSummary = $partner ? $this->formatUserSummary($partner) : null;
+
+                    return response()->json([
+                        'success'         => true,
+                        'message'         => 'Conversation fetched successfully.',
+                        'is_group'        => false,
+                        'chat_type'       => 'direct',
+                        'id'              => (int) $existingConv->id,
+                        'conversation_id' => (int) $existingConv->id,
+                        'partner'         => $partnerSummary,
+                        'data'            => [
+                            'id'              => (int) $existingConv->id,
+                            'conversation_id' => (int) $existingConv->id,
+                            'is_group'        => false,
+                            'chat_type'       => 'direct',
+                            'partner'         => $partnerSummary,
+                            'last_message_at' => optional($existingConv->last_message_at)->toISOString(),
+                            'latest_message'  => $existingConv->latestMessage ? $this->formatMessageSummary($existingConv->latestMessage) : null,
+                        ]
+                    ], 200);
+                }
+            }
+        }
+
+        // 3. Start or fetch 1-to-1 conversation with target user
         $targetId = $request->input('target_id') ?? $request->input('recipient_id') ?? $request->input('user_id');
-        $targetType = $request->input('target_type') ?? $request->input('recipient_type') ?? $request->input('type');
+        $targetType = $typeParam ?: ($request->input('target_type') ?? $request->input('recipient_type') ?? $request->input('type'));
 
         if (!$targetId || !$targetType) {
             return response()->json([
@@ -546,7 +817,6 @@ class ChatApiController extends Controller
             ], 422);
         }
 
-        $user = Auth::user();
         $targetClass = $this->resolveModelClass($targetType);
 
         if (!$targetClass) {
@@ -587,9 +857,42 @@ class ChatApiController extends Controller
             ]);
         }
 
-        // Send optional initial message if provided
+        // Send optional initial message if provided (text, image, video, audio, document, or live location)
         $initialMessage = null;
-        if ($request->filled('body') || $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video')) {
+        $hasInitialLocation = ($request->filled('latitude') && $request->filled('longitude'))
+            || ($request->filled('lat') && ($request->filled('lng') || $request->filled('long')))
+            || $request->filled('location')
+            || $request->filled('map_url')
+            || $request->filled('live_location');
+
+        $hasInitialMedia = $request->hasFile('attachments') 
+            || $request->hasFile('image') 
+            || $request->hasFile('images') 
+            || $request->hasFile('video') 
+            || $request->hasFile('videos') 
+            || $request->hasFile('audio') 
+            || $request->hasFile('audios') 
+            || $request->hasFile('voice') 
+            || $request->hasFile('voice_note') 
+            || $request->hasFile('document') 
+            || $request->hasFile('documents') 
+            || $request->hasFile('doc') 
+            || $request->hasFile('docs') 
+            || $request->hasFile('file') 
+            || $request->hasFile('files') 
+            || $request->hasFile('media') 
+            || $request->filled('video_url') 
+            || $request->filled('audio_url') 
+            || $request->filled('voice_url')
+            || $request->filled('document_url')
+            || $request->filled('doc_url')
+            || $hasInitialLocation
+            || (is_string($request->input('video')) && filter_var($request->input('video'), FILTER_VALIDATE_URL))
+            || (is_string($request->input('audio')) && filter_var($request->input('audio'), FILTER_VALIDATE_URL))
+            || (is_string($request->input('voice')) && filter_var($request->input('voice'), FILTER_VALIDATE_URL))
+            || (!empty($request->input('attachments')) && is_array($request->input('attachments')));
+
+        if ($request->filled('body') || $hasInitialMedia) {
             $initialMessage = $this->storeMessageRecord(
                 conversationId: $conversation->id,
                 chatGroupId: null,
@@ -612,7 +915,113 @@ class ChatApiController extends Controller
     }
 
     /**
-     * Get messages in a direct 1-to-1 conversation.
+     * Resolve whether an ID corresponds to a ChatGroup or a 1-to-1 Conversation.
+     * Smartly disambiguates even when IDs overlap based on participant membership & recent activity.
+     */
+    private function resolveConversationOrGroup($id, $user, Request $request): ?array
+    {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return null;
+        }
+
+        $isGroupHint = null;
+        if ($request->has('is_group')) {
+            $isGroupHint = filter_var($request->input('is_group'), FILTER_VALIDATE_BOOLEAN);
+        }
+        $typeHint = strtolower(trim((string) ($request->input('chat_type') ?? $request->input('type') ?? '')));
+        $explicitGroupId = $request->input('chat_group_id') ?? $request->input('group_id');
+
+        // 1. Explicit group hints
+        if ($isGroupHint === true || $typeHint === 'group' || !empty($explicitGroupId)) {
+            $groupId = !empty($explicitGroupId) ? (int) $explicitGroupId : $id;
+            $group = ChatGroup::find($groupId);
+            if ($group) {
+                return ['type' => 'group', 'model' => $group];
+            }
+        }
+
+        // 2. Explicit direct conversation hints
+        if ($isGroupHint === false || in_array($typeHint, ['direct', 'conversation', 'single', 'individual'])) {
+            $conv = Conversation::find($id);
+            if ($conv) {
+                return ['type' => 'conversation', 'model' => $conv];
+            }
+        }
+
+        // 3. No explicit hint provided: check both models
+        $group = ChatGroup::find($id);
+        $conv = Conversation::find($id);
+
+        if ($group && !$conv) {
+            return ['type' => 'group', 'model' => $group];
+        }
+
+        if ($conv && !$group) {
+            return ['type' => 'conversation', 'model' => $conv];
+        }
+
+        // Both exist with this same ID: disambiguate by checking user participation
+        if ($group && $conv) {
+            $isGroupMember = $group->hasParticipant($user);
+            $isConvMember = ($conv->sender_id == $user->id && $conv->sender_type == get_class($user))
+                || ($conv->receiver_id == $user->id && $conv->receiver_type == get_class($user));
+
+            if ($isGroupMember && !$isConvMember) {
+                return ['type' => 'group', 'model' => $group];
+            }
+
+            if ($isConvMember && !$isGroupMember) {
+                return ['type' => 'conversation', 'model' => $conv];
+            }
+
+            // If user is participant in BOTH (or SuperAdmin in both), compare latest activity
+            $convActiveAt = $conv->last_message_at ?? $conv->updated_at;
+            $groupActiveAt = $group->updated_at ?? $group->created_at;
+
+            if ($groupActiveAt && $convActiveAt) {
+                return ($groupActiveAt >= $convActiveAt)
+                    ? ['type' => 'group', 'model' => $group]
+                    : ['type' => 'conversation', 'model' => $conv];
+            }
+
+            return ['type' => 'conversation', 'model' => $conv];
+        }
+
+        // 4. Neither exists with ID $id as primary key:
+        // Check if $id was passed as partner's user ID for a direct conversation
+        $targetTypeStr = $request->input('target_type') 
+            ?? $request->input('partner_type') 
+            ?? $request->input('recipient_type') 
+            ?? $request->input('user_type');
+        $targetClass = $targetTypeStr ? $this->resolveModelClass($targetTypeStr) : null;
+
+        $partnerQuery = Conversation::where(function ($q) use ($user, $id, $targetClass) {
+            $q->where('sender_id', $user->id)->where('sender_type', get_class($user))
+              ->where('receiver_id', $id);
+            if ($targetClass) {
+                $q->where('receiver_type', $targetClass);
+            }
+        })->orWhere(function ($q) use ($user, $id, $targetClass) {
+            $q->where('receiver_id', $user->id)->where('receiver_type', get_class($user))
+              ->where('sender_id', $id);
+            if ($targetClass) {
+                $q->where('sender_type', $targetClass);
+            }
+        });
+
+        $partnerConv = $partnerQuery->orderByDesc('last_message_at')->first();
+
+        if ($partnerConv) {
+            return ['type' => 'conversation', 'model' => $partnerConv];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get messages in a direct 1-to-1 conversation or chat group.
+     * Unified endpoint: works for both 1-to-1 conversations and groups by ID.
      */
     public function getConversationMessages(Request $request, $id)
     {
@@ -629,14 +1038,132 @@ class ChatApiController extends Controller
                 ], 403);
             }
 
-            $conversation = Conversation::find($id);
-            if (!$conversation) {
+            $resolved = $this->resolveConversationOrGroup($id, $user, $request);
+            if (!$resolved) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Conversation #{$id} not found."
+                    'message' => "Conversation or Group #{$id} not found."
                 ], 404);
             }
 
+            $page = max(1, (int) $request->input('page', 1));
+            $perPage = max(1, min(100, (int) $request->input('per_page', 50)));
+            $order = strtolower(trim((string) $request->input('order', 'asc')));
+            $fromOldest = filter_var($request->input('from_oldest', false), FILTER_VALIDATE_BOOLEAN)
+                || filter_var($request->input('from_start', false), FILTER_VALIDATE_BOOLEAN);
+
+            // 1. GROUP CHAT MESSAGES
+            if ($resolved['type'] === 'group') {
+                $group = $resolved['model'];
+
+                if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized to view this group chat.'], 403);
+                }
+
+                // Mark incoming group messages as read
+                try {
+                    Message::where('chat_group_id', $group->id)
+                        ->where(function ($q) use ($user) {
+                            $q->where('sender_id', '!=', $user->id)
+                              ->orWhere('sender_type', '!=', get_class($user));
+                        })
+                        ->where('is_read', false)
+                        ->update(['is_read' => true]);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to mark group messages as read: ' . $e->getMessage());
+                }
+
+                $totalCount = (int) Message::where('chat_group_id', $group->id)->count();
+                $lastPage = (int) max(1, ceil($totalCount / $perPage));
+
+                if ($order === 'desc') {
+                    $messages = Message::where('chat_group_id', $group->id)
+                        ->with(['attachments', 'sender'])
+                        ->orderBy('id', 'desc')
+                        ->paginate($perPage);
+
+                    $formattedMessages = [];
+                    foreach ($messages->items() as $m) {
+                        $formattedMessages[] = $this->formatMessageSummary($m);
+                    }
+                } elseif ($fromOldest) {
+                    $messages = Message::where('chat_group_id', $group->id)
+                        ->with(['attachments', 'sender'])
+                        ->orderBy('id', 'asc')
+                        ->paginate($perPage);
+
+                    $formattedMessages = [];
+                    foreach ($messages->items() as $m) {
+                        $formattedMessages[] = $this->formatMessageSummary($m);
+                    }
+                } else {
+                    if ($page > $lastPage) {
+                        $formattedMessages = [];
+                    } else {
+                        $calculatedOffset = $totalCount - ($page * $perPage);
+                        if ($calculatedOffset < 0) {
+                            $limit = $perPage + $calculatedOffset;
+                            $offset = 0;
+                        } else {
+                            $offset = $calculatedOffset;
+                            $limit = $perPage;
+                        }
+
+                        $items = Message::where('chat_group_id', $group->id)
+                            ->with(['attachments', 'sender'])
+                            ->orderBy('id', 'asc')
+                            ->offset($offset)
+                            ->limit($limit)
+                            ->get();
+
+                        $formattedMessages = $items->map(fn($m) => $this->formatMessageSummary($m))->values()->toArray();
+                    }
+                }
+
+                $groupSummary = $this->formatGroupSummary($group, $user, true);
+                $partnerSummary = [
+                    'id'        => (int) $group->id,
+                    'name'      => $group->name,
+                    'full_name' => $group->name,
+                    'label'     => $group->name,
+                    'code'      => 'GROUP-' . $group->id,
+                    'type'      => 'group',
+                    'role'      => 'group',
+                    'avatar'    => null,
+                    'image'     => null,
+                    'image_url' => null,
+                ];
+
+                Log::info("[CHAT GET GROUP MESSAGES] Group #{$group->id} requested by User " . get_class($user) . " #{$user->id}", [
+                    'group_id'       => (int) $group->id,
+                    'page'           => $page,
+                    'total_messages' => $totalCount,
+                    'returned_count' => count($formattedMessages),
+                ]);
+
+                return response()->json([
+                    'success'         => true,
+                    'conversation_id' => (int) $group->id,
+                    'id'              => (int) $group->id,
+                    'is_group'        => true,
+                    'chat_type'       => 'group',
+                    'group'           => $groupSummary,
+                    'partner'         => $partnerSummary,
+                    'user'            => $partnerSummary,
+                    'messages'        => $formattedMessages,
+                    'data'            => $formattedMessages,
+                    'pagination'      => [
+                        'current_page' => $page,
+                        'last_page'    => $lastPage,
+                        'per_page'     => $perPage,
+                        'total'        => $totalCount,
+                        'has_more'     => $page < $lastPage,
+                    ]
+                ]);
+            }
+
+            // 2. DIRECT 1-TO-1 CONVERSATION MESSAGES
+            $conversation = $resolved['model'];
             $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
                 || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
 
@@ -649,7 +1176,7 @@ class ChatApiController extends Controller
 
             // Mark incoming messages as read
             try {
-                Message::where('conversation_id', $id)
+                Message::where('conversation_id', $conversation->id)
                     ->where(function ($q) use ($user) {
                         $q->where('sender_id', '!=', $user->id)
                           ->orWhere('sender_type', '!=', get_class($user));
@@ -660,32 +1187,85 @@ class ChatApiController extends Controller
                 Log::warning('Failed to mark messages as read: ' . $e->getMessage());
             }
 
-            $perPage = max(1, min(100, (int) $request->input('per_page', 50)));
-            $messages = Message::where('conversation_id', $id)
-                ->with(['attachments', 'sender'])
-                ->orderBy('created_at', 'asc')
-                ->paginate($perPage);
+            $totalCount = (int) Message::where('conversation_id', $conversation->id)->count();
+            $lastPage = (int) max(1, ceil($totalCount / $perPage));
+
+            if ($order === 'desc') {
+                $messages = Message::where('conversation_id', $conversation->id)
+                    ->with(['attachments', 'sender'])
+                    ->orderBy('id', 'desc')
+                    ->paginate($perPage);
+
+                $formattedMessages = [];
+                foreach ($messages->items() as $m) {
+                    $formattedMessages[] = $this->formatMessageSummary($m);
+                }
+            } elseif ($fromOldest) {
+                $messages = Message::where('conversation_id', $conversation->id)
+                    ->with(['attachments', 'sender'])
+                    ->orderBy('id', 'asc')
+                    ->paginate($perPage);
+
+                $formattedMessages = [];
+                foreach ($messages->items() as $m) {
+                    $formattedMessages[] = $this->formatMessageSummary($m);
+                }
+            } else {
+                if ($page > $lastPage) {
+                    $formattedMessages = [];
+                } else {
+                    $calculatedOffset = $totalCount - ($page * $perPage);
+                    if ($calculatedOffset < 0) {
+                        $limit = $perPage + $calculatedOffset;
+                        $offset = 0;
+                    } else {
+                        $offset = $calculatedOffset;
+                        $limit = $perPage;
+                    }
+
+                    $items = Message::where('conversation_id', $conversation->id)
+                        ->with(['attachments', 'sender'])
+                        ->orderBy('id', 'asc')
+                        ->offset($offset)
+                        ->limit($limit)
+                        ->get();
+
+                    $formattedMessages = $items->map(fn($m) => $this->formatMessageSummary($m))->values()->toArray();
+                }
+            }
 
             $partner = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
                 ? $conversation->receiver
                 : $conversation->sender;
 
-            $formattedMessages = [];
-            foreach ($messages->items() as $m) {
-                $formattedMessages[] = $this->formatMessageSummary($m);
-            }
+            $partnerSummary = $partner ? $this->formatUserSummary($partner) : null;
+
+            Log::info("[CHAT GET MESSAGES] Conversation #{$conversation->id} requested by User " . get_class($user) . " #{$user->id}", [
+                'conversation_id' => (int) $conversation->id,
+                'page'            => $page,
+                'total_messages'  => $totalCount,
+                'returned_count'  => count($formattedMessages),
+                'first_id'        => !empty($formattedMessages) ? $formattedMessages[0]['id'] : null,
+                'last_id'         => !empty($formattedMessages) ? end($formattedMessages)['id'] : null,
+            ]);
 
             return response()->json([
                 'success'         => true,
                 'conversation_id' => (int) $conversation->id,
-                'partner'         => $partner ? $this->formatUserSummary($partner) : null,
+                'id'              => (int) $conversation->id,
+                'is_group'        => false,
+                'chat_type'       => 'direct',
+                'partner'         => $partnerSummary,
+                'user'            => $partnerSummary,
+                'group'           => null,
                 'messages'        => $formattedMessages,
                 'data'            => $formattedMessages,
                 'pagination'      => [
-                    'current_page' => $messages->currentPage(),
-                    'last_page'    => $messages->lastPage(),
-                    'per_page'     => $messages->perPage(),
-                    'total'        => $messages->total(),
+                    'current_page' => $page,
+                    'last_page'    => $lastPage,
+                    'per_page'     => $perPage,
+                    'total'        => $totalCount,
+                    'has_more'     => $page < $lastPage,
                 ]
             ]);
         } catch (\Throwable $e) {
@@ -700,7 +1280,8 @@ class ChatApiController extends Controller
     }
 
     /**
-     * Send message with optional images/videos in a 1-to-1 conversation.
+     * Send message in a direct conversation or group chat.
+     * Unified endpoint: works for both 1-to-1 conversations and groups by ID.
      */
     public function sendConversationMessage(Request $request, $id)
     {
@@ -715,13 +1296,39 @@ class ChatApiController extends Controller
             }
 
             $request->validate([
-                'body'          => 'nullable|string',
-                'message'       => 'nullable|string',
-                'text'          => 'nullable|string',
-                'content'       => 'nullable|string',
-                'attachments.*' => 'nullable|file|max:51200',
-                'image'         => 'nullable',
-                'video'         => 'nullable',
+                'body'             => 'nullable|string',
+                'message'          => 'nullable|string',
+                'text'             => 'nullable|string',
+                'content'          => 'nullable|string',
+                'attachments.*'    => 'nullable|file|max:102400',
+                'image'            => 'nullable',
+                'images.*'         => 'nullable|file|max:51200',
+                'video'            => 'nullable',
+                'videos.*'         => 'nullable|file|max:102400',
+                'audio'            => 'nullable',
+                'audios.*'         => 'nullable|file|max:51200',
+                'voice'            => 'nullable',
+                'voice_note'       => 'nullable',
+                'document'         => 'nullable',
+                'documents.*'      => 'nullable|file|max:102400',
+                'doc'              => 'nullable',
+                'docs.*'           => 'nullable|file|max:102400',
+                'file'             => 'nullable',
+                'files.*'          => 'nullable|file|max:102400',
+                'video_url'        => 'nullable|string',
+                'audio_url'        => 'nullable|string',
+                'voice_url'        => 'nullable|string',
+                'document_url'     => 'nullable|string',
+                'doc_url'          => 'nullable|string',
+                'latitude'         => 'nullable',
+                'longitude'        => 'nullable',
+                'lat'              => 'nullable',
+                'lng'              => 'nullable',
+                'long'             => 'nullable',
+                'location'         => 'nullable',
+                'live_location'    => 'nullable',
+                'is_live_location' => 'nullable',
+                'map_url'          => 'nullable|string',
             ]);
 
             $user = Auth::user();
@@ -736,19 +1343,12 @@ class ChatApiController extends Controller
                 ], 403);
             }
 
-            $conversation = Conversation::find($id);
-            if (!$conversation) {
+            $resolved = $this->resolveConversationOrGroup($id, $user, $request);
+            if (!$resolved) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Conversation #{$id} not found."
+                    'message' => "Conversation or Group #{$id} not found."
                 ], 404);
-            }
-
-            $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
-                || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
-
-            if (!$isParticipant && !$this->isSuperAdmin($user)) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized to send message here.'], 403);
             }
 
             $bodyText = $request->input('body') 
@@ -760,18 +1360,152 @@ class ChatApiController extends Controller
                 ?? $request->input('action_input')
                 ?? (!empty($rawContent) && !str_starts_with(trim($rawContent), '{') ? trim($rawContent) : null);
 
+            $hasLocation = ($request->filled('latitude') && $request->filled('longitude'))
+                || ($request->filled('lat') && ($request->filled('lng') || $request->filled('long')))
+                || $request->filled('location')
+                || $request->filled('map_url')
+                || $request->filled('live_location');
+
             $hasText = !is_null($bodyText) && trim((string)$bodyText) !== '';
-            $hasMedia = $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video') || $request->hasFile('file');
+            $hasMedia = $request->hasFile('attachments') 
+                || $request->hasFile('image') 
+                || $request->hasFile('images') 
+                || $request->hasFile('video') 
+                || $request->hasFile('videos') 
+                || $request->hasFile('audio') 
+                || $request->hasFile('audios') 
+                || $request->hasFile('voice') 
+                || $request->hasFile('voice_note') 
+                || $request->hasFile('document') 
+                || $request->hasFile('documents') 
+                || $request->hasFile('doc') 
+                || $request->hasFile('docs') 
+                || $request->hasFile('file') 
+                || $request->hasFile('files') 
+                || $request->hasFile('media') 
+                || $request->filled('video_url') 
+                || $request->filled('audio_url') 
+                || $request->filled('voice_url')
+                || $request->filled('document_url')
+                || $request->filled('doc_url')
+                || $hasLocation
+                || (is_string($request->input('video')) && filter_var($request->input('video'), FILTER_VALIDATE_URL))
+                || (is_string($request->input('audio')) && filter_var($request->input('audio'), FILTER_VALIDATE_URL))
+                || (is_string($request->input('voice')) && filter_var($request->input('voice'), FILTER_VALIDATE_URL))
+                || (!empty($request->input('attachments')) && is_array($request->input('attachments')));
 
             if (!$hasText && !$hasMedia) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Message body or an attachment is required.',
+                    'message' => 'Message body, a media attachment (video, audio, document, image), or live location is required.',
                     'debug'   => [
                         'received_keys' => array_keys($request->all()),
-                        'hint' => 'Send a JSON body like {"body": "your message"} or form-data with key "body".'
+                        'supported_media_keys' => ['video', 'audio', 'document', 'live_location', 'latitude', 'longitude', 'attachments', 'image', 'file', 'video_url', 'audio_url', 'document_url'],
+                        'hint' => 'Send text/URL via "body", upload files via "video", "audio", "document", or send live location via "latitude" & "longitude".'
                     ]
                 ], 422);
+            }
+
+            // 1. SEND GROUP MESSAGE
+            if ($resolved['type'] === 'group') {
+                $group = $resolved['model'];
+                if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized to send messages in this group.'], 403);
+                }
+
+                $message = $this->storeMessageRecord(
+                    conversationId: null,
+                    chatGroupId: $group->id,
+                    user: $user,
+                    request: $request
+                );
+
+                $group->touch(); // updates updated_at
+
+                // Broadcast WebSocket (Pusher) event to group channel and conversation channel
+                try {
+                    $broadcastEvent = new MessageSent($message);
+                    $eventChannels = array_map(fn($c) => $c->name, $broadcastEvent->broadcastOn());
+                    Log::info("[PUSHER GROUP BROADCAST] Sending message #{$message->id} to Group #{$group->id}:", [
+                        'group_id'   => $group->id,
+                        'channels'   => $eventChannels,
+                        'event_name' => $broadcastEvent->broadcastAs(),
+                        'sender'     => get_class($user) . ' #' . $user->id,
+                    ]);
+                    broadcast($broadcastEvent);
+                    Log::info("[PUSHER GROUP BROADCAST] Group message #{$message->id} successfully broadcasted to Pusher!");
+                } catch (\Throwable $e) {
+                    Log::error('[PUSHER GROUP BROADCAST FAILED]: ' . $e->getMessage());
+                }
+
+                // Send FCM Push notifications to all group participants (except sender)
+                $senderSummary = $this->formatUserSummary($user);
+                if (!empty($message->body)) {
+                    $bodyPreview = $message->body;
+                } elseif ($message->attachments->isNotEmpty()) {
+                    $firstAtt = $message->attachments->first();
+                    $bodyPreview = match ($firstAtt->file_type) {
+                        'audio'    => '🎤 Voice / Audio message',
+                        'video'    => '🎥 Video message',
+                        'image'    => '📷 Photo',
+                        'document' => '📄 Document: ' . $firstAtt->file_name,
+                        default    => 'Sent media attachment',
+                    };
+                } else {
+                    $bodyPreview = 'New message';
+                }
+                $notificationTitle = "{$group->name} • {$senderSummary['name']}";
+
+                $participants = $group->participants()
+                    ->where(function ($q) use ($user) {
+                        $q->where('user_id', '!=', $user->id)
+                          ->orWhere('user_type', '!=', get_class($user));
+                    })
+                    ->with('user')
+                    ->get();
+
+                foreach ($participants as $pRecord) {
+                    $pUser = $pRecord->user;
+                    if ($pUser && method_exists($pUser, 'notify')) {
+                        try {
+                            $pUser->notify(new NewChatMessageNotification(
+                                $message,
+                                $notificationTitle,
+                                $bodyPreview,
+                                [
+                                    'conversation_id' => (string) $group->id,
+                                    'chat_group_id'   => (string) $group->id,
+                                    'is_group'        => 'true',
+                                    'group_name'      => (string) $group->name,
+                                    'sender_name'     => (string) $senderSummary['name'],
+                                ]
+                            ));
+                        } catch (\Throwable $e) {
+                            Log::warning('FCM group participant push failed (non-fatal): ' . $e->getMessage());
+                        }
+                    }
+                }
+
+                $formattedMessage = $this->formatMessageSummary($message);
+
+                return response()->json([
+                    'success'         => true,
+                    'is_group'        => true,
+                    'chat_type'       => 'group',
+                    'conversation_id' => (int) $group->id,
+                    'chat_group_id'   => (int) $group->id,
+                    'message'         => 'Group message sent successfully.',
+                    'data'            => $formattedMessage
+                ], 201);
+            }
+
+            // 2. SEND DIRECT 1-TO-1 CONVERSATION MESSAGE
+            $conversation = $resolved['model'];
+            $isParticipant = ($conversation->sender_id == $user->id && $conversation->sender_type == get_class($user))
+                || ($conversation->receiver_id == $user->id && $conversation->receiver_type == get_class($user));
+
+            if (!$isParticipant && !$this->isSuperAdmin($user)) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized to send message here.'], 403);
             }
 
             $message = $this->storeMessageRecord(
@@ -783,11 +1517,35 @@ class ChatApiController extends Controller
 
             $conversation->update(['last_message_at' => now()]);
 
-            // Broadcast Reverb WebSocket event (non-fatal if socket server is off)
+            // Broadcast WebSocket (Pusher) event
             try {
-                broadcast(new MessageSent($message))->toOthers();
+                $broadcastEvent = new MessageSent($message);
+                $eventChannels = array_map(fn($c) => $c->name, $broadcastEvent->broadcastOn());
+                $eventPayload = $broadcastEvent->broadcastWith();
+
+                Log::info("[PUSHER CHAT BROADCAST] Sending message #{$message->id} to Pusher:", [
+                    'conversation_id' => $conversation->id,
+                    'event_name'      => $broadcastEvent->broadcastAs(),
+                    'channels'        => $eventChannels,
+                    'sender'          => get_class($user) . ' #' . $user->id,
+                    'payload_preview' => [
+                        'id'          => $eventPayload['id'] ?? null,
+                        'body'        => $eventPayload['body'] ?? '',
+                        'sender_name' => $eventPayload['sender_name'] ?? '',
+                        'attachments' => count($eventPayload['attachments'] ?? []),
+                        'created_at'  => $eventPayload['created_at'] ?? '',
+                    ]
+                ]);
+
+                broadcast($broadcastEvent);
+
+                Log::info("[PUSHER CHAT BROADCAST] Message #{$message->id} successfully broadcasted to Pusher Cloud!");
             } catch (\Throwable $e) {
-                Log::warning('Socket broadcasting failed (non-fatal): ' . $e->getMessage());
+                Log::error("[PUSHER CHAT BROADCAST FAILED]: " . $e->getMessage(), [
+                    'line'  => $e->getLine(),
+                    'file'  => basename($e->getFile()),
+                    'trace' => $e->getTraceAsString(),
+                ]);
             }
 
             // Send FCM Push Notification to the partner
@@ -798,7 +1556,20 @@ class ChatApiController extends Controller
             if ($partner && method_exists($partner, 'notify')) {
                 try {
                     $senderSummary = $this->formatUserSummary($user);
-                    $bodyPreview = $message->body ?: ($message->attachments->count() > 0 ? 'Sent media attachment' : 'New message');
+                    if (!empty($message->body)) {
+                        $bodyPreview = $message->body;
+                    } elseif ($message->attachments->isNotEmpty()) {
+                        $firstAtt = $message->attachments->first();
+                        $bodyPreview = match ($firstAtt->file_type) {
+                            'audio'    => '🎤 Voice / Audio message',
+                            'video'    => '🎥 Video message',
+                            'image'    => '📷 Photo',
+                            'document' => '📄 Document: ' . $firstAtt->file_name,
+                            default    => 'Sent media attachment',
+                        };
+                    } else {
+                        $bodyPreview = 'New message';
+                    }
 
                     $partner->notify(new NewChatMessageNotification(
                         $message,
@@ -816,9 +1587,12 @@ class ChatApiController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Message sent successfully.',
-                'data'    => $this->formatMessageSummary($message)
+                'success'         => true,
+                'is_group'        => false,
+                'chat_type'       => 'direct',
+                'conversation_id' => (int) $conversation->id,
+                'message'         => 'Message sent successfully.',
+                'data'            => $this->formatMessageSummary($message)
             ], 201);
         } catch (\Throwable $e) {
             Log::error('sendConversationMessage error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -975,54 +1749,7 @@ class ChatApiController extends Controller
      */
     public function getGroups(Request $request)
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
-        }
-
-        if (!$this->hasChatPermission($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
-            ], 403);
-        }
-
-        $isSuperAdmin = $this->isSuperAdmin($user);
-
-        if ($isSuperAdmin && $request->boolean('all')) {
-            $groups = ChatGroup::with(['creator', 'participants.user', 'latestMessage.attachments'])
-                ->orderByDesc('updated_at')
-                ->get();
-        } else {
-            // Find groups where user is a participant or creator
-            $groupIds = ChatGroupParticipant::where('user_id', $user->id)
-                ->where('user_type', get_class($user))
-                ->pluck('chat_group_id')
-                ->toArray();
-
-            // Also check creator
-            $createdGroupIds = ChatGroup::where('creator_id', $user->id)
-                ->where('creator_type', get_class($user))
-                ->pluck('id')
-                ->toArray();
-
-            $allIds = array_unique(array_merge($groupIds, $createdGroupIds));
-
-            $query = ChatGroup::whereIn('id', $allIds);
-
-            // If Admin, also include global admin groups
-            if ($user instanceof ProcessOwner) {
-                $query->orWhere('is_global_admin_group', true);
-            }
-
-            $groups = $query->with(['creator', 'participants.user', 'latestMessage.attachments'])
-                ->orderByDesc('updated_at')
-                ->get();
-        }
-
-        $data = $groups->map(fn($g) => $this->formatGroupSummary($g, $user));
-
-        return response()->json(['success' => true, 'data' => $data]);
+        return $this->getRecentChats($request->merge(['type' => 'groups']));
     }
 
     /**
@@ -1149,152 +1876,21 @@ class ChatApiController extends Controller
     }
 
     /**
-     * Get messages in a group chat.
+     * Get messages in a group chat (Delegates to unified getConversationMessages).
      */
     public function getGroupMessages(Request $request, $id)
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
-        }
-
-        if (!$this->hasChatPermission($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
-            ], 403);
-        }
-        $group = ChatGroup::findOrFail($id);
-
-        if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized to view this group chat.'], 403);
-        }
-
-        $perPage = (int) $request->input('per_page', 50);
-        $messages = Message::where('chat_group_id', $id)
-            ->with(['attachments', 'sender'])
-            ->orderBy('created_at', 'asc')
-            ->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'group'   => [
-                'id'   => (int) $group->id,
-                'name' => $group->name,
-            ],
-            'data'    => $messages->map(fn($m) => $this->formatMessageSummary($m)),
-            'pagination' => [
-                'current_page' => $messages->currentPage(),
-                'last_page'    => $messages->lastPage(),
-                'per_page'     => $messages->perPage(),
-                'total'        => $messages->total(),
-            ]
-        ]);
+        $request->merge(['is_group' => true]);
+        return $this->getConversationMessages($request, $id);
     }
 
     /**
-     * Send group message with optional images and videos.
+     * Send group message (Delegates to unified sendConversationMessage).
      */
     public function sendGroupMessage(Request $request, $id)
     {
-        $request->validate([
-            'body'          => 'nullable|string',
-            'message'       => 'nullable|string',
-            'text'          => 'nullable|string',
-            'content'       => 'nullable|string',
-            'reply'         => 'nullable|string',
-            'input'         => 'nullable|string',
-            'action_input'  => 'nullable|string',
-            'attachments.*' => 'nullable|file|max:51200',
-            'image'         => 'nullable|file|image|max:15360',
-            'video'         => 'nullable|file|mimes:mp4,mov,avi,3gp,webm,mkv|max:51200',
-        ]);
-
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
-        }
-
-        if (!$this->hasChatPermission($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have chat permissions enabled. Please contact Super Admin.'
-            ], 403);
-        }
-        $group = ChatGroup::findOrFail($id);
-
-        if (!$group->hasParticipant($user) && !$this->isSuperAdmin($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized to send messages in this group.'], 403);
-        }
-
-        $bodyText = $request->input('body') 
-            ?? $request->input('message') 
-            ?? $request->input('text') 
-            ?? $request->input('content')
-            ?? $request->input('reply')
-            ?? $request->input('input')
-            ?? $request->input('action_input');
-        $hasText = !is_null($bodyText) && trim((string)$bodyText) !== '';
-        $hasMedia = $request->hasFile('attachments') || $request->hasFile('image') || $request->hasFile('video') || $request->hasFile('file');
-
-        if (!$hasText && !$hasMedia) {
-            return response()->json(['success' => false, 'message' => 'Message body or an attachment is required.'], 422);
-        }
-
-        $message = $this->storeMessageRecord(
-            conversationId: null,
-            chatGroupId: $group->id,
-            user: $user,
-            request: $request
-        );
-
-        $group->touch(); // updates updated_at
-
-        // Broadcast Reverb WebSocket event to group channel
-        try {
-            broadcast(new MessageSent($message))->toOthers();
-        } catch (\Throwable $e) {
-            Log::warning('Reverb group broadcast failed (non-fatal): ' . $e->getMessage());
-        }
-
-        // Send FCM Push notifications to all group participants (except sender)
-        $senderSummary = $this->formatUserSummary($user);
-        $bodyPreview = $message->body ?: ($message->attachments->count() > 0 ? 'Sent media attachment' : 'New message');
-        $notificationTitle = "{$group->name} • {$senderSummary['name']}";
-
-        $participants = $group->participants()
-            ->where(function ($q) use ($user) {
-                $q->where('user_id', '!=', $user->id)
-                  ->orWhere('user_type', '!=', get_class($user));
-            })
-            ->with('user')
-            ->get();
-
-        foreach ($participants as $pRecord) {
-            $pUser = $pRecord->user;
-            if ($pUser && method_exists($pUser, 'notify')) {
-                try {
-                    $pUser->notify(new NewChatMessageNotification(
-                        $message,
-                        $notificationTitle,
-                        $bodyPreview,
-                        [
-                            'chat_group_id' => (string) $group->id,
-                            'group_name'    => (string) $group->name,
-                            'sender_name'   => (string) $senderSummary['name'],
-                        ]
-                    ));
-                } catch (\Throwable $e) {
-                    Log::warning('FCM group participant push failed (non-fatal): ' . $e->getMessage());
-                }
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Group message sent successfully.',
-            'data'    => $this->formatMessageSummary($message)
-        ], 201);
+        $request->merge(['is_group' => true]);
+        return $this->sendConversationMessage($request, $id);
     }
 
     /**
@@ -1841,75 +2437,53 @@ class ChatApiController extends Controller
             return ['allowed' => true];
         }
 
-        // 4. Buyer communication rules
+        // 4. Buyer communication rules: Only their own Key Users or Admins
         if ($user instanceof Buyer) {
-            // Own Key Users
-            if ($target instanceof KeyUser && strtoupper(trim($target->bp_code)) === strtoupper(trim($user->bp_code))) {
-                return ['allowed' => true];
-            }
-            // Craftsmen and Craftsman Staff
-            if ($target instanceof Craftman || $target instanceof CraftsmanStaff) {
+            if ($target instanceof KeyUser && strtoupper(trim((string)$target->bp_code)) === strtoupper(trim((string)$user->bp_code))) {
                 return ['allowed' => true];
             }
             return [
                 'allowed' => false,
-                'reason'  => 'Buyers can only communicate directly with their Key Users, Craftsmen, or Admins.'
+                'reason'  => 'Buyers can only communicate directly with their own Key Users or Admins.'
             ];
         }
 
-        // 5. Craftsman communication rules
+        // 5. Craftsman communication rules: Only their own Craftsman Staff or Admins
         if ($user instanceof Craftman) {
-            // Own staff
             if ($target instanceof CraftsmanStaff && (int) $target->craftsman_id === (int) $user->id) {
                 return ['allowed' => true];
             }
-            // Buyers and their Key Users
-            if ($target instanceof Buyer || $target instanceof KeyUser) {
-                return ['allowed' => true];
-            }
             return [
                 'allowed' => false,
-                'reason'  => 'Craftsmen can only communicate directly with their staff, Buyers, or Admins.'
+                'reason'  => 'Craftsmen can only communicate directly with their own staff or Admins.'
             ];
         }
 
-        // 6. Key User communication rules
+        // 6. Key User communication rules: Only their parent Buyer, fellow Key Users under same BP code, or Admins
         if ($user instanceof KeyUser) {
-            // Parent Buyer
-            if ($target instanceof Buyer && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
+            if ($target instanceof Buyer && strtoupper(trim((string)$user->bp_code)) === strtoupper(trim((string)$target->bp_code))) {
                 return ['allowed' => true];
             }
-            // Fellow Key Users under same BP code
-            if ($target instanceof KeyUser && strtoupper(trim($user->bp_code)) === strtoupper(trim($target->bp_code))) {
-                return ['allowed' => true];
-            }
-            // Craftsmen and Craftsman Staff
-            if ($target instanceof Craftman || $target instanceof CraftsmanStaff) {
+            if ($target instanceof KeyUser && strtoupper(trim((string)$user->bp_code)) === strtoupper(trim((string)$target->bp_code))) {
                 return ['allowed' => true];
             }
             return [
                 'allowed' => false,
-                'reason'  => 'Key users can only communicate directly with their parent Buyer, colleagues, Craftsmen, or Admins.'
+                'reason'  => 'Key users can only communicate directly with their parent Buyer, colleagues, or Admins.'
             ];
         }
 
-        // 7. Craftsman Staff communication rules
+        // 7. Craftsman Staff communication rules: Only their parent Craftsman, fellow staff in same workshop, or Admins
         if ($user instanceof CraftsmanStaff) {
-            // Parent Craftsman
             if ($target instanceof Craftman && (int) $user->craftsman_id === (int) $target->id) {
                 return ['allowed' => true];
             }
-            // Fellow staff members
             if ($target instanceof CraftsmanStaff && (int) $user->craftsman_id === (int) $target->craftsman_id) {
-                return ['allowed' => true];
-            }
-            // Buyers and Key Users
-            if ($target instanceof Buyer || $target instanceof KeyUser) {
                 return ['allowed' => true];
             }
             return [
                 'allowed' => false,
-                'reason'  => 'Staff can only communicate directly with their Craftsman, fellow staff members, Buyers, or Admins.'
+                'reason'  => 'Craftsman staff can only communicate directly with their parent Craftsman, workshop colleagues, or Admins.'
             ];
         }
 
@@ -1991,32 +2565,163 @@ class ChatApiController extends Controller
     }
 
     /**
-     * Format a message for API response with full attachment URLs.
+     * Format a message for API response with full attachment URLs and media convenience keys.
      */
     private function formatMessageSummary(Message $message): array
     {
         $senderSummary = $this->formatUserSummary($message->sender);
 
         $attachments = $message->attachments->map(function ($att) {
+            $streamUrl = $att->stream_url ?? url('/api/common/chat/media/' . $att->id . '/stream');
+            $ext = strtolower(pathinfo($att->file_name ?? $att->file_path, PATHINFO_EXTENSION));
+            $mimeType = $att->mime_type;
+            if (empty($mimeType) || $mimeType === 'application/octet-stream' || str_ends_with($mimeType, '/*')) {
+                $mimeType = match ($ext) {
+                    'm4a'   => 'audio/mp4',
+                    'mp3'   => 'audio/mpeg',
+                    'wav'   => 'audio/wav',
+                    'aac'   => 'audio/aac',
+                    'opus'  => 'audio/opus',
+                    'mp4'   => 'video/mp4',
+                    'mov'   => 'video/quicktime',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    'png'   => 'image/png',
+                    'pdf'   => 'application/pdf',
+                    'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'xls'   => 'application/vnd.ms-excel',
+                    'docx'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'doc'   => 'application/msword',
+                    default => ($att->file_type === 'audio' ? 'audio/mp4' : ($att->file_type === 'video' ? 'video/mp4' : 'application/octet-stream')),
+                };
+            }
+
             return [
-                'id'        => (int) $att->id,
-                'file_name' => $att->file_name,
-                'file_path' => $att->file_path,
-                'file_type' => $att->file_type,
-                'mime_type' => $att->mime_type,
-                'full_url'  => $att->full_url,
+                'id'         => (int) $att->id,
+                'file_name'  => $att->file_name,
+                'file_path'  => $att->file_path,
+                'file_type'  => $att->file_type,
+                'mime_type'  => $mimeType,
+                'full_url'   => $att->full_url,
+                'stream_url' => $streamUrl,
             ];
         })->values()->toArray();
 
+        // Location detection (Live Location / Shared Google Maps Location)
+        $isLocation = false;
+        $latitude = null;
+        $longitude = null;
+        $mapUrl = null;
+        $isLiveLocation = false;
+
+        $rawBody = (string) $message->body;
+        if (preg_match('/(?:maps\.google\.com\/(?:maps)?\?q=|@)(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', $rawBody, $locMatches)) {
+            $isLocation = true;
+            $latitude = (float) $locMatches[1];
+            $longitude = (float) $locMatches[2];
+            $mapUrl = "https://maps.google.com/?q={$latitude},{$longitude}";
+            $isLiveLocation = str_contains(strtolower($rawBody), 'live');
+        } elseif (preg_match('/^location:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', trim($rawBody), $locMatches)) {
+            $isLocation = true;
+            $latitude = (float) $locMatches[1];
+            $longitude = (float) $locMatches[2];
+            $mapUrl = "https://maps.google.com/?q={$latitude},{$longitude}";
+            $isLiveLocation = false;
+        }
+
+        // Extract primary media URLs for direct top-level access in Flutter/Web
+        $audioAtt = $message->attachments->firstWhere('file_type', 'audio');
+        $videoAtt = $message->attachments->firstWhere('file_type', 'video');
+        $imageAtt = $message->attachments->firstWhere('file_type', 'image');
+        $docAtt   = $message->attachments->firstWhere('file_type', 'document');
+
+        $primaryAtt = $audioAtt ?? $videoAtt ?? $imageAtt ?? $docAtt;
+
+        if ($isLocation) {
+            $mediaType = $isLiveLocation ? 'live_location' : 'location';
+        } else {
+            $mediaType = $primaryAtt ? $primaryAtt->file_type : 'text';
+        }
+
+        $audioUrl = $audioAtt ? ($audioAtt->stream_url ?? $audioAtt->full_url) : null;
+        $videoUrl = $videoAtt ? ($videoAtt->stream_url ?? $videoAtt->full_url) : null;
+        $imageUrl = $imageAtt ? $imageAtt->full_url : null;
+        $fileUrl  = $docAtt ? $docAtt->full_url : null;
+
+        $mediaUrl = null;
+        if ($isLocation) {
+            $mediaUrl = $mapUrl;
+        } elseif ($primaryAtt) {
+            $mediaUrl = ($primaryAtt->file_type === 'audio' || $primaryAtt->file_type === 'video')
+                ? ($primaryAtt->stream_url ?? $primaryAtt->full_url)
+                : $primaryAtt->full_url;
+        }
+
+        $body = $message->body;
+
+        if ($isLocation) {
+            $body = $mapUrl;
+        } elseif ($primaryAtt) {
+            $currentTrimmed = trim((string)$body);
+            $fileName = trim((string)$primaryAtt->file_name);
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // If body is empty, OR matches the bare filename, OR ends with a media extension without spaces
+            $shouldReplaceWithUrl = empty($currentTrimmed) || ($currentTrimmed === $fileName);
+            if (!$shouldReplaceWithUrl && !empty($ext) && str_ends_with(strtolower($currentTrimmed), '.' . $ext) && !str_contains($currentTrimmed, ' ') && !str_starts_with($currentTrimmed, 'http')) {
+                $shouldReplaceWithUrl = true;
+            }
+
+            if ($shouldReplaceWithUrl) {
+                $body = $mediaUrl;
+            }
+        }
+
+        $primaryExt = $primaryAtt ? strtolower(pathinfo($primaryAtt->file_name ?? $primaryAtt->file_path, PATHINFO_EXTENSION)) : '';
+        $primaryMime = $primaryAtt ? ($primaryAtt->mime_type ?: match ($primaryExt) {
+            'm4a'   => 'audio/mp4',
+            'mp3'   => 'audio/mpeg',
+            'wav'   => 'audio/wav',
+            'aac'   => 'audio/aac',
+            'mp4'   => 'video/mp4',
+            'pdf'   => 'application/pdf',
+            'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            default => ($primaryAtt->file_type === 'audio' ? 'audio/mp4' : ($primaryAtt->file_type === 'video' ? 'video/mp4' : null)),
+        }) : null;
+
         return [
-            'id'              => (int) $message->id,
-            'conversation_id' => $message->conversation_id ? (int) $message->conversation_id : null,
-            'chat_group_id'   => $message->chat_group_id ? (int) $message->chat_group_id : null,
-            'sender'          => $senderSummary,
-            'body'            => $message->body,
-            'attachments'     => $attachments,
-            'is_read'         => (bool) $message->is_read,
-            'created_at'      => optional($message->created_at)->toISOString(),
+            'id'               => (int) $message->id,
+            'conversation_id'  => $message->conversation_id ? (int) $message->conversation_id : ($message->chat_group_id ? (int) $message->chat_group_id : null),
+            'chat_group_id'    => $message->chat_group_id ? (int) $message->chat_group_id : null,
+            'is_group'         => !empty($message->chat_group_id),
+            'chat_type'        => !empty($message->chat_group_id) ? 'group' : 'direct',
+            'sender'           => $senderSummary,
+            'body'             => $body,
+            'text'             => $body,
+            'message'          => $body,
+            'content'          => $body,
+            'media_type'       => $mediaType,
+            'media_url'        => $mediaUrl,
+            'audio_url'        => $audioUrl,
+            'audio_stream_url' => $audioAtt ? ($audioAtt->stream_url ?? null) : null,
+            'video_url'        => $videoUrl,
+            'image_url'        => $imageUrl,
+            'document_url'     => $fileUrl,
+            'file_url'         => $fileUrl,
+            'file_name'        => $primaryAtt ? $primaryAtt->file_name : null,
+            'mime_type'        => $primaryMime,
+            'is_live_location' => $isLiveLocation,
+            'latitude'         => $latitude,
+            'longitude'        => $longitude,
+            'map_url'          => $mapUrl,
+            'location'         => $isLocation ? [
+                'latitude'  => $latitude,
+                'longitude' => $longitude,
+                'map_url'   => $mapUrl,
+                'is_live'   => $isLiveLocation,
+            ] : null,
+            'attachments'      => $attachments,
+            'is_read'          => (bool) $message->is_read,
+            'created_at'       => optional($message->created_at)->toISOString(),
         ];
     }
 
@@ -2041,6 +2746,11 @@ class ChatApiController extends Controller
 
         $res = [
             'id'                    => (int) $group->id,
+            'conversation_id'       => (int) $group->id,
+            'chat_group_id'         => (int) $group->id,
+            'is_group'              => true,
+            'chat_type'             => 'group',
+            'channel_name'          => 'private-conversation.' . $group->id,
             'name'                  => $group->name,
             'creator'               => $creatorSummary,
             'is_global_admin_group' => (bool) $group->is_global_admin_group,
@@ -2064,6 +2774,7 @@ class ChatApiController extends Controller
 
     /**
      * Store message record and all uploaded multimedia files.
+     * Automatically handles video, audio, document, and live location.
      */
     private function storeMessageRecord(?int $conversationId, ?int $chatGroupId, $user, Request $request): Message
     {
@@ -2075,6 +2786,66 @@ class ChatApiController extends Controller
             ?? $request->input('input') 
             ?? $request->input('action_input') 
             ?? '';
+
+        // Check for incoming location coordinates
+        $lat = $request->input('latitude') ?? $request->input('lat');
+        $lng = $request->input('longitude') ?? $request->input('lng') ?? $request->input('long');
+        if (is_null($lat) && is_array($request->input('location'))) {
+            $lat = $request->input('location.latitude') ?? $request->input('location.lat');
+            $lng = $request->input('location.longitude') ?? $request->input('location.lng');
+        }
+
+        // Support JSON string passed inside body (e.g. {"text": "...", "latitude": ..., "image": ...})
+        if (is_string($bodyContent) && str_starts_with(trim($bodyContent), '{') && str_ends_with(trim($bodyContent), '}')) {
+            $decodedJson = json_decode(trim($bodyContent), true);
+            if (is_array($decodedJson)) {
+                if (isset($decodedJson['text']) || isset($decodedJson['message']) || isset($decodedJson['content']) || isset($decodedJson['body'])) {
+                    $bodyContent = $decodedJson['text'] ?? $decodedJson['message'] ?? $decodedJson['content'] ?? $decodedJson['body'];
+                }
+                if (is_null($lat) && (isset($decodedJson['latitude']) || isset($decodedJson['lat']))) {
+                    $lat = $decodedJson['latitude'] ?? $decodedJson['lat'];
+                    $lng = $decodedJson['longitude'] ?? $decodedJson['lng'] ?? $decodedJson['long'] ?? null;
+                } elseif (is_null($lat) && isset($decodedJson['location']) && is_array($decodedJson['location'])) {
+                    $lat = $decodedJson['location']['latitude'] ?? $decodedJson['location']['lat'] ?? null;
+                    $lng = $decodedJson['location']['longitude'] ?? $decodedJson['location']['lng'] ?? null;
+                }
+                if (!empty($decodedJson['image']) && is_string($decodedJson['image'])) {
+                    $request->merge(['image_url' => $decodedJson['image']]);
+                }
+                if (!empty($decodedJson['video']) && is_string($decodedJson['video'])) {
+                    $request->merge(['video_url' => $decodedJson['video']]);
+                }
+                if (!empty($decodedJson['audio']) && is_string($decodedJson['audio'])) {
+                    $request->merge(['audio_url' => $decodedJson['audio']]);
+                }
+                if (!empty($decodedJson['voice']) && is_string($decodedJson['voice'])) {
+                    $request->merge(['audio_url' => $decodedJson['voice']]);
+                }
+                if (!empty($decodedJson['document']) && is_string($decodedJson['document'])) {
+                    $request->merge(['document_url' => $decodedJson['document']]);
+                }
+                if (!empty($decodedJson['doc']) && is_string($decodedJson['doc'])) {
+                    $request->merge(['document_url' => $decodedJson['doc']]);
+                }
+                if (!empty($decodedJson['file']) && is_string($decodedJson['file'])) {
+                    $request->merge(['file_url' => $decodedJson['file']]);
+                }
+            }
+        }
+
+        $isLiveLocation = filter_var($request->input('live_location', false), FILTER_VALIDATE_BOOLEAN)
+            || filter_var($request->input('is_live_location', false), FILTER_VALIDATE_BOOLEAN)
+            || str_contains(strtolower((string)$bodyContent), 'live');
+
+        if (!is_null($lat) && !is_null($lng) && is_numeric($lat) && is_numeric($lng)) {
+            $prefix = $isLiveLocation ? "📍 Live Location:\n" : "📍 Location:\n";
+            $mapLink = "https://maps.google.com/?q={$lat},{$lng}";
+            if (!empty($bodyContent) && !str_contains((string)$bodyContent, 'maps.google.com')) {
+                $bodyContent = trim((string)$bodyContent) . "\n" . $mapLink;
+            } else {
+                $bodyContent = $mapLink;
+            }
+        }
 
         $messageData = [
             'sender_id'   => $user->id,
@@ -2093,39 +2864,79 @@ class ChatApiController extends Controller
 
         $message = Message::create($messageData);
 
+        // 1. Process all multipart file uploads (image, video, audio, voice, document, attachments, etc.)
+        $fileKeys = [
+            'attachments',
+            'image', 'images',
+            'video', 'videos',
+            'audio', 'audios',
+            'voice', 'voice_note',
+            'document', 'documents',
+            'doc', 'docs',
+            'file', 'files',
+            'media'
+        ];
         $filesToProcess = [];
 
-        // 1. attachments[] array
-        if ($request->hasFile('attachments')) {
-            $files = $request->file('attachments');
-            if (is_array($files)) {
-                $filesToProcess = array_merge($filesToProcess, $files);
-            } else {
-                $filesToProcess[] = $files;
+        foreach ($fileKeys as $key) {
+            if ($request->hasFile($key)) {
+                $files = $request->file($key);
+                if (is_array($files)) {
+                    $filesToProcess = array_merge($filesToProcess, $files);
+                } elseif ($files instanceof \Illuminate\Http\UploadedFile) {
+                    $filesToProcess[] = $files;
+                }
             }
         }
 
-        // 2. individual 'image' file
-        if ($request->hasFile('image')) {
-            $filesToProcess[] = $request->file('image');
-        }
-
-        // 3. individual 'video' file
-        if ($request->hasFile('video')) {
-            $filesToProcess[] = $request->file('video');
-        }
-
-        // 4. individual 'file' file
-        if ($request->hasFile('file')) {
-            $filesToProcess[] = $request->file('file');
-        }
-
+        // Deduplicate files by hash to prevent multiple form keys uploading the same file multiple times
+        $seenHashes = [];
+        $uniqueFiles = [];
         foreach ($filesToProcess as $file) {
-            if (!$file->isValid()) continue;
+            if (!$file instanceof \Illuminate\Http\UploadedFile || !$file->isValid()) continue;
+            $hash = md5_file($file->getRealPath()) ?: ($file->getClientOriginalName() . '_' . $file->getSize());
+            if (isset($seenHashes[$hash])) continue;
+            $seenHashes[$hash] = true;
+            $uniqueFiles[] = $file;
+        }
 
+        foreach ($uniqueFiles as $file) {
             $originalName = $file->getClientOriginalName();
+            $ext = strtolower($file->getClientOriginalExtension() ?: pathinfo($originalName, PATHINFO_EXTENSION));
             $mimeType = $file->getClientMimeType() ?: 'application/octet-stream';
-            $fileType = $this->determineFileType($mimeType, $file->getClientOriginalExtension());
+            $fileType = $this->determineFileType($mimeType, $ext);
+
+            // Ensure proper audio/video/document MIME type
+            if ($fileType === 'audio') {
+                $mimeType = match ($ext) {
+                    'm4a'   => 'audio/mp4',
+                    'mp3'   => 'audio/mpeg',
+                    'wav'   => 'audio/wav',
+                    'aac'   => 'audio/aac',
+                    'opus'  => 'audio/opus',
+                    'amr'   => 'audio/amr',
+                    default => ($mimeType ?: 'audio/mp4'),
+                };
+            } elseif ($fileType === 'video') {
+                $mimeType = match ($ext) {
+                    'mp4'   => 'video/mp4',
+                    'mov'   => 'video/quicktime',
+                    'webm'  => 'video/webm',
+                    default => ($mimeType ?: 'video/mp4'),
+                };
+            } elseif ($fileType === 'document') {
+                $mimeType = match ($ext) {
+                    'pdf'   => 'application/pdf',
+                    'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'xls'   => 'application/vnd.ms-excel',
+                    'docx'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'doc'   => 'application/msword',
+                    'txt'   => 'text/plain',
+                    'csv'   => 'text/csv',
+                    'zip'   => 'application/zip',
+                    default => ($mimeType ?: 'application/octet-stream'),
+                };
+            }
 
             $path = $file->store('chat_attachments', 'public');
 
@@ -2138,6 +2949,159 @@ class ChatApiController extends Controller
             ]);
         }
 
+        // 2. Process any direct URL inputs for video, audio, voice, document, or files in JSON body
+        $urlInputs = [
+            'video_url'    => 'video',
+            'audio_url'    => 'audio',
+            'voice_url'    => 'audio',
+            'image_url'    => 'image',
+            'document_url' => 'document',
+            'doc_url'      => 'document',
+            'file_url'     => 'document',
+        ];
+
+        foreach ($urlInputs as $inputKey => $defaultType) {
+            $urlVal = $request->input($inputKey);
+            if (is_string($urlVal) && filter_var($urlVal, FILTER_VALIDATE_URL)) {
+                $ext = strtolower(pathinfo(parse_url($urlVal, PHP_URL_PATH), PATHINFO_EXTENSION));
+                $fileType = !empty($ext) ? $this->determineFileType('', $ext) : $defaultType;
+                $mimeType = match ($ext) {
+                    'm4a'   => 'audio/mp4',
+                    'mp3'   => 'audio/mpeg',
+                    'wav'   => 'audio/wav',
+                    'aac'   => 'audio/aac',
+                    'mp4'   => 'video/mp4',
+                    'pdf'   => 'application/pdf',
+                    default => "{$fileType}/*",
+                };
+
+                MessageAttachment::create([
+                    'message_id' => $message->id,
+                    'file_path'  => $urlVal,
+                    'file_name'  => basename(parse_url($urlVal, PHP_URL_PATH)) ?: "{$defaultType}_file",
+                    'file_type'  => $fileType,
+                    'mime_type'  => $mimeType,
+                ]);
+            }
+        }
+
+        // Direct string URLs passed in 'video', 'audio', 'voice', 'image', 'document', 'doc'
+        foreach (['video', 'audio', 'voice', 'image', 'document', 'doc'] as $directKey) {
+            $val = $request->input($directKey);
+            if (is_string($val) && filter_var($val, FILTER_VALIDATE_URL)) {
+                $defaultType = ($directKey === 'voice') ? 'audio' : ($directKey === 'doc' ? 'document' : $directKey);
+                $ext = strtolower(pathinfo(parse_url($val, PHP_URL_PATH), PATHINFO_EXTENSION));
+                $fileType = !empty($ext) ? $this->determineFileType('', $ext) : $defaultType;
+                $mimeType = match ($ext) {
+                    'm4a'   => 'audio/mp4',
+                    'mp3'   => 'audio/mpeg',
+                    'wav'   => 'audio/wav',
+                    'aac'   => 'audio/aac',
+                    'mp4'   => 'video/mp4',
+                    'pdf'   => 'application/pdf',
+                    default => "{$fileType}/*",
+                };
+
+                MessageAttachment::create([
+                    'message_id' => $message->id,
+                    'file_path'  => $val,
+                    'file_name'  => basename(parse_url($val, PHP_URL_PATH)) ?: "{$directKey}_file",
+                    'file_type'  => $fileType,
+                    'mime_type'  => $mimeType,
+                ]);
+            }
+        }
+
+        // 3. Process array of JSON attachments if passed in body
+        $jsonAttachments = $request->input('attachments');
+        if (is_array($jsonAttachments) && !$request->hasFile('attachments')) {
+            foreach ($jsonAttachments as $jAtt) {
+                if (is_array($jAtt) && !empty($jAtt['url'])) {
+                    $u = $jAtt['url'];
+                    $ext = strtolower(pathinfo(parse_url($u, PHP_URL_PATH), PATHINFO_EXTENSION));
+                    $fType = $jAtt['type'] ?? (!empty($ext) ? $this->determineFileType('', $ext) : 'document');
+                    $mMime = $jAtt['mime_type'] ?? match ($ext) {
+                        'm4a'   => 'audio/mp4',
+                        'mp3'   => 'audio/mpeg',
+                        'wav'   => 'audio/wav',
+                        'aac'   => 'audio/aac',
+                        'mp4'   => 'video/mp4',
+                        'pdf'   => 'application/pdf',
+                        default => "{$fType}/*",
+                    };
+
+                    MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'file_path'  => $u,
+                        'file_name'  => $jAtt['name'] ?? (basename(parse_url($u, PHP_URL_PATH)) ?: 'attachment'),
+                        'file_type'  => $fType,
+                        'mime_type'  => $mMime,
+                    ]);
+                }
+            }
+        }
+
+        // 4. Auto-detect if "body" itself is a direct media URL (sent in body only)
+        if (is_string($bodyContent) && filter_var(trim($bodyContent), FILTER_VALIDATE_URL)) {
+            $trimmedUrl = trim($bodyContent);
+            $ext = strtolower(pathinfo(parse_url($trimmedUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+            if (!empty($ext)) {
+                $fType = $this->determineFileType('', $ext);
+                if (in_array($fType, ['audio', 'video', 'image', 'document'])) {
+                    $exists = MessageAttachment::where('message_id', $message->id)
+                        ->where('file_path', $trimmedUrl)
+                        ->exists();
+
+                    if (!$exists) {
+                        $mimeType = match ($ext) {
+                            'm4a'   => 'audio/mp4',
+                            'mp3'   => 'audio/mpeg',
+                            'wav'   => 'audio/wav',
+                            'aac'   => 'audio/aac',
+                            'opus'  => 'audio/opus',
+                            'mp4'   => 'video/mp4',
+                            'mov'   => 'video/quicktime',
+                            'jpg', 'jpeg' => 'image/jpeg',
+                            'png'   => 'image/png',
+                            'pdf'   => 'application/pdf',
+                            default => "{$fType}/*",
+                        };
+
+                        MessageAttachment::create([
+                            'message_id' => $message->id,
+                            'file_path'  => $trimmedUrl,
+                            'file_name'  => basename(parse_url($trimmedUrl, PHP_URL_PATH)) ?: "{$fType}_file",
+                            'file_type'  => $fType,
+                            'mime_type'  => $mimeType,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // 5. Update DB body with the actual media stream/storage URL if body was empty or just a raw filename
+        $firstAttachment = $message->attachments()->first();
+        if ($firstAttachment) {
+            $curBody = trim((string)$message->body);
+            $fileName = trim((string)$firstAttachment->file_name);
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            $isBareFilename = ($curBody === '' || $curBody === $fileName);
+            if (!$isBareFilename && !empty($ext) && str_ends_with(strtolower($curBody), '.' . $ext) && !str_contains($curBody, ' ') && !str_starts_with($curBody, 'http')) {
+                $isBareFilename = true;
+            }
+
+            if ($isBareFilename) {
+                $mediaUrl = ($firstAttachment->file_type === 'audio' || $firstAttachment->file_type === 'video')
+                    ? ($firstAttachment->stream_url ?? $firstAttachment->full_url)
+                    : $firstAttachment->full_url;
+
+                $message->update([
+                    'body' => $mediaUrl
+                ]);
+            }
+        }
+
         return $message->fresh(['attachments', 'sender']);
     }
 
@@ -2146,22 +3110,157 @@ class ChatApiController extends Controller
      */
     private function determineFileType(string $mime, string $ext): string
     {
-        $mime = strtolower($mime);
-        $ext = strtolower($ext);
+        $mime = strtolower(trim($mime));
+        $ext = strtolower(trim($ext, '. '));
 
-        if (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'])) {
+        if (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'svg', 'bmp', 'tiff'])) {
             return 'image';
         }
 
-        if (str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', '3gp', 'webm', 'mkv', 'flv'])) {
+        if (str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', '3gp', '3g2', 'webm', 'mkv', 'flv', 'wmv', 'm4v', 'mpeg', 'mpg'])) {
             return 'video';
         }
 
-        if (str_starts_with($mime, 'audio/') || in_array($ext, ['mp3', 'wav', 'm4a', 'aac', 'ogg'])) {
+        if (str_starts_with($mime, 'audio/') || in_array($ext, ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'opus', 'amr', 'caf', 'wma', 'flac', '3ga', 'weba'])) {
             return 'audio';
         }
 
         return 'document';
+    }
+
+    /**
+     * Stream multimedia attachments with HTTP 206 Byte-Range support.
+     * Essential for iOS AVPlayer (DarwinAudioError fix), Safari, and HTML5 audio/video.
+     * Includes ngrok interstitial bypass header.
+     * Route: GET /api/common/chat/media/{id}/stream
+     */
+    public function streamMedia(Request $request, $id)
+    {
+        // 1. Resolve attachment by ID if numeric, otherwise by file_path or file_name
+        if (is_numeric($id)) {
+            $attachment = MessageAttachment::find((int) $id);
+        } else {
+            $attachment = MessageAttachment::where('file_path', 'like', "%{$id}%")
+                ->orWhere('file_name', $id)
+                ->first();
+        }
+
+        $diskPath = null;
+        $fileName = 'media_file';
+        $fileType = 'audio';
+        $mimeType = null;
+
+        if ($attachment) {
+            $fileName = $attachment->file_name;
+            $fileType = $attachment->file_type;
+            $mimeType = $attachment->mime_type;
+
+            // Direct external absolute URL stored in attachment
+            if (str_starts_with($attachment->file_path, 'http://') || str_starts_with($attachment->file_path, 'https://')) {
+                return redirect()->away($attachment->file_path);
+            }
+
+            $diskPath = storage_path('app/public/' . $attachment->file_path);
+            if (!file_exists($diskPath)) {
+                $diskPath = public_path('storage/' . $attachment->file_path);
+            }
+        } else {
+            // Direct file search in storage/app/public/chat_attachments
+            $cleanId = basename($id);
+            $possiblePath = storage_path('app/public/chat_attachments/' . $cleanId);
+            if (file_exists($possiblePath)) {
+                $diskPath = $possiblePath;
+                $fileName = $cleanId;
+            } else {
+                $possiblePublicPath = public_path('storage/chat_attachments/' . $cleanId);
+                if (file_exists($possiblePublicPath)) {
+                    $diskPath = $possiblePublicPath;
+                    $fileName = $cleanId;
+                }
+            }
+        }
+
+        if (!$diskPath || !file_exists($diskPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Media attachment '{$id}' not found on server disk."
+            ], 404);
+        }
+
+        $fileSize = filesize($diskPath);
+        $ext = strtolower(pathinfo($diskPath, PATHINFO_EXTENSION));
+
+        // Determine precise MIME type
+        if (empty($mimeType) || $mimeType === 'application/octet-stream' || str_ends_with($mimeType, '/*')) {
+            $mimeType = match ($ext) {
+                'm4a'   => 'audio/mp4',
+                'mp3'   => 'audio/mpeg',
+                'wav'   => 'audio/wav',
+                'aac'   => 'audio/aac',
+                'ogg'   => 'audio/ogg',
+                'opus'  => 'audio/opus',
+                'amr'   => 'audio/amr',
+                'mp4'   => 'video/mp4',
+                'mov'   => 'video/quicktime',
+                'webm'  => 'video/webm',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'png'   => 'image/png',
+                default => 'application/octet-stream',
+            };
+        }
+
+        $start = 0;
+        $end = $fileSize - 1;
+        $statusCode = 200;
+
+        // Inspect HTTP Range header (iOS AVPlayer sends "bytes=0-1" or "bytes=0-")
+        $rangeHeader = $request->header('Range') ?? ($request->server('HTTP_RANGE') ?? null);
+
+        if (!empty($rangeHeader) && preg_match('/bytes=(\d+)-(\d*)[\/,\s]?/i', $rangeHeader, $matches)) {
+            $start = (int) $matches[1];
+            if (!empty($matches[2])) {
+                $end = min((int) $matches[2], $fileSize - 1);
+            }
+            $statusCode = 206; // Partial Content for iOS AVPlayer
+        }
+
+        $length = ($end - $start) + 1;
+
+        $headers = [
+            'Content-Type'                  => $mimeType,
+            'Content-Length'                => (string) $length,
+            'Accept-Ranges'                 => 'bytes',
+            'Cache-Control'                 => 'public, max-age=604800, no-transform',
+            'Access-Control-Allow-Origin'   => '*',
+            'Access-Control-Allow-Methods'  => 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers'  => 'Range, Authorization, Content-Type, ngrok-skip-browser-warning',
+            'Access-Control-Expose-Headers' => 'Content-Range, Accept-Ranges, Content-Length',
+            'ngrok-skip-browser-warning'    => '1',
+            'Content-Disposition'           => 'inline; filename="' . basename($fileName) . '"',
+        ];
+
+        if ($statusCode === 206) {
+            $headers['Content-Range'] = "bytes {$start}-{$end}/{$fileSize}";
+        }
+
+        return response()->stream(function () use ($diskPath, $start, $length) {
+            $fp = fopen($diskPath, 'rb');
+            if ($fp === false) return;
+
+            fseek($fp, $start);
+            $chunkSize = 1024 * 64; // 64KB chunk buffer
+            $remaining = $length;
+
+            while (!feof($fp) && $remaining > 0) {
+                $bytesToRead = min($chunkSize, $remaining);
+                $chunk = fread($fp, $bytesToRead);
+                if ($chunk === false) break;
+                echo $chunk;
+                flush();
+                $remaining -= strlen($chunk);
+            }
+            fclose($fp);
+        }, $statusCode, $headers);
     }
 
     /**
