@@ -31,6 +31,10 @@ return new class extends Migration
             $table->text('repair_details')->nullable();
             $table->string('item_delivered_by');
             $table->string('item_received_by');
+            $table->unsignedBigInteger('accepted_by_staff_id')->nullable();
+            $table->timestamp('staff_accepted_at')->nullable();
+            $table->timestamp('staff_completed_at')->nullable();
+            $table->unsignedBigInteger('craftsman_staff_id')->nullable();
             $table->timestamps();
         });
     }

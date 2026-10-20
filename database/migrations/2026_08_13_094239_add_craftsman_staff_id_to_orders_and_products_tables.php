@@ -23,7 +23,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('repairs', 'craftsman_staff_id')) {
+        if (Schema::hasTable('repairs') && !Schema::hasColumn('repairs', 'craftsman_staff_id')) {
             Schema::table('repairs', function (Blueprint $table) {
                 $table->unsignedBigInteger('craftsman_staff_id')->nullable();
             });
@@ -49,9 +49,11 @@ return new class extends Migration
             $table->dropColumn('craftsman_staff_id');
         });
 
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->dropColumn('craftsman_staff_id');
-        });
+        if (Schema::hasTable('repairs')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->dropColumn('craftsman_staff_id');
+            });
+        }
 
         Schema::table('products', function (Blueprint $table) {
             $table->dropColumn('craftsman_staff_id');

@@ -23,11 +23,13 @@ return new class extends Migration
             $table->timestamp('staff_completed_at')->nullable();
         });
 
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->unsignedBigInteger('accepted_by_staff_id')->nullable();
-            $table->timestamp('staff_accepted_at')->nullable();
-            $table->timestamp('staff_completed_at')->nullable();
-        });
+        if (Schema::hasTable('repairs')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->unsignedBigInteger('accepted_by_staff_id')->nullable();
+                $table->timestamp('staff_accepted_at')->nullable();
+                $table->timestamp('staff_completed_at')->nullable();
+            });
+        }
     }
 
     /**
@@ -43,8 +45,10 @@ return new class extends Migration
             $table->dropColumn(['accepted_by_staff_id', 'staff_accepted_at', 'staff_completed_at']);
         });
 
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->dropColumn(['accepted_by_staff_id', 'staff_accepted_at', 'staff_completed_at']);
-        });
+        if (Schema::hasTable('repairs')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->dropColumn(['accepted_by_staff_id', 'staff_accepted_at', 'staff_completed_at']);
+            });
+        }
     }
 };

@@ -9,10 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('repairs', function (Blueprint $table) {
-            
-            
-            // Storing the craftman_code directly as a string (or foreign key if craftman_code is a unique key in the craftman table)
-            $table->string('craftman_code')->nullable()->after('status');
+            if (!Schema::hasColumn('repairs', 'status')) {
+                $table->string('status')->default('pending')->after('reference_number');
+            }
+            if (!Schema::hasColumn('repairs', 'craftman_code')) {
+                // Storing the craftman_code directly as a string (or foreign key if craftman_code is a unique key in the craftman table)
+                $table->string('craftman_code')->nullable()->after('status');
+            }
             
             // If craftman_code is the primary/unique key in your craftman table, you can add this foreign constraint:
             // $table->foreign('craftman_code')->references('craftman_code')->on('craftsmen')->onDelete('set null');
