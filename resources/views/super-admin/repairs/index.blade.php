@@ -325,11 +325,11 @@
                     </div>
                     <div class="modal-body text-start">
                         <div class="mb-3">
-                            <label class="form-label">Item Returned By <span class="text-danger">*</span></label>
+                            <label class="form-label">Item Returned By (Craftsmen)<span class="text-danger">*</span></label>
                             <input type="text" name="item_returned_by" class="form-control" list="returnedList" placeholder="Select or type name..." required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Item Collected By <span class="text-danger">*</span></label>
+                            <label class="form-label">Item Collected By (AJPL)<span class="text-danger">*</span></label>
                             <input type="text" name="item_collected_by" class="form-control" list="collectedList" placeholder="Select or type name..." required>
                         </div>
                     </div>
@@ -386,7 +386,12 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="mb-3">
+                            <label class="form-label">Item Assigned To(Craftsmen)<span class="text-danger">*</span></label>
+                            <input type="text" name="item_assigning_to" class="form-control" list="collectedList" placeholder="Select or type name..." required>
                         </div>
+                        </div>
+                        
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary">Confirm Allocation</button>
@@ -484,7 +489,7 @@
                         </div>
                         <div class="modal-body text-start">
                             <div class="mb-3">
-                                <label class="form-label">Item Sent By <span class="text-danger">*</span></label>
+                                <label class="form-label">Item Sent By (AJPL)<span class="text-danger">*</span></label>
                                 <input type="text" name="item_sent_by" class="form-control" list="sentList" placeholder="Select or type name..." required>
                             </div>
                         </div>
@@ -515,7 +520,7 @@
                                 <input type="text" name="item_sent_by" class="form-control" list="sentList" value="{{ old('item_sent_by', $repair->item_sent_by) }}" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Item Accepted By <span class="text-danger">*</span></label>
+                                <label class="form-label">Item Accepted By (Buyer)<span class="text-danger">*</span></label>
                                 <input type="text" name="item_accepted_by" class="form-control" list="acceptedList" placeholder="Select or type name..." required>
                             </div>
                             <div class="mb-3">

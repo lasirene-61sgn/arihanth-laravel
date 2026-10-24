@@ -25,7 +25,7 @@ class CreateReapir extends FormRequest
             'date' => ['required', 'date'],
             'buyer_id' => ['required', 'exists:buyers,id'], // If using buyer_id foreign key
             'product_name' => ['required', 'string', 'max:255'],
-            'order_number' => ['required', 'string', 'max:255'],
+            'order_number' => ['nullable', 'string', 'max:255'],
             'repair_or_sample' => ['required', 'in:repair,sample'],
             'reference_number' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
@@ -33,6 +33,7 @@ class CreateReapir extends FormRequest
             'repair_details' => ['nullable', 'string'],
             'item_delivered_by' => ['required', 'string', 'max:255'],
             'item_received_by' => ['required', 'string', 'max:255'],
+            'item_assigning_to' => ['nullable', 'string', 'max:255'],
             'repair_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
         ];
     }

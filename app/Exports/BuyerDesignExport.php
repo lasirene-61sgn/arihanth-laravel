@@ -22,6 +22,8 @@ class BuyerDesignExport implements FromQuery, WithHeadings, WithMapping
             ->whereNotNull('design_code')
             ->where('design_status', 'Accepted');
 
+        $buyer = \Illuminate\Support\Facades\Auth::guard('buyer')->user();
+
         // Apply filters identical to the index page
         if ($this->request->filled('search')) {
             $query->where('product_name', 'like', '%' . $this->request->search . '%');
@@ -29,6 +31,14 @@ class BuyerDesignExport implements FromQuery, WithHeadings, WithMapping
         if ($this->request->filled('category')) {
             $query->where('product_category_id', $this->request->category);
         }
+        if ($this->request->filled('subcategory')) {
+            $query->where('product_subcategory_id', $this->request->subcategory);
+        }
+        if ($this->request->filled('lock_status')) {
+            $query->filterByLockStatus($buyer, $this->request->lock_status);
+        }
+
+        $query->orderByLockStatus($buyer);
 
         $sort = $this->request->get('sort', 'created_at');
         $direction = $this->request->get('direction', 'desc');

@@ -69,6 +69,14 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Access Status</label>
+                            <select name="lock_status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                <option value="" {{ request('lock_status') == '' ? 'selected' : '' }}>All Designs (Unlocked First)</option>
+                                <option value="unlocked" {{ request('lock_status') == 'unlocked' ? 'selected' : '' }}>Unlocked Only</option>
+                                <option value="locked" {{ request('lock_status') == 'locked' ? 'selected' : '' }}>Locked Only</option>
+                            </select>
+                        </div>
                         <div class="flex gap-2 pt-2">
                             <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">Apply</button>
                             <a href="{{ route('buyer.design.index') }}" class="flex-1 bg-slate-100 text-slate-600 text-center py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors">Reset</a>
@@ -112,8 +120,13 @@
     @endphp
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-            <h5 class="text-sm font-bold text-slate-700 uppercase tracking-widest">Accepted Products Gallery</h5>
+        <div class="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <h5 class="text-sm font-bold text-slate-700 uppercase tracking-widest">Accepted Products Gallery</h5>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Unlocked First
+                </span>
+            </div>
             @if(Auth::guard('buyer')->user()->hasPermission('stock_order'))
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -125,12 +138,28 @@
         <div class="p-6 bg-white">
             @if($designs->count() > 0)
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                @php $hasLockedDividerShown = false; @endphp
                 @foreach($designs as $design)
                 @php
                     $isLocked = $design->isDesignLocked(Auth::guard('buyer')->user());
                     $isFavorited = array_key_exists($design->id, $buyerFavoritesMap);
                     $currentDesignName = $isFavorited ? ($buyerFavoritesMap[$design->id] ?? '') : '';
                 @endphp
+
+                @if(!$hasLockedDividerShown && $isLocked)
+                @php $hasLockedDividerShown = true; @endphp
+                <div class="col-span-full py-4 my-2">
+                    <div class="relative flex items-center justify-center">
+                        <div class="border-t-2 border-dashed border-amber-200 w-full"></div>
+                        <div class="absolute bg-white px-4 flex items-center gap-2">
+                            <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-sm">
+                                <i class="bi bi-lock-fill text-amber-600"></i> Locked Designs Catalogue
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 <div class="group flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 overflow-hidden relative">
                     
                     @if(Auth::guard('buyer')->user()->hasPermission('stock_order') && !$isLocked)
@@ -138,6 +167,18 @@
                         <input type="checkbox" class="design-checkbox w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm cursor-pointer" value="{{ $design->design_code }}" onchange="updateBulkCart()">
                     </div>
                     @endif
+
+                    <div class="absolute top-3 right-3 z-10">
+                        @if(!$isLocked)
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs backdrop-blur-sm">
+                            <i class="bi bi-unlock-fill text-[9px]"></i> Unlocked
+                        </span>
+                        @else
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs backdrop-blur-sm">
+                            <i class="bi bi-lock-fill text-[9px]"></i> Locked
+                        </span>
+                        @endif
+                    </div>
 
                     <div class="relative aspect-[4/3] bg-white p-4 overflow-hidden">
                         @php

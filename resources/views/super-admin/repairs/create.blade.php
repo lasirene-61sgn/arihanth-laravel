@@ -1,6 +1,7 @@
 @extends('super-admin.layouts.app')
 
 @section('content')
+
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center my-4">
         <h2 class="mb-0">Create Repair / Sample Record</h2>

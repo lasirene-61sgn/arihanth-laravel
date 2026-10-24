@@ -206,11 +206,13 @@ class RepairController extends Controller
     {
         $request->validate([
             'craftman_code' => ['required', 'string', 'exists:craftmen,craftman_code'],
+            'item_assigning_to' => ['required', 'string', 'max:255'],
         ]);
 
         $repair->update([
             'status' => 'allocated',
             'craftman_code' => $request->craftman_code,
+            'item_assigning_to' => $request->item_assigning_to,
             'craftsman_status' => 'pending_acceptance',
         ]);
 

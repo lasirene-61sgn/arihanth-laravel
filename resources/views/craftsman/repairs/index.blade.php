@@ -17,7 +17,7 @@
             <a class="nav-link {{ ($tab ?? '') === 'in_process' ? 'active fw-bold' : '' }}" href="{{ route('craftsman.repairs.index', array_merge(request()->except('page'), ['tab' => 'in_process'])) }}">In Process</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {{ ($tab ?? '') === 'pending_approval' ? 'active fw-bold' : '' }}" href="{{ route('craftsman.repairs.index', array_merge(request()->except('page'), ['tab' => 'pending_approval'])) }}">Pending Superadmin Approval</a>
+            <a class="nav-link {{ ($tab ?? '') === 'pending_approval' ? 'active fw-bold' : '' }}" href="{{ route('craftsman.repairs.index', array_merge(request()->except('page'), ['tab' => 'pending_approval'])) }}">Pending Approval</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {{ ($tab ?? '') === 'completed' ? 'active fw-bold' : '' }}" href="{{ route('craftsman.repairs.index', array_merge(request()->except('page'), ['tab' => 'completed'])) }}">Completed</a>
@@ -103,6 +103,7 @@
                         <th>Order No</th>
                         <th>Type</th>
                         <th>Weight</th>
+                        <th>Item Brought By</th>
                         <th>Status</th>
                         <th class="text-center">Action</th>
                     </tr>
@@ -128,6 +129,7 @@
                         <td>{{ $repair->order_number }}</td>
                         <td><span class="badge bg-info text-dark">{{ ucfirst($repair->repair_or_sample) }}</span></td>
                         <td>{{ $repair->weight}}</td>
+                        <td>{{ $repair->item_assigning_to}}</td>
                         <td>
                             <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $repair->craftsman_status)) }}</span>
                         </td>

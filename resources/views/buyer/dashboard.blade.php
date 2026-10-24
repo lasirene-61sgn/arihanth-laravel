@@ -203,7 +203,7 @@
             </div>
 
             {{-- Completed --}}
-            <div onclick="openStatusDetailsModal('completed', 'Completed Orders')" 
+            <!-- <div onclick="openStatusDetailsModal('completed', 'Completed Orders')" 
                  class="group relative bg-slate-50 hover:bg-emerald-50/60 p-4 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all cursor-pointer shadow-xs hover:shadow-md">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-slate-600 group-hover:text-emerald-700">Completed</span>
@@ -216,7 +216,7 @@
                     <span>Total Wt:</span>
                     <span class="font-bold text-slate-700">{{ number_format($woCompletedWeight, 2) }} g</span>
                 </div>
-            </div>
+            </div> -->
 
             {{-- Overdue --}}
             <div onclick="openStatusDetailsModal('overdue', 'Overdue Orders')" 

@@ -10,13 +10,14 @@ return new class extends Migration
     {
         Schema::table('repairs', function (Blueprint $table) {
             $table->string('repair_image')->nullable()->after('repair_details');
+            $table->string('item_assigning_to')->nullable();
         });
     }
 
     public function down(): void
     {
         Schema::table('repairs', function (Blueprint $table) {
-            $table->dropColumn(['repair_image']);
+            $table->dropColumn(['repair_image', 'item_assigning_to']);
         });
     }
 };

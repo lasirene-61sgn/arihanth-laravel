@@ -223,12 +223,14 @@ class RepairController extends Controller
     public function allocate(Request $request, Repair $repair)
     {
         $request->validate([
-            'craftman_code' => ['required', 'string', 'exists:craftmen,craftman_code']
+            'craftman_code' => ['required', 'string', 'exists:craftmen,craftman_code'],
+            'item_assigning_to' => ['required', 'string', 'max:250'],
         ]);
 
         $repair->update([
             'status' => 'allocated',
             'craftman_code' => $request->craftman_code,
+            'item_assigning_to' => $request->item_assigning_to,
             'craftsman_status' => 'pending_acceptance',
         ]);
 

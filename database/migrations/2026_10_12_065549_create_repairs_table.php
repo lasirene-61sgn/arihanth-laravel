@@ -23,7 +23,7 @@ return new class extends Migration
             // $table->foreign('bp_code')->references('bp_code')->on('buyers')->onDelete('cascade');
 
             $table->string('product_name');
-            $table->string('order_number');
+            $table->string('order_number')->nullable();
             $table->enum('repair_or_sample', ['repair', 'sample']);
             $table->string('reference_number')->nullable();
             $table->text('notes')->nullable();

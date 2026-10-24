@@ -338,7 +338,7 @@
                         </div>
                     </div>
 
-                    <div onclick="openOrdersDetailModal('completed')" class="bg-white p-5 rounded-2xl border-2 border-green-200 hover:border-green-500 cursor-pointer transition hover:shadow-lg">
+                    <!-- <div onclick="openOrdersDetailModal('completed')" class="bg-white p-5 rounded-2xl border-2 border-green-200 hover:border-green-500 cursor-pointer transition hover:shadow-lg">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-green-700 uppercase">Completed</span>
                             <i class="bi bi-check2-circle text-green-600 text-lg"></i>
@@ -348,7 +348,7 @@
                             <span class="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-100">Work Orders: {{ $woStats['completed'] }}</span>
                             <span class="bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-100">Purchase Orders: {{ $poStats['completed'] }}</span>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </div>

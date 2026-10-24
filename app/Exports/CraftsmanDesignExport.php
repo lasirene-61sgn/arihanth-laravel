@@ -15,6 +15,8 @@ class CraftsmanDesignExport implements FromQuery, WithHeadings, WithMapping
 
     public function query()
     {
+        $craftsman = auth()->guard('craftsman')->user() ?? (auth()->guard('craftsman_staff')->check() ? auth()->guard('craftsman_staff')->user()->craftsman : null);
+
         $query = Product::whereNotNull('design_code')->where('design_status', 'Accepted');
 
         if ($this->request->filled('filter_design_code')) {
@@ -26,6 +28,17 @@ class CraftsmanDesignExport implements FromQuery, WithHeadings, WithMapping
         if ($this->request->filled('filter_product_code')) {
             $query->where('product_code', 'like', '%' . $this->request->filter_product_code . '%');
         }
+        if ($this->request->filled('filter_category')) {
+            $query->where('product_category_id', $this->request->filter_category);
+        }
+        if ($this->request->filled('filter_subcategory')) {
+            $query->where('product_subcategory_id', $this->request->filter_subcategory);
+        }
+        if ($this->request->filled('lock_status')) {
+            $query->filterByLockStatus($craftsman, $this->request->lock_status);
+        }
+
+        $query->orderByLockStatus($craftsman);
 
         return $query;
     }

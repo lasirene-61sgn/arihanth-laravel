@@ -337,6 +337,9 @@ class Product extends Model
             } elseif ($user instanceof \App\Models\Craftman) {
                 $userType = 'craftsman';
                 $userCode = $user->craftman_code;
+            } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+                $userType = 'craftsman';
+                $userCode = $user->craftsman ? $user->craftsman->craftman_code : null;
             }
 
             if ($userType && $userCode) {
@@ -362,6 +365,145 @@ class Product extends Model
     public function userAccess()
     {
         return $this->hasMany(DesignUserAccess::class);
+    }
+
+    /**
+     * Scope a query to sort unlocked designs first, then locked designs.
+     */
+    public function scopeOrderByLockStatus($query, $user = null)
+    {
+        // 0. SuperAdmin / Admin has full access, no locking distinction
+        if ($user) {
+            if (isset($user->role) && ($user->role === 'super_admin' || $user->role === 'admin')) {
+                return $query;
+            }
+            if ($user instanceof \App\Models\ProcessOwner && ($user->role === 'super_admin' || $user->role === 'admin')) {
+                return $query;
+            }
+        }
+
+        $userType = null;
+        $userCode = null;
+
+        if ($user instanceof \App\Models\Buyer) {
+            $userType = 'buyer';
+            $userCode = $user->bp_code;
+        } elseif ($user instanceof \App\Models\KeyUser) {
+            $userType = 'key_user';
+            $userCode = $user->user_code;
+        } elseif ($user instanceof \App\Models\User) {
+            $userType = 'user';
+            $userCode = $user->user_code;
+        } elseif ($user instanceof \App\Models\Craftman) {
+            $userType = 'craftsman';
+            $userCode = $user->craftman_code;
+        } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+            $userType = 'craftsman';
+            $userCode = $user->craftsman ? $user->craftsman->craftman_code : null;
+        }
+
+        $now = now()->toDateTimeString();
+
+        if ($userType && $userCode) {
+            return $query->orderByRaw("
+                CASE 
+                    WHEN (products.is_locked = 0 OR products.is_locked IS NULL) THEN 0
+                    WHEN (products.design_view_unlocked_until IS NOT NULL AND products.design_view_unlocked_until > ?) THEN 0
+                    WHEN EXISTS (
+                        SELECT 1 FROM design_user_access 
+                        WHERE design_user_access.product_id = products.id 
+                          AND design_user_access.user_type = ? 
+                          AND design_user_access.user_code = ? 
+                          AND design_user_access.unlocked_until >= ?
+                    ) THEN 0
+                    ELSE 1
+                END ASC
+            ", [$now, $userType, $userCode, $now]);
+        }
+
+        return $query->orderByRaw("
+            CASE 
+                WHEN (products.is_locked = 0 OR products.is_locked IS NULL) THEN 0
+                WHEN (products.design_view_unlocked_until IS NOT NULL AND products.design_view_unlocked_until > ?) THEN 0
+                ELSE 1
+            END ASC
+        ", [$now]);
+    }
+
+    /**
+     * Scope a query to filter by lock status ('unlocked' or 'locked').
+     */
+    public function scopeFilterByLockStatus($query, $user, $status)
+    {
+        if (empty($status) || $status === 'all') {
+            return $query;
+        }
+
+        $userType = null;
+        $userCode = null;
+
+        if ($user instanceof \App\Models\Buyer) {
+            $userType = 'buyer';
+            $userCode = $user->bp_code;
+        } elseif ($user instanceof \App\Models\KeyUser) {
+            $userType = 'key_user';
+            $userCode = $user->user_code;
+        } elseif ($user instanceof \App\Models\User) {
+            $userType = 'user';
+            $userCode = $user->user_code;
+        } elseif ($user instanceof \App\Models\Craftman) {
+            $userType = 'craftsman';
+            $userCode = $user->craftman_code;
+        } elseif ($user instanceof \App\Models\CraftsmanStaff) {
+            $userType = 'craftsman';
+            $userCode = $user->craftsman ? $user->craftsman->craftman_code : null;
+        }
+
+        $now = now()->toDateTimeString();
+
+        if ($status === 'unlocked') {
+            return $query->where(function ($q) use ($now, $userType, $userCode) {
+                $q->where(function ($sub) {
+                    $sub->where('products.is_locked', 0)
+                        ->orWhereNull('products.is_locked');
+                })->orWhere(function ($sub) use ($now) {
+                    $sub->whereNotNull('products.design_view_unlocked_until')
+                        ->where('products.design_view_unlocked_until', '>', $now);
+                });
+
+                if ($userType && $userCode) {
+                    $q->orWhereExists(function ($sub) use ($now, $userType, $userCode) {
+                        $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                            ->from('design_user_access')
+                            ->whereColumn('design_user_access.product_id', 'products.id')
+                            ->where('design_user_access.user_type', $userType)
+                            ->where('design_user_access.user_code', $userCode)
+                            ->where('design_user_access.unlocked_until', '>=', $now);
+                    });
+                }
+            });
+        } elseif ($status === 'locked') {
+            return $query->where(function ($q) use ($now, $userType, $userCode) {
+                $q->where('products.is_locked', 1)
+                  ->where(function ($sub) use ($now) {
+                      $sub->whereNull('products.design_view_unlocked_until')
+                          ->orWhere('products.design_view_unlocked_until', '<=', $now);
+                  });
+
+                if ($userType && $userCode) {
+                    $q->whereNotExists(function ($sub) use ($now, $userType, $userCode) {
+                        $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                            ->from('design_user_access')
+                            ->whereColumn('design_user_access.product_id', 'products.id')
+                            ->where('design_user_access.user_type', $userType)
+                            ->where('design_user_access.user_code', $userCode)
+                            ->where('design_user_access.unlocked_until', '>=', $now);
+                    });
+                }
+            });
+        }
+
+        return $query;
     }
 
     /**

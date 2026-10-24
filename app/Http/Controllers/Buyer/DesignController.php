@@ -52,14 +52,19 @@ class DesignController extends Controller
         if ($request->filled('subcategory')) {
             $query->where('product_subcategory_id', $request->subcategory);
         }
+        if ($request->filled('lock_status')) {
+            $query->filterByLockStatus($buyer, $request->lock_status);
+        }
 
-        // 4. SORTING (Rearrange Table)
+        // 4. SORTING: Unlocked designs first, then locked designs, then selected sort
+        $query->orderByLockStatus($buyer);
+
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
         $query->orderBy($sort, $direction);
 
         // 5. Get Data (using paginate for better ERP performance)
-        $designs = $query->paginate(15);
+        $designs = $query->paginate(15)->withQueryString();
         $categories = ProductCategory::all();
         $subcategories = ProductSubcategory::all();
 

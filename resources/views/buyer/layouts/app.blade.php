@@ -96,6 +96,13 @@
                         <span>Dashboard</span>
                     </a>
 
+                    {{-- Tools Section --}}
+                    <a href="{{ route('buyer.global-search') }}"
+                        class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.global-search') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.global-search') ? 'background:rgba(255,255,255,0.15)' : '' }}">
+                        <i class="bi bi-search text-lg mr-3"></i>
+                        <span>Global Search</span>
+                    </a>
+
                     {{-- Products --}}
                     @if($authUser && $authUser->hasPermission('product'))
                     <a href="{{ route('buyer.product.index') }}"
@@ -121,12 +128,12 @@
                     @endif
 
                     {{-- Repairs and Samples --}}
-@if($authUser && $authUser->hasPermission('repairs'))
-<a href="{{ route('buyer.repairs.index') }}"
-    class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.repairs.*') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.stock-order.*') ? 'background:rgba(255,255,255,0.15)' : '' }}">
-    <span class="flex items-center"><i class="bi bi-box2-heart text-lg mr-3"></i> <span>Repairs</span></span>
-</a>
-@endif
+                    @if($authUser && $authUser->hasPermission('repairs'))
+                    <a href="{{ route('buyer.repairs.index') }}"
+                        class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.repairs.*') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.stock-order.*') ? 'background:rgba(255,255,255,0.15)' : '' }}">
+                        <span class="flex items-center"><i class="bi bi-box2-heart text-lg mr-3"></i> <span>Repairs</span></span>
+                    </a>
+                    @endif
 
                     {{-- Designs --}}
                     @if($authUser && $authUser->hasPermission('design'))
@@ -170,15 +177,7 @@
                     @endif
                 </nav>
 
-                {{-- Tools Section --}}
-                <div class="pt-6 mt-6" style="border-top: 1px solid rgba(255,255,255,0.12);">
-                    <h6 class="px-3 mb-2 text-xs font-semibold uppercase tracking-widest" style="color:rgba(255,255,255,0.4);">Tools</h6>
-                    <a href="{{ route('buyer.global-search') }}"
-                        class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.global-search') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.global-search') ? 'background:rgba(255,255,255,0.15)' : '' }}">
-                        <i class="bi bi-search text-lg mr-3"></i>
-                        <span>Global Search</span>
-                    </a>
-                </div>
+                
 
                 {{-- Account Section --}}
                 <div class="pt-6 mt-6" style="border-top: 1px solid rgba(255,255,255,0.12);">
@@ -192,7 +191,7 @@
                     </a>
 
                     {{-- Messages --}}
-                    
+
 
                     {{-- Meetings --}}
                     @if($authUser && $authUser->hasPermission('meetings'))
@@ -230,7 +229,7 @@
                         <a href="{{ route('buyer.global-search') }}" class="text-purple-600 hover:text-purple-800 transition-colors" title="Global Search">
                             <i class="bi bi-search text-xl"></i>
                         </a>
-                       
+
                         <div class="dropdown">
                             <button class="text-purple-600 hover:text-purple-800 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
                                 <i class="bi bi-calendar-check text-xl"></i>
@@ -309,7 +308,7 @@
                 <a href="{{ route('buyer.meetings.index') }}" title="Meetings" class="w-12 h-12 bg-white text-purple-700 rounded-full shadow-lg flex items-center justify-center border border-purple-100 hover:bg-purple-50 transition-all">
                     <i class="bi bi-calendar-check text-xl"></i>
                 </a>
-                
+
             </div>
         </div>
     </div>

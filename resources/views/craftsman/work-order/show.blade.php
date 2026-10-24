@@ -19,7 +19,7 @@
                         @endif
                     </div>
                 </div>
-                <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- <div class="d-flex flex-wrap align-items-center gap-2">
                     <div class="dropdown">
                         <button type="button" class="btn btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-2 px-3 shadow-sm" data-bs-toggle="dropdown">
                             <i class="bi bi-share"></i>
@@ -58,7 +58,7 @@
                         <i class="bi bi-arrow-left"></i>
                         <span>Back to List</span>
                     </a>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>

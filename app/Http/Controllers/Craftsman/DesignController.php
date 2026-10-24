@@ -20,7 +20,7 @@ class DesignController extends Controller
 
     public function index(Request $request)
     {
-        $craftsman = Auth::guard('craftsman')->user();
+        $craftsman = $this->currentCraftsman();
 
         // Designs section: ALL accepted designs
         // No bp_code filter - shows all accepted designs from any buyer/craftsman
@@ -56,8 +56,13 @@ class DesignController extends Controller
         if ($request->filled('filter_subcategory')) {
             $query->where('product_subcategory_id', $request->filter_subcategory);
         }
+        if ($request->filled('lock_status')) {
+            $query->filterByLockStatus($craftsman, $request->lock_status);
+        }
 
-        // --- SORTING ---
+        // --- SORTING: Unlocked designs first, then locked designs, then selected sort ---
+        $query->orderByLockStatus($craftsman);
+
         $sort = $request->get('sort', 'latest');
         if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
         elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');

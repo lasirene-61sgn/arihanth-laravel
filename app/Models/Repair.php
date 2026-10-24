@@ -28,6 +28,7 @@ class Repair extends Model
         'craftsman_status',
         'item_sent_by',
         'item_accepted_by',
+        'item_assigning_to',
         'craftsman_voucher_image',
         'craftsman_completion_proof_image',
         'buyer_voucher_image',

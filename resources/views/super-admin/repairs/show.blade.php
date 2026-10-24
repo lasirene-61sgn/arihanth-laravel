@@ -81,6 +81,8 @@
                 <div class="col-md-3">{{ $repair->item_delivered_by ?? 'Not Recorded' }}</div>
                 <div class="col-md-3 fw-bold">Item Received By:</div>
                 <div class="col-md-3">{{ $repair->item_received_by ?? 'Not Recorded' }}</div>
+                <div class="col-md-3 fw-bold">Item Assigned To:</div>
+                <div class="col-md-3">{{ $repair->item_assigning_to ?? 'Not Recorded' }}</div>
             </div>
 
             <div class="row mb-3">

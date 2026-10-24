@@ -73,6 +73,16 @@
                                 @endforeach
                             </select>
                         </div>
+
+                        <!-- Access Status Filter -->
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Access Status</label>
+                            <select name="lock_status" class="w-full px-3 py-2 border border-emerald-100 rounded-md text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="" {{ request('lock_status') == '' ? 'selected' : '' }}>All Designs (Unlocked First)</option>
+                                <option value="unlocked" {{ request('lock_status') == 'unlocked' ? 'selected' : '' }}>Unlocked Only</option>
+                                <option value="locked" {{ request('lock_status') == 'locked' ? 'selected' : '' }}>Locked Only</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="flex gap-2 pt-4 border-t border-emerald-50">
                         <button type="submit" class="flex-1 bg-emerald-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-emerald-800 transition">Apply</button>
@@ -84,7 +94,7 @@
     </div>
 
     @php
-    $loggedCraftsman = Auth::guard('craftsman')->user();
+    $loggedCraftsman = Auth::guard('craftsman')->user() ?? (Auth::guard('craftsman_staff')->check() ? Auth::guard('craftsman_staff')->user()->craftsman : null);
     // Handles Craftsman direct login or CraftsmanStaff portal login
     $craftsmanId = $loggedCraftsman->craftman_id ?? $loggedCraftsman->craftsman_id ?? $loggedCraftsman->id ?? null;
 
@@ -95,11 +105,24 @@
     @endphp
 
     <div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+                <h5 class="text-sm font-bold text-emerald-900 uppercase tracking-widest">Approved Designs Catalogue</h5>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Unlocked First
+                </span>
+            </div>
+            <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                {{ $designs->total() }} Designs Found
+            </span>
+        </div>
+
         @if($designs->count() > 0)
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @php $hasLockedDividerShown = false; @endphp
             @foreach($designs as $design)
             @php
-            $isLocked = $design->isDesignLocked(Auth::guard('craftsman')->user());
+            $isLocked = $design->isDesignLocked($loggedCraftsman);
             $isFavorited = array_key_exists($design->id, $craftsmanFavoritesMap);
             $currentDesignName = $isFavorited ? ($craftsmanFavoritesMap[$design->id] ?? '') : '';
 
@@ -120,7 +143,33 @@
             }
             @endphp
 
-            <div class="group bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
+            @if(!$hasLockedDividerShown && $isLocked)
+            @php $hasLockedDividerShown = true; @endphp
+            <div class="col-span-full py-4 my-2">
+                <div class="relative flex items-center justify-center">
+                    <div class="border-t-2 border-dashed border-emerald-200 w-full"></div>
+                    <div class="absolute bg-white px-4 flex items-center gap-2">
+                        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-sm">
+                            <i class="bi bi-lock-fill text-amber-600"></i> Locked Designs Catalogue
+                        </span>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <div class="group bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative">
+
+                <div class="absolute top-3 right-3 z-20">
+                    @if(!$isLocked)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs backdrop-blur-sm">
+                        <i class="bi bi-unlock-fill text-[9px]"></i> Unlocked
+                    </span>
+                    @else
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-xs backdrop-blur-sm">
+                        <i class="bi bi-lock-fill text-[9px]"></i> Locked
+                    </span>
+                    @endif
+                </div>
 
                 <div class="relative h-56 bg-white overflow-hidden flex items-center justify-center p-4">
                     @if($imgSrc)
