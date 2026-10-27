@@ -1017,6 +1017,11 @@
                                                 <span class="text-sm font-bold text-slate-800">{{ $order->work_order_number }}</span>
                                                 <!-- <span class="text-[10px] font-medium text-slate-500 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                                 <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                                @if($order->priority)
+                                                <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                    {{ trim($order->priority) }}
+                                                </span>
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="p-4">
@@ -1100,6 +1105,13 @@
                             <a href="{{ route('admin.work-order.reallocate.form', $order) }}" class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Reallocate">
                                 <i class="bi bi-arrow-repeat text-sm text-[16px]"></i>
                             </a>
+                            <form action="{{ route('admin.work-order.destroy', $order) }}" method="POST" class="inline" onsubmit="return confirm('Delete this order?');">
+                                @csrf @method('DELETE')
+                                <input type="hidden" name="tab" x-bind:value="activeTab">
+                                <button class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors">
+                                    <i class="bi bi-trash text-sm text-[16px]"></i>
+                                </button>
+                            </form>
                         </div>
                     </td>
                     </tr>
@@ -1302,6 +1314,11 @@
                                             <span class="text-sm font-bold text-slate-800">{{ $order->work_order_number }}</span>
                                             <!-- <span class="text-[10px] font-medium text-slate-500 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                             <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                            @if($order->priority)
+                                            <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                {{ trim($order->priority) }}
+                                            </span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="p-4">
@@ -1579,6 +1596,11 @@
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-rose-900">{{ $order->work_order_number }}</span>
                                             <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                            @if($order->priority)
+                                            <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                {{ trim($order->priority) }}
+                                            </span>
+                                            @endif
                                             <!-- <span class="text-[10px] font-bold text-rose-600 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                         </div>
                                     </td>
@@ -1840,6 +1862,11 @@
                                                 <span class="text-sm font-bold text-emerald-900">{{ $order->work_order_number }}</span>
                                                 <!-- <span class="text-sm font-medium text-slate-700">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                                 <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                                @if($order->priority)
+                                                <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                    {{ trim($order->priority) }}
+                                                </span>
+                                                @endif
                                                 <!-- <span class="text-[10px] font-bold text-emerald-600 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                             </div>
                                         </td>
@@ -2122,6 +2149,11 @@
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-slate-800">{{ $order->work_order_number }}</span>
                                             <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                            @if($order->priority)
+                                            <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                {{ trim($order->priority) }}
+                                            </span>
+                                            @endif
                                             <!-- <span class="text-[10px] font-medium text-slate-500 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                         </div>
                                     </td>
@@ -2403,6 +2435,11 @@
                                             <div class="flex flex-col">
                                                 <span class="text-sm font-bold text-slate-800">{{ $order->work_order_number }}</span>
                                                 <span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-[12px] font-bold uppercase">REF : {{ $order->reference_no }}</span>
+                                                <!-- @if($order->priority)
+                                                <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                    {{ trim($order->priority) }}
+                                                </span>
+                                                @endif -->
                                                 <!-- <span class="text-[10px] font-medium text-slate-500 uppercase">{{ $order->bp_code ?? 'NO BP' }}</span> -->
                                             </div>
                                         </td>
@@ -2728,7 +2765,7 @@
                 }
                 const originalText = item.getAttribute('data-original-text');
                 const text = originalText.toLowerCase();
-                
+
                 if (query && text.includes(query)) {
                     item.classList.remove('hidden');
                     const regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
@@ -3051,7 +3088,7 @@
             input.addEventListener('input', function() {
                 clearTimeout(debounceTimer);
                 const form = this.closest('form');
-                
+
                 const iconContainer = this.nextElementSibling;
                 if (iconContainer && iconContainer.innerHTML.includes('bi-search')) {
                     iconContainer.innerHTML = '<i class="bi bi-hourglass-split text-xs text-pink-500 animate-spin"></i>';
@@ -3068,7 +3105,7 @@
             const escapedQuery = searchString.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp('(' + escapedQuery + ')', 'gi');
             const highlightClass = 'bg-yellow-200 text-gray-900 px-0.5 rounded';
-            
+
             function highlightTextNodes(node) {
                 if (node.nodeType === 3) {
                     const match = node.nodeValue.match(regex);
@@ -3078,14 +3115,14 @@
                         span.innerHTML = escapeHtml(node.nodeValue).replace(regex, `<span class="${highlightClass}">$1</span>`);
                         node.parentNode.replaceChild(span, node);
                     }
-                } else if (node.nodeType === 1 && 
-                           node.nodeName !== 'SCRIPT' && 
-                           node.nodeName !== 'STYLE' && 
-                           node.nodeName !== 'INPUT' && 
-                           node.nodeName !== 'TEXTAREA' && 
-                           node.nodeName !== 'SELECT' && 
-                           node.nodeName !== 'OPTION' && 
-                           !node.classList.contains('bg-yellow-200')) {
+                } else if (node.nodeType === 1 &&
+                    node.nodeName !== 'SCRIPT' &&
+                    node.nodeName !== 'STYLE' &&
+                    node.nodeName !== 'INPUT' &&
+                    node.nodeName !== 'TEXTAREA' &&
+                    node.nodeName !== 'SELECT' &&
+                    node.nodeName !== 'OPTION' &&
+                    !node.classList.contains('bg-yellow-200')) {
                     const children = Array.from(node.childNodes);
                     for (let i = 0; i < children.length; i++) {
                         highlightTextNodes(children[i]);

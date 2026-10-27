@@ -100,10 +100,10 @@
                 </form>
             </div>
 
-            
+
             <!-- Category Filter -->
             <div class="">
-                
+
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -143,7 +143,7 @@
 
             <!-- Subcategory Filter -->
             <div class="">
-                
+
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -183,7 +183,7 @@
 
             <!-- Design Code Filter -->
             <div class="">
-                
+
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -223,7 +223,7 @@
 
             <!-- Product Code Filter -->
             <div class="">
-                
+
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -263,7 +263,7 @@
 
             <!-- Return Status Filter -->
             <div class="">
-                
+
                 <form method="GET">
                     <input type="hidden" name="tab" value="{{ request('tab', 'new-orders') }}">
                     <input type="hidden" name="search" value="{{ request('search') }}">
@@ -602,6 +602,11 @@
                                                         <span class="tw-text-gray-400 tw-mr-1">REF:</span>
                                                         {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                                     </span>
+                                                    @if($order->priority)
+                                                    <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                        {{ trim($order->priority) }}
+                                                    </span>
+                                                    @endif
                                                 </div>
                                             </td>
                                             <td class="tw-px-4 tw-py-4">
@@ -926,7 +931,14 @@
                                                     <span class="tw-text-gray-400 tw-mr-1">REF:</span>
                                                     {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                                 </span>
-                                            </div>
+                                                @if($order->priority)
+                                                <div class="tw-mt-2">
+                                                    <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                        {{ trim($order->priority) }}
+                                                    </span>
+                                                    <div>
+                                                        @endif
+                                                    </div>
                                         </td>
                                         <td class="tw-px-4 tw-py-4">
                                             <div class="tw-text-[14px] tw-text-red-600 tw-font-bold tw-mt-1">{{ $order->customer_name }}</div>
@@ -993,22 +1005,22 @@
                                                     </div>
                                                 </div>
                                                 @if($order->return_note)
-<div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
-    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
-    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
-        "{{ $order->return_note }}"
-    </div>
-</div>
-@endif
+                                                <div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
+                                                    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
+                                                    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
+                                                        "{{ $order->return_note }}"
+                                                    </div>
+                                                </div>
+                                                @endif
 
-@if($order->return_due_date)
-<div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
-    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
-    <span class="tw-text-rose-600 tw-font-semibold">
-        {{ $order->return_due_date->format('d M, Y') }}
-    </span>
-</div>
-@endif
+                                                @if($order->return_due_date)
+                                                <div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
+                                                    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
+                                                    <span class="tw-text-rose-600 tw-font-semibold">
+                                                        {{ $order->return_due_date->format('d M, Y') }}
+                                                    </span>
+                                                </div>
+                                                @endif
                                             </div>
                                         </td>
                                         <!-- <td class="tw-px-4 tw-py-4">
@@ -1271,6 +1283,13 @@
                                                     {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                                 </span>
                                             </div>
+                                            @if($order->priority)
+                                            <div class="tw-mt-2">
+                                                <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                    {{ trim($order->priority) }}
+                                                </span>
+                                                <div>
+                                                    @endif
                                         </td>
                                         <td class="tw-px-4 tw-py-4">
                                             <div class="tw-text-[14px] tw-text-red-600 tw-font-bold tw-mt-1">{{ $order->customer_name }}</div>
@@ -1333,23 +1352,23 @@
                                                         "{{ $order->narration_craftsman ?: '-' }}"
                                                     </div>
                                                 </div>
-@if($order->return_note)
-<div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
-    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
-    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
-        "{{ $order->return_note }}"
-    </div>
-</div>
-@endif
+                                                @if($order->return_note)
+                                                <div class="tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded tw-p-2 tw-mb-2">
+                                                    <div class="tw-text-[10px] tw-text-amber-700 tw-font-bold tw-uppercase tw-mb-1">Return Notes:</div>
+                                                    <div class="tw-text-sm tw-text-amber-900 tw-font-medium tw-italic tw-leading-snug">
+                                                        "{{ $order->return_note }}"
+                                                    </div>
+                                                </div>
+                                                @endif
 
-@if($order->return_due_date)
-<div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
-    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
-    <span class="tw-text-rose-600 tw-font-semibold">
-        {{ $order->return_due_date->format('d M, Y') }}
-    </span>
-</div>
-@endif
+                                                @if($order->return_due_date)
+                                                <div class="tw-flex tw-items-center tw-gap-1.5 tw-text-[11px]">
+                                                    <span class="tw-text-slate-500 tw-w-8 tw-font-bold">RDUE:</span>
+                                                    <span class="tw-text-rose-600 tw-font-semibold">
+                                                        {{ $order->return_due_date->format('d M, Y') }}
+                                                    </span>
+                                                </div>
+                                                @endif
                                             </div>
                                         </td>
                                         <!--<td class="tw-px-4 tw-py-4">-->
@@ -1519,6 +1538,13 @@
                                                     {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                                 </span>
                                             </div>
+                                            @if($order->priority)
+                                            <div class="tw-mt-2">
+                                                <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                    {{ trim($order->priority) }}
+                                                </span>
+                                                <div>
+                                                    @endif
                                         </td>
                                         <td class="tw-px-4 tw-py-4">
                                             <div class="tw-text-gray-900 tw-font-bold tw-text-xs">{{ $order->customer_name }}</div>
@@ -1766,6 +1792,13 @@
                                                 {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                             </span>
                                         </div>
+                                        @if($order->priority)
+                                        <div class="tw-mt-2">
+                                            <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                {{ trim($order->priority) }}
+                                            </span>
+                                            <div>
+                                                @endif
                                     </td>
                                     <td class="tw-px-4 tw-py-4">
                                         <div class="tw-text-gray-900 tw-font-bold tw-text-xs">{{ $order->customer_name }}</div>
@@ -2054,6 +2087,13 @@
                                                         {{ $order->reference_no ?? '-' }}
                                                     </span>
                                                 </div>
+                                                @if($order->priority)
+                                                <div class="tw-mt-2">
+                                                    <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                        {{ trim($order->priority) }}
+                                                    </span>
+                                                    <div>
+                                                        @endif
                                             </td>
                                             <td class="tw-px-4 tw-py-4">
                                                 <div class="tw-text-gray-900 tw-font-bold tw-text-xs">{{ $order->customer_name }}</div>
@@ -2136,7 +2176,7 @@
                                                     <a href="{{ route('super-admin.work-order.show', $order) }}" class="tw-p-2 tw-text-sky-600 hover:tw-bg-sky-50 tw-rounded-lg tw-transition-colors" title="View">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
-                                                    
+
                                                     <a href="{{ route('super-admin.work-order.reallocate.form', $order) }}" class="tw-p-2 tw-text-orange-600 hover:tw-bg-orange-50 tw-rounded-lg tw-transition-colors" title="Reallocate">
                                                         <i class="bi bi-arrow-repeat"></i>
                                                     </a>
@@ -2298,6 +2338,13 @@
                                                 {{ $order_details->reference_no ?? ($order->reference_no ?? '-') }}
                                             </span>
                                         </div>
+                                        @if($order->priority)
+                                        <div class="tw-mt-2">
+                                            <span class="inline-flex items-center w-fit px-2 py-0.5 bg-red-100 text-red-700 rounded text-[12px] font-bold whitespace-nowrap">
+                                                {{ trim($order->priority) }}
+                                            </span>
+                                            <div>
+                                                @endif
                                     </td>
                                     <td class="tw-px-4 tw-py-4">
                                         <div class="tw-text-gray-900 tw-font-bold tw-text-xs">{{ $order->customer_name }}</div>
@@ -2903,7 +2950,7 @@
         fetch(`/super-admin/product/get-subcategories?category_id=${categoryId}`)
             .then(res => res.json())
             .then(data => {
-                    let list = data.subcategories || data;
+                let list = data.subcategories || data;
                 list.forEach(sub => {
                     const opt = document.createElement('option');
                     opt.value = sub.id;
@@ -2984,10 +3031,10 @@
         <div class="tw-inline-block tw-w-full tw-max-w-md tw-p-6 tw-my-8 tw-text-left tw-align-middle tw-transition-all tw-transform tw-bg-white tw-shadow-xl tw-rounded-2xl tw-relative">
             <h3 class="tw-text-lg tw-font-bold tw-text-slate-900 tw-mb-4">Undo Work Order Status</h3>
             <p class="tw-text-sm tw-text-slate-500 tw-mb-4" id="superAdminUndoModalMsg"></p>
-            
+
             <form id="superAdminUndoForm" method="POST" action="">
                 @csrf
-                
+
                 <div id="superAdminUndoOtpSection" class="tw-hidden">
                     <div class="tw-mb-4 tw-p-3 tw-bg-slate-50 tw-border tw-border-slate-200 tw-rounded-lg tw-text-sm tw-text-left">
                         <div class="tw-font-medium tw-text-slate-700 tw-mb-1">Send OTP To:</div>
@@ -3000,7 +3047,7 @@
                         <button type="button" onclick="sendSuperAdminUndoOtp('whatsapp')" class="tw-px-3 tw-py-1.5 tw-bg-emerald-50 tw-text-xs tw-text-emerald-600 hover:tw-text-emerald-700 tw-font-medium tw-rounded tw-border tw-border-emerald-200"><i class="bi bi-whatsapp tw-mr-1"></i> WhatsApp</button>
                         <span id="superAdminOtpStatus" class="tw-ml-2 tw-text-xs tw-text-green-600 tw-hidden">OTP Sent!</span>
                     </div>
-                    
+
                     <div class="tw-mb-4 tw-text-left">
                         <label class="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Enter OTP</label>
                         <input type="text" name="otp" id="superAdminUndoOtpInput" class="tw-w-full tw-px-3 tw-py-2 tw-bg-slate-50 tw-border tw-border-slate-200 tw-rounded-lg tw-text-sm" placeholder="6-digit OTP">
@@ -3017,124 +3064,124 @@
 </div>
 
 <script>
-let currentSuperAdminUndoWoId = null;
+    let currentSuperAdminUndoWoId = null;
 
-function openSuperAdminUndoModal(woId, undoCount) {
-    currentSuperAdminUndoWoId = woId;
-    document.getElementById('superAdminUndoForm').action = `/super-admin/work-order/${woId}/undo`;
-    
-    if (undoCount >= 6) {
-        document.getElementById('superAdminUndoOtpSection').classList.remove('tw-hidden');
-        document.getElementById('superAdminUndoOtpInput').required = true;
-        document.getElementById('superAdminUndoModalMsg').innerText = "You have reached the maximum undo limit without OTP (6 times). OTP is required to undo again.";
-    } else {
-        document.getElementById('superAdminUndoOtpSection').classList.add('tw-hidden');
-        document.getElementById('superAdminUndoOtpInput').required = false;
-        document.getElementById('superAdminUndoModalMsg').innerText = `Are you sure you want to undo the status of this work order? (Used: ${undoCount}/6 before OTP is required)`;
-    }
-    
-    document.getElementById('superAdminUndoModal').classList.remove('tw-hidden');
-}
+    function openSuperAdminUndoModal(woId, undoCount) {
+        currentSuperAdminUndoWoId = woId;
+        document.getElementById('superAdminUndoForm').action = `/super-admin/work-order/${woId}/undo`;
 
-function closeSuperAdminUndoModal() {
-    document.getElementById('superAdminUndoModal').classList.add('tw-hidden');
-}
-
-function sendSuperAdminUndoOtp(method) {
-    document.getElementById('superAdminOtpStatus').classList.remove('tw-hidden');
-    document.getElementById('superAdminOtpStatus').innerText = "Sending...";
-    document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-amber-600";
-    
-    fetch(`/super-admin/work-order/${currentSuperAdminUndoWoId}/send-undo-otp`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ delivery_method: method })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('superAdminOtpStatus').innerText = "OTP Sent!";
-            document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-emerald-600";
+        if (undoCount >= 6) {
+            document.getElementById('superAdminUndoOtpSection').classList.remove('tw-hidden');
+            document.getElementById('superAdminUndoOtpInput').required = true;
+            document.getElementById('superAdminUndoModalMsg').innerText = "You have reached the maximum undo limit without OTP (6 times). OTP is required to undo again.";
         } else {
-            document.getElementById('superAdminOtpStatus').innerText = "Failed: " + data.message;
-            document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
-        }
-    })
-    .catch(err => {
-        document.getElementById('superAdminOtpStatus').innerText = "Error sending OTP";
-        document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
-    });
-}
-
-// --- LIVE SEARCH AND HIGHLIGHT LOGIC ---
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInputs = document.querySelectorAll('input[name="search"]');
-    let debounceTimer;
-
-    searchInputs.forEach(input => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('search') && input.value === urlParams.get('search')) {
-            if (input.offsetParent !== null) {
-                input.focus();
-                const val = input.value;
-                input.value = '';
-                input.value = val;
-            }
+            document.getElementById('superAdminUndoOtpSection').classList.add('tw-hidden');
+            document.getElementById('superAdminUndoOtpInput').required = false;
+            document.getElementById('superAdminUndoModalMsg').innerText = `Are you sure you want to undo the status of this work order? (Used: ${undoCount}/6 before OTP is required)`;
         }
 
-        input.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            const form = this.closest('form');
-            
-            const iconContainer = this.nextElementSibling;
-            if (iconContainer && iconContainer.innerHTML.includes('bi-search')) {
-                iconContainer.innerHTML = '<i class="bi bi-hourglass-split tw-text-xs tw-text-purple-600 tw-animate-spin"></i>';
-            }
-
-            debounceTimer = setTimeout(() => {
-                form.submit();
-            }, 800);
-        });
-    });
-
-    const searchString = new URLSearchParams(window.location.search).get('search');
-    if (searchString && searchString.trim() !== '') {
-        const escapedQuery = searchString.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp('(' + escapedQuery + ')', 'gi');
-        const highlightClass = 'tw-bg-yellow-200 tw-text-gray-900 tw-px-0.5 tw-rounded';
-        
-        function highlightTextNodes(node) {
-            if (node.nodeType === 3) {
-                const match = node.nodeValue.match(regex);
-                if (match && node.nodeValue.trim() !== '') {
-                    const span = document.createElement('span');
-                    const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    span.innerHTML = escapeHtml(node.nodeValue).replace(regex, `<span class="${highlightClass}">$1</span>`);
-                    node.parentNode.replaceChild(span, node);
-                }
-            } else if (node.nodeType === 1 && 
-                       node.nodeName !== 'SCRIPT' && 
-                       node.nodeName !== 'STYLE' && 
-                       node.nodeName !== 'INPUT' && 
-                       node.nodeName !== 'TEXTAREA' && 
-                       node.nodeName !== 'SELECT' && 
-                       node.nodeName !== 'OPTION' && 
-                       !node.classList.contains('tw-bg-yellow-200')) {
-                const children = Array.from(node.childNodes);
-                for (let i = 0; i < children.length; i++) {
-                    highlightTextNodes(children[i]);
-                }
-            }
-        }
-
-        const tbodies = document.querySelectorAll('table tbody');
-        tbodies.forEach(tbody => highlightTextNodes(tbody));
+        document.getElementById('superAdminUndoModal').classList.remove('tw-hidden');
     }
-});
+
+    function closeSuperAdminUndoModal() {
+        document.getElementById('superAdminUndoModal').classList.add('tw-hidden');
+    }
+
+    function sendSuperAdminUndoOtp(method) {
+        document.getElementById('superAdminOtpStatus').classList.remove('tw-hidden');
+        document.getElementById('superAdminOtpStatus').innerText = "Sending...";
+        document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-amber-600";
+
+        fetch(`/super-admin/work-order/${currentSuperAdminUndoWoId}/send-undo-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    delivery_method: method
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('superAdminOtpStatus').innerText = "OTP Sent!";
+                    document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-emerald-600";
+                } else {
+                    document.getElementById('superAdminOtpStatus').innerText = "Failed: " + data.message;
+                    document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
+                }
+            })
+            .catch(err => {
+                document.getElementById('superAdminOtpStatus').innerText = "Error sending OTP";
+                document.getElementById('superAdminOtpStatus').className = "tw-ml-2 tw-text-xs tw-text-rose-600";
+            });
+    }
+
+    // --- LIVE SEARCH AND HIGHLIGHT LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInputs = document.querySelectorAll('input[name="search"]');
+        let debounceTimer;
+
+        searchInputs.forEach(input => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('search') && input.value === urlParams.get('search')) {
+                if (input.offsetParent !== null) {
+                    input.focus();
+                    const val = input.value;
+                    input.value = '';
+                    input.value = val;
+                }
+            }
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const form = this.closest('form');
+
+                const iconContainer = this.nextElementSibling;
+                if (iconContainer && iconContainer.innerHTML.includes('bi-search')) {
+                    iconContainer.innerHTML = '<i class="bi bi-hourglass-split tw-text-xs tw-text-purple-600 tw-animate-spin"></i>';
+                }
+
+                debounceTimer = setTimeout(() => {
+                    form.submit();
+                }, 800);
+            });
+        });
+
+        const searchString = new URLSearchParams(window.location.search).get('search');
+        if (searchString && searchString.trim() !== '') {
+            const escapedQuery = searchString.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp('(' + escapedQuery + ')', 'gi');
+            const highlightClass = 'tw-bg-yellow-200 tw-text-gray-900 tw-px-0.5 tw-rounded';
+
+            function highlightTextNodes(node) {
+                if (node.nodeType === 3) {
+                    const match = node.nodeValue.match(regex);
+                    if (match && node.nodeValue.trim() !== '') {
+                        const span = document.createElement('span');
+                        const escapeHtml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        span.innerHTML = escapeHtml(node.nodeValue).replace(regex, `<span class="${highlightClass}">$1</span>`);
+                        node.parentNode.replaceChild(span, node);
+                    }
+                } else if (node.nodeType === 1 &&
+                    node.nodeName !== 'SCRIPT' &&
+                    node.nodeName !== 'STYLE' &&
+                    node.nodeName !== 'INPUT' &&
+                    node.nodeName !== 'TEXTAREA' &&
+                    node.nodeName !== 'SELECT' &&
+                    node.nodeName !== 'OPTION' &&
+                    !node.classList.contains('tw-bg-yellow-200')) {
+                    const children = Array.from(node.childNodes);
+                    for (let i = 0; i < children.length; i++) {
+                        highlightTextNodes(children[i]);
+                    }
+                }
+            }
+
+            const tbodies = document.querySelectorAll('table tbody');
+            tbodies.forEach(tbody => highlightTextNodes(tbody));
+        }
+    });
 </script>
 @endsection
-
-
