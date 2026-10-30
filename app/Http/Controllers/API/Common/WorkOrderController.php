@@ -103,16 +103,29 @@ class WorkOrderController extends Controller
 
         // ── Ensure product_category is a string, not an object ──
         if (isset($workOrderData['product_category']) && is_array($workOrderData['product_category'])) {
-            $workOrderData['product_category'] = $workOrder->productCategory ? $workOrder->productCategory->name : $workOrder->product_category;
+            $workOrderData['product_category'] = $workOrder->productCategory ? $workOrder->productCategory->name : ($workOrderData['product_category']['name'] ?? null);
         } elseif (!isset($workOrderData['product_category'])) {
             $workOrderData['product_category'] = $workOrder->productCategory ? $workOrder->productCategory->name : null;
+        }
+        if (is_array($workOrderData['product_category'])) {
+            $workOrderData['product_category'] = null;
         }
 
         // ── Ensure subcategory is a string, not an object ──
         if (isset($workOrderData['subcategory']) && is_array($workOrderData['subcategory'])) {
-            $workOrderData['subcategory'] = $workOrder->subcategoryRelation ? $workOrder->subcategoryRelation->name : $workOrder->subcategory;
+            $workOrderData['subcategory'] = $workOrder->subcategoryRelation ? $workOrder->subcategoryRelation->name : ($workOrderData['subcategory']['name'] ?? null);
         } elseif (!isset($workOrderData['subcategory'])) {
             $workOrderData['subcategory'] = $workOrder->subcategoryRelation ? $workOrder->subcategoryRelation->name : null;
+        }
+        if (is_array($workOrderData['subcategory'])) {
+            $workOrderData['subcategory'] = null;
+        }
+
+        // ── Ensure rejection_reason is a string, not an object/array ──
+        if (isset($workOrderData['rejection_reason']) && is_array($workOrderData['rejection_reason'])) {
+            $workOrderData['rejection_reason'] = $workOrderData['rejection_reason']['reason'] 
+                ?? $workOrderData['rejection_reason']['rejection_reason'] 
+                ?? json_encode($workOrderData['rejection_reason']);
         }
 
         // ── Apply Data Masking if it's a PDF Work Order or if User is a Craftsman ──
@@ -252,12 +265,12 @@ class WorkOrderController extends Controller
         }
 
         if ($user instanceof \App\Models\CraftsmanStaff) {
-            // Check granular craftsman staff permissions
-            return $user->hasPermission($specificPermission);
+            // Check granular craftsman staff permissions or general work order permission
+            return $user->hasPermission($specificPermission) || $user->hasPermission('work_order');
         }
 
         if ($user instanceof \App\Models\Craftman || ($user->role ?? '') === 'craftsman') {
-            if ($specificPermission === 'wo_view' || $specificPermission === 'work_order') return true;
+            if ($specificPermission === 'wo_view' || $specificPermission === 'work_order' || $user->hasPermission('work_order')) return true;
             // Check granular craftsman permissions
             return $user->hasPermission($specificPermission);
         }
@@ -1622,40 +1635,54 @@ class WorkOrderController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Work order accepted',
-            'data' => $this->transformWorkOrderResponse($workOrder)
+            'data' => $this->transformWorkOrderResponse($workOrder->fresh())
         ]);
     }
 
     public function rejectWorkOrder(Request $request, $id)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
+        if (!$this->isAdmin($user) && !$this->isCraftsman($user)) {
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
         }
 
-        $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))->find($id);
+        if ($user instanceof \App\Models\CraftsmanStaff && !$this->checkPermission($user, 'wo_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
+        }
+
+        $query = WorkOrder::query();
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+        $workOrder = $query->find($id);
+
         if (!$workOrder) return response()->json(['success' => false, 'message' => 'Work Order not found'], 404);
 
         if ($workOrder->craftsman_status !== 'allocated') {
             return response()->json(['success' => false, 'message' => 'Work order cannot be rejected in current status'], 400);
         }
 
-        $validator = Validator::make($request->all(), [
-            'rejection_reason' => 'required|string'
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        // Support rejection_reason, reason, reject_reason, notes, remarks
+        $reason = $request->input('rejection_reason') 
+            ?? $request->input('reason') 
+            ?? $request->input('reject_reason') 
+            ?? $request->input('notes') 
+            ?? $request->input('remarks');
+
+        if (is_array($reason)) {
+            $reason = $reason['reason'] ?? $reason['rejection_reason'] ?? json_encode($reason);
         }
+        $reason = !empty($reason) ? (string)$reason : 'Rejected by craftsman';
 
         $workOrder->update([
-            'craftsman_status'  => 'rejected',
-            'rejection_reason'  => $request->rejection_reason,
+            'craftsman_status' => 'rejected',
+            'rejection_reason' => $reason,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Work order rejected',
-            'data' => $this->transformWorkOrderResponse($workOrder)
+            'data'    => $this->transformWorkOrderResponse($workOrder->fresh())
         ]);
     }
 
@@ -1713,38 +1740,110 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order accept permission'], 403);
         }
 
-        $request->validate(['ids' => 'required|array', 'ids.*' => 'exists:work_orders,id']);
+        $rawIds = $request->input('ids') ?? $request->input('work_order_ids') ?? $request->input('order_ids');
+        if (is_string($rawIds)) {
+            $decoded = json_decode($rawIds, true);
+            $ids = is_array($decoded) ? $decoded : explode(',', $rawIds);
+        } elseif (is_numeric($rawIds)) {
+            $ids = [(int)$rawIds];
+        } elseif (is_array($rawIds)) {
+            $ids = $rawIds;
+        } else {
+            $ids = [];
+        }
 
-        $count = WorkOrder::whereIn('id', $request->ids)
+        $ids = array_values(array_filter(array_map(fn($id) => is_numeric(trim((string)$id)) ? (int)trim((string)$id) : trim((string)$id), $ids)));
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No work order IDs provided',
+                'errors'  => ['ids' => ['The ids field is required.']]
+            ], 422);
+        }
+
+        $count = WorkOrder::whereIn('id', $ids)
             ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
             ->where('craftsman_status', 'allocated')
             ->update(['craftsman_status' => 'in_process']);
 
-        return response()->json(['success' => true, 'message' => "$count work orders accepted"]);
+        return response()->json([
+            'success' => true,
+            'message' => "$count work orders accepted",
+            'count'   => $count,
+            'data'    => [
+                'count'        => $count,
+                'accepted_ids' => array_values($ids)
+            ]
+        ]);
     }
 
     public function bulkRejectWorkOrders(Request $request)
     {
         $user = $request->user();
-        if (!$this->isCraftsman($user) || !$this->checkPermission($user, 'wo_reject')) {
+        if (!$this->isAdmin($user) && !$this->isCraftsman($user)) {
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
         }
 
-        $request->validate([
-            'ids'              => 'required|array',
-            'ids.*'            => 'exists:work_orders,id',
-            'rejection_reason' => 'required|string'
+        if ($user instanceof \App\Models\CraftsmanStaff && !$this->checkPermission($user, 'wo_reject')) {
+            return response()->json(['success' => false, 'message' => 'Forbidden – no work order reject permission'], 403);
+        }
+
+        $rawIds = $request->input('ids') ?? $request->input('work_order_ids') ?? $request->input('order_ids');
+        if (is_string($rawIds)) {
+            $decoded = json_decode($rawIds, true);
+            $ids = is_array($decoded) ? $decoded : explode(',', $rawIds);
+        } elseif (is_numeric($rawIds)) {
+            $ids = [(int)$rawIds];
+        } elseif (is_array($rawIds)) {
+            $ids = $rawIds;
+        } else {
+            $ids = [];
+        }
+
+        $ids = array_values(array_filter(array_map(fn($id) => is_numeric(trim((string)$id)) ? (int)trim((string)$id) : trim((string)$id), $ids)));
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No work order IDs provided',
+                'errors'  => ['ids' => ['The ids field is required.']]
+            ], 422);
+        }
+
+        // Support rejection_reason, reason, reject_reason, notes, remarks
+        $reason = $request->input('rejection_reason') 
+            ?? $request->input('reason') 
+            ?? $request->input('reject_reason') 
+            ?? $request->input('notes') 
+            ?? $request->input('remarks');
+
+        if (is_array($reason)) {
+            $reason = $reason['reason'] ?? $reason['rejection_reason'] ?? json_encode($reason);
+        }
+        $reason = !empty($reason) ? (string)$reason : 'Rejected by craftsman';
+
+        $query = WorkOrder::whereIn('id', $ids)
+            ->where('craftsman_status', 'allocated');
+
+        if (!$this->isAdmin($user)) {
+            $query->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user));
+        }
+
+        $count = $query->update([
+            'craftsman_status' => 'rejected',
+            'rejection_reason' => $reason,
         ]);
 
-        $count = WorkOrder::whereIn('id', $request->ids)
-            ->where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
-            ->where('craftsman_status', 'allocated')
-            ->update([
-                'craftsman_status' => 'rejected',
-                'rejection_reason' => $request->rejection_reason,
-            ]);
-
-        return response()->json(['success' => true, 'message' => "$count work orders rejected"]);
+        return response()->json([
+            'success' => true,
+            'message' => "$count work orders rejected",
+            'count'   => $count,
+            'data'    => [
+                'count'        => $count,
+                'rejected_ids' => array_values($ids)
+            ]
+        ]);
     }
 
     public function bulkCompleteWorkOrders(Request $request)
@@ -1754,17 +1853,34 @@ class WorkOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Forbidden – no work order complete permission'], 403);
         }
 
-        $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:work_orders,id',
-        ]);
+        $rawIds = $request->input('ids') ?? $request->input('work_order_ids') ?? $request->input('order_ids');
+        if (is_string($rawIds)) {
+            $decoded = json_decode($rawIds, true);
+            $ids = is_array($decoded) ? $decoded : explode(',', $rawIds);
+        } elseif (is_numeric($rawIds)) {
+            $ids = [(int)$rawIds];
+        } elseif (is_array($rawIds)) {
+            $ids = $rawIds;
+        } else {
+            $ids = [];
+        }
+
+        $ids = array_values(array_filter(array_map(fn($id) => is_numeric(trim((string)$id)) ? (int)trim((string)$id) : trim((string)$id), $ids)));
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No work order IDs provided',
+                'errors'  => ['ids' => ['The ids field is required.']]
+            ], 422);
+        }
 
         // Optional: You can send a common weight for all, or individual weights per work order
         // If sending individual weights, format should be: { "ids": [1,2], "weights": {"1": 10.5, "2": 12.3} }
         $weights = $request->input('weights', []);
 
         $count = 0;
-        foreach ($request->ids as $id) {
+        foreach ($ids as $id) {
             $workOrder = WorkOrder::where('allocated_craftsman_bp_code', $this->getCraftsmanCode($user))
                 ->where('id', $id)
                 ->where('craftsman_status', 'in_process')
