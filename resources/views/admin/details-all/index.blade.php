@@ -925,7 +925,7 @@
                         <thead class="bg-light">
                             <tr>
                                 <th class="text-center" style="width: 40px;">
-                                    <input class="form-check-input" type="checkbox" id="modalDesignsSelectAll">
+                                    <input class="form-check-input" type="checkbox" id="modalDesignsSelectAll" checked>
                                 </th>
                                 <th class="text-center">Image</th>
                                 <th>Design Code</th>
@@ -1239,6 +1239,113 @@
         }
     });
 
+    // ==========================================
+    // ROBUST PRINT WINDOW HELPER
+    // ==========================================
+    function openPrintWindow(title, bodyContent, customStyles = '') {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Popup was blocked by your browser. Please allow popups for this site to print.');
+            return;
+        }
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Print - ${title}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 15mm;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #212529;
+            background: #fff;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 11px;
+        }
+        .table th, .table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+        .table-light th, thead th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .bg-primary { background-color: #0d6efd !important; color: #fff !important; }
+        .bg-info { background-color: #0dcaf0 !important; color: #fff !important; }
+        .text-danger { color: #dc3545 !important; }
+        .text-success { color: #198754 !important; }
+        .text-center { text-align: center; }
+        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+
+        ${customStyles}
+
+        @media print {
+            body {
+                margin: 10mm;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .table th, .table td {
+                border: 1px solid #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; padding: 12px 16px; background: #e9ecef; border: 1px solid #ced4da; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <strong>Print Preview:</strong> Click <em>Print Now</em> if the print dialog does not open automatically.
+        </div>
+        <div>
+            <button onclick="window.focus(); window.print();" style="padding: 6px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                🖨️ Print Now
+            </button>
+            <button onclick="window.close();" style="padding: 6px 14px; background: #6c757d; color: #fff; border: none; border-radius: 4px; margin-left: 8px; cursor: pointer; font-size: 13px;">
+                ✕ Close
+            </button>
+        </div>
+    </div>
+
+    ${bodyContent}
+
+    <script>
+        function triggerPrint() {
+            window.focus();
+            window.print();
+        }
+        window.onafterprint = function() {
+            window.close();
+        };
+        // Trigger print after short delay
+        setTimeout(triggerPrint, 350);
+    <\/script>
+</body>
+</html>`;
+
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+
+        // Fallback trigger from opener
+        printWindow.focus();
+        setTimeout(() => {
+            try {
+                printWindow.focus();
+                printWindow.print();
+            } catch(e) {}
+        }, 500);
+    }
+
     // Print Modal Orders
     function printModalSelected() {
         const checkboxes = document.querySelectorAll('.modal-row-checkbox:checked');
@@ -1251,15 +1358,15 @@
         const isOverdue = title.toLowerCase().includes('overdue');
         const isPO = currentOrderType === 'po';
 
-        const showNum = document.getElementById('printCol_number').checked;
-        const showBP = !isPO && document.getElementById('printCol_bp').checked;
-        const showBusiness = !isPO && document.getElementById('printCol_business').checked;
-        const showCraftsmanCode = !isPO && document.getElementById('printCol_craftsman_code').checked;
-        const showCraftsmanName = !isPO && document.getElementById('printCol_craftsman_name').checked;
-        const showQty = document.getElementById('printCol_qty').checked;
-        const showWeight = document.getElementById('printCol_weight').checked;
-        const showDue = document.getElementById('printCol_due').checked;
-        const showOverdueDays = isOverdue && document.getElementById('printCol_overdue').checked;
+        const showNum = document.getElementById('printCol_number')?.checked ?? true;
+        const showBP = !isPO && (document.getElementById('printCol_bp')?.checked ?? true);
+        const showBusiness = !isPO && (document.getElementById('printCol_business')?.checked ?? true);
+        const showCraftsmanCode = !isPO && (document.getElementById('printCol_craftsman_code')?.checked ?? true);
+        const showCraftsmanName = !isPO && (document.getElementById('printCol_craftsman_name')?.checked ?? true);
+        const showQty = document.getElementById('printCol_qty')?.checked ?? true;
+        const showWeight = document.getElementById('printCol_weight')?.checked ?? true;
+        const showDue = document.getElementById('printCol_due')?.checked ?? true;
+        const showOverdueDays = isOverdue && (document.getElementById('printCol_overdue')?.checked ?? true);
 
         let headersHtml = '';
         if (showNum) headersHtml += '<th>Order Number</th>';
@@ -1288,37 +1395,18 @@
             rowsHtml += '</tr>';
         });
 
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print - ${title}</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
-                        .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                        .table th, .table td { border: 1px solid #dee2e6; padding: 6px 10px; font-size: 11px; }
-                        .text-danger { color: #dc3545 !important; }
-                        .text-center { text-align: center; }
-                        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="text-center mb-3">
-                    <div class="header-title">${title}</div>
-                    <div class="text-muted small">Generated on ${new Date().toLocaleDateString()}</div>
-                </div>
-                <table class="table table-bordered">
-                    <thead class="table-light"><tr>${headersHtml}</tr></thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-                <script>window.onload = function() { window.print(); window.close(); }<\/script>
-            </body>
-            </html>`);
-        printWindow.document.close();
+        const bodyContent = `
+            <div class="text-center mb-3">
+                <div class="header-title">${title}</div>
+                <div class="text-muted small">Generated on ${new Date().toLocaleDateString()}</div>
+            </div>
+            <table class="table table-bordered">
+                <thead class="table-light"><tr>${headersHtml}</tr></thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        `;
+
+        openPrintWindow(title, bodyContent);
     }
 
     // Designs Modal State & Logic
@@ -1348,7 +1436,7 @@
             rowsHtml += `
                 <tr class="modal-design-row">
                     <td class="text-center" style="vertical-align: middle;">
-                        <input class="form-check-input modal-design-checkbox" type="checkbox">
+                        <input class="form-check-input modal-design-checkbox" type="checkbox" checked>
                     </td>
                     <td class="text-center">
                         <img src="${design.image || ''}" alt="Design" style="height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd;" class="design-img-preview" onerror="this.src='';">
@@ -1465,44 +1553,73 @@
                 </tr>`;
         });
 
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print - ${title}</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
-                        .table { width: 100%; border-collapse: collapse; }
-                        .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 12px; }
-                        .text-center { text-align: center; }
-                    }
-                </style>
-            </head>
-            <body>
-                <h4 class="text-center mb-4 fw-bold">${title}</h4>
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="text-align: center; width: 100px;">Image</th>
-                            <th>Design Code</th>
-                            <th>Design Name</th>
-                            <th>Category</th>
-                            <th style="text-align: center;">Weight From (g)</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tbodyHtml}</tbody>
-                </table>
-                <script>
-                    window.onload = function() { 
-                        setTimeout(() => { window.print(); window.close(); }, 400); 
-                    }
-                <\/script>
-            </body>
-            </html>`);
-        printWindow.document.close();
+        const bodyContent = `
+            <h4 class="text-center mb-4 fw-bold">${title}</h4>
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th style="text-align: center; width: 100px;">Image</th>
+                        <th>Design Code</th>
+                        <th>Design Name</th>
+                        <th>Category</th>
+                        <th style="text-align: center;">Weight From (g)</th>
+                    </tr>
+                </thead>
+                <tbody>${tbodyHtml}</tbody>
+            </table>
+        `;
+
+        openPrintWindow(title, bodyContent);
+    }
+
+    function printSelectedDesigns() {
+        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one design to print.');
+            return;
+        }
+
+        const title = document.getElementById('designsListModalTitle').innerText;
+        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
+
+        let tbodyHtml = '';
+        rowsToPrint.forEach(row => {
+            const imgEl = row.querySelector('.design-img-preview');
+            const imgSrc = imgEl ? imgEl.src : '';
+            const code = row.cells[2]?.innerText || '';
+            const name = row.cells[3]?.innerText || '';
+            const category = row.cells[4]?.innerText || '';
+            const weight = row.cells[5]?.innerText || '';
+
+            tbodyHtml += `
+                <tr>
+                    <td style="text-align: center; vertical-align: middle; padding: 8px;">
+                        ${imgSrc ? `<img src="${imgSrc}" style="max-height: 80px; max-width: 80px; object-fit: contain;">` : '-'}
+                    </td>
+                    <td style="vertical-align: middle; font-weight: bold;">${code}</td>
+                    <td style="vertical-align: middle;">${name}</td>
+                    <td style="vertical-align: middle;">${category}</td>
+                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
+                </tr>`;
+        });
+
+        const bodyContent = `
+            <h4 class="text-center mb-4 fw-bold">${title}</h4>
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th style="text-align: center; width: 100px;">Image</th>
+                        <th>Design Code</th>
+                        <th>Design Name</th>
+                        <th>Category</th>
+                        <th style="text-align: center;">Weight From (g)</th>
+                    </tr>
+                </thead>
+                <tbody>${tbodyHtml}</tbody>
+            </table>
+        `;
+
+        openPrintWindow(title, bodyContent);
     }
 
     function printSelectedDesigns() {
@@ -1577,7 +1694,7 @@
     }
 
     // Craftsmen and Clients Main Table Print logic
-    function generatePrintHtml(rowsToPrint, title, isClients = false) {
+    function generatePrintTableHtml(rowsToPrint, title, isClients = false) {
         let rowsHtml = '';
         rowsToPrint.forEach(row => {
             const cells = row.querySelectorAll('td');
@@ -1619,67 +1736,42 @@
             </tr>`;
 
         return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print - ${title}</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        body { -webkit-print-color-adjust: exact; margin: 15mm; font-family: system-ui, sans-serif; }
-                        .table { width: 100%; border-collapse: collapse; }
-                        .table th, .table td { border: 1px solid #dee2e6; padding: 6px 8px; font-size: 11px; }
-                        .bg-primary { background-color: #0d6efd !important; color: white !important; }
-                        .bg-info { background-color: #0dcaf0 !important; color: white !important; }
-                        .text-danger { color: #dc3545 !important; }
-                        .text-success { color: #198754 !important; }
-                        .text-center { text-align: center; }
-                    }
-                </style>
-            </head>
-            <body>
-                <h4 class="text-center mb-3 fw-bold">${title}</h4>
-                <table class="table table-bordered">
-                    <thead>${headersHtml}</thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-                <script>window.onload = function() { window.print(); window.close(); }<\/script>
-            </body>
-            </html>`;
+            <h4 class="text-center mb-3 fw-bold">${title}</h4>
+            <table class="table table-bordered">
+                <thead>${headersHtml}</thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        `;
     }
 
     function printSelected() {
         const checkboxes = document.querySelectorAll('.row-checkbox:checked');
         if (checkboxes.length === 0) return alert('Please select at least one row to print.');
         const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-        const w = window.open('', '_blank');
-        w.document.write(generatePrintHtml(rowsToPrint, 'Craftsman Workflow Overview', false));
-        w.document.close();
+        const bodyContent = generatePrintTableHtml(rowsToPrint, 'Craftsman Workflow Overview', false);
+        openPrintWindow('Craftsman Workflow Overview', bodyContent);
     }
 
     function printAllFiltered() {
         const rows = document.querySelectorAll('#detailsTable tbody tr.data-row');
         if (rows.length === 0) return alert('No data to print.');
-        const w = window.open('', '_blank');
-        w.document.write(generatePrintHtml(Array.from(rows), 'Craftsman Workflow Overview', false));
-        w.document.close();
+        const bodyContent = generatePrintTableHtml(Array.from(rows), 'Craftsman Workflow Overview', false);
+        openPrintWindow('Craftsman Workflow Overview', bodyContent);
     }
 
     function printSelectedClients() {
         const checkboxes = document.querySelectorAll('.client-row-checkbox:checked');
         if (checkboxes.length === 0) return alert('Please select at least one client to print.');
         const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-        const w = window.open('', '_blank');
-        w.document.write(generatePrintHtml(rowsToPrint, 'Top Picks Clients Report (Work Orders)', true));
-        w.document.close();
+        const bodyContent = generatePrintTableHtml(rowsToPrint, 'Top Picks Clients Report (Work Orders)', true);
+        openPrintWindow('Top Picks Clients Report (Work Orders)', bodyContent);
     }
 
     function printAllClients() {
         const rows = document.querySelectorAll('#clientsTable tbody tr.client-data-row');
         if (rows.length === 0) return alert('No clients to print.');
-        const w = window.open('', '_blank');
-        w.document.write(generatePrintHtml(Array.from(rows), 'Top Picks Clients Report (Work Orders)', true));
-        w.document.close();
+        const bodyContent = generatePrintTableHtml(Array.from(rows), 'Top Picks Clients Report (Work Orders)', true);
+        openPrintWindow('Top Picks Clients Report (Work Orders)', bodyContent);
     }
 
     // --- Custom Pagination for Main Grids ---
