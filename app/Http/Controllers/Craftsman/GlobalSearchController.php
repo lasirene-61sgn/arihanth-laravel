@@ -145,10 +145,7 @@ class GlobalSearchController extends Controller
 
             // Repairs (Only allocated to this Craftsman)
             if ($canAccess('repair') && isset($matchedItems[Repair::class])) {
-                $repairs = Repair::where(function($q) use ($craftsmanCode, $craftsmanId) {
-                        $q->where('craftman_code', $craftsmanCode);
-                        if ($craftsmanId) $q->orWhere('craftsman_id', $craftsmanId);
-                    })
+                $repairs = Repair::where('craftman_code', $craftsmanCode)
                     ->whereIn('id', $matchedItems[Repair::class])
                     ->get();
                 $addResults('Repairs', $repairs, 'craftsman.repairs.show', 'id', 'order_number');
@@ -227,13 +224,11 @@ class GlobalSearchController extends Controller
 
             // Repairs (Only allocated to this Craftsman)
             if ($canAccess('repair')) {
-                $repairs = Repair::where(function($q) use ($craftsmanCode, $craftsmanId) {
-                        $q->where('craftman_code', $craftsmanCode);
-                        if ($craftsmanId) $q->orWhere('craftsman_id', $craftsmanId);
-                    })
+                $repairs = Repair::where('craftman_code', $craftsmanCode)
                     ->where(function($q) use ($query) {
                         $q->where('order_number', 'LIKE', "%{$query}%")
                             ->orWhere('product_name', 'LIKE', "%{$query}%")
+                            ->orWhere('reference_number', 'LIKE', "%{$query}%")
                             ->orWhere('repair_details', 'LIKE', "%{$query}%")
                             ->orWhere('notes', 'LIKE', "%{$query}%");
                     })->limit(20)->get();

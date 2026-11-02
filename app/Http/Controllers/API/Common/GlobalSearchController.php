@@ -180,12 +180,10 @@ class GlobalSearchController extends Controller
 
 
                 if (isset($matchedItems[Repair::class])) {
-                    $repQuery = Repair::select('id', 'order_no', 'product_name', 'image_proof')->whereIn('id', $matchedItems[Repair::class]);
+                    $repQuery = Repair::select('id', 'order_number', 'product_name', 'repair_image')->whereIn('id', $matchedItems[Repair::class]);
                     if (!$isAdmin) {
                         if ($isCraftsman) {
-                            $repQuery->whereHas('craftsman', function($q) use ($craftsmanCode) {
-                                $q->where('craftman_code', $craftsmanCode);
-                            });
+                            $repQuery->where('craftman_code', $craftsmanCode);
                         } elseif ($isBuyer) {
                             $repQuery->whereHas('buyer', function($q) use ($buyerCode) {
                                 $q->where('bp_code', $buyerCode);
@@ -266,16 +264,17 @@ class GlobalSearchController extends Controller
 
 
             // Repairs
-            $repQuery = Repair::query()->select('id', 'order_no', 'product_name', 'image_proof')
+            $repQuery = Repair::query()->select('id', 'order_number', 'product_name', 'repair_image')
                 ->where(function($q) use ($query) {
-                    $q->where('order_no', 'LIKE', "%{$query}%")
-                      ->orWhere('product_name', 'LIKE', "%{$query}%");
+                    $q->where('order_number', 'LIKE', "%{$query}%")
+                      ->orWhere('product_name', 'LIKE', "%{$query}%")
+                      ->orWhere('reference_number', 'LIKE', "%{$query}%")
+                      ->orWhere('repair_details', 'LIKE', "%{$query}%")
+                      ->orWhere('notes', 'LIKE', "%{$query}%");
                 });
             if (!$isAdmin) {
                 if ($isCraftsman) {
-                    $repQuery->whereHas('craftsman', function($q) use ($craftsmanCode) {
-                        $q->where('craftman_code', $craftsmanCode);
-                    });
+                    $repQuery->where('craftman_code', $craftsmanCode);
                 } elseif ($isBuyer) {
                     $repQuery->whereHas('buyer', function($q) use ($buyerCode) {
                         $q->where('bp_code', $buyerCode);

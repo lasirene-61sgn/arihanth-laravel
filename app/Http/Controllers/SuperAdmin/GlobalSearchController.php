@@ -61,7 +61,8 @@ class GlobalSearchController extends Controller
 
                         // Fallback if display field is empty
                         if (empty($display)) {
-                            if (isset($item->name)) $display = $item->name;
+                            if (isset($item->product_name)) $display = $item->product_name;
+                            elseif (isset($item->name)) $display = $item->name;
                             elseif (isset($item->title)) $display = $item->title;
                             elseif (isset($item->first_name) && isset($item->last_name)) $display = $item->first_name . ' ' . $item->last_name;
                             elseif (isset($item->first_name)) $display = $item->first_name;
@@ -90,6 +91,7 @@ class GlobalSearchController extends Controller
                         elseif (isset($item->image)) $image = $item->image;
                         elseif (isset($item->profile_image)) $image = $item->profile_image;
                         elseif (isset($item->image_proof)) $image = $item->image_proof;
+                        elseif (isset($item->repair_image)) $image = $item->repair_image;
                         elseif (isset($item->product) && isset($item->product->product_image)) $image = $item->product->product_image;
 
                         if ($image && !filter_var($image, FILTER_VALIDATE_URL)) {
@@ -116,6 +118,7 @@ class GlobalSearchController extends Controller
                         // Determine details
                         $detailsText = 'No additional details available.';
                         if (isset($item->details) && !empty($item->details)) $detailsText = strip_tags($item->details);
+                        elseif (isset($item->repair_details) && !empty($item->repair_details)) $detailsText = strip_tags($item->repair_details);
                         elseif (isset($item->notes) && !empty($item->notes)) $detailsText = strip_tags($item->notes);
                         elseif (isset($item->customer_name) && !empty($item->customer_name)) $detailsText = 'Customer: ' . $item->customer_name;
                         elseif (isset($item->business_name) && !empty($item->business_name)) $detailsText = 'Business: ' . $item->business_name;
@@ -243,6 +246,14 @@ class GlobalSearchController extends Controller
                     $buyers = Buyer::whereIn('id', $matchedItems[Buyer::class])->get();
                     $addResults('Buyers', $buyers, 'super-admin.business-partner.buyer.show', 'buyer', 'name');
                 }
+                if (isset($matchedItems[Repair::class])) {
+                    try {
+                        $repairs = Repair::whereIn('id', $matchedItems[Repair::class])->get();
+                        $addResults('Repairs', $repairs, 'super-admin.repairs.show', 'repair', 'order_number');
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('GlobalSearch Image Search Repairs Error: ' . $e->getMessage());
+                    }
+                }
 
             } catch (\Exception $e) {
                 if ($request->ajax() || $request->wantsJson()) {
@@ -352,14 +363,21 @@ class GlobalSearchController extends Controller
             $addResults('Live Stock Orders', $stockOrders, 'super-admin.stock-order.show', 'stockOrder', 'order_number');
 
             // Repairs
-            $repairs = Repair::where('order_no', 'LIKE', "%{$query}%")
-                ->orWhere('product_name', 'LIKE', "%{$query}%")
-                ->orWhere('repair_details', 'LIKE', "%{$query}%")
-                ->orWhere('sample_details', 'LIKE', "%{$query}%")
-                ->orWhere('item_given_to', 'LIKE', "%{$query}%")
-                ->orWhere('notes', 'LIKE', "%{$query}%")
-                ->limit(20)->get();
-            $addResults('Repairs', $repairs, 'super-admin.repairs.show', 'repair', 'order_no');
+            try {
+                $repairs = Repair::where('order_number', 'LIKE', "%{$query}%")
+                    ->orWhere('product_name', 'LIKE', "%{$query}%")
+                    ->orWhere('reference_number', 'LIKE', "%{$query}%")
+                    ->orWhere('repair_details', 'LIKE', "%{$query}%")
+                    ->orWhere('notes', 'LIKE', "%{$query}%")
+                    ->orWhere('item_delivered_by', 'LIKE', "%{$query}%")
+                    ->orWhere('item_received_by', 'LIKE', "%{$query}%")
+                    ->orWhere('item_sent_by', 'LIKE', "%{$query}%")
+                    ->orWhere('item_assigning_to', 'LIKE', "%{$query}%")
+                    ->limit(20)->get();
+                $addResults('Repairs', $repairs, 'super-admin.repairs.show', 'repair', 'order_number');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('GlobalSearch Repairs Error: ' . $e->getMessage());
+            }
 
             // Favorites (Checks design_name, product design code, and buyer/craftsman names)
             $craftmanTable = (new Craftman)->getTable();

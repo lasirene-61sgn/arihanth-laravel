@@ -157,12 +157,12 @@ class GlobalSearchController extends Controller
             if ($canAccess('repair') && isset($matchedItems[Repair::class])) {
                 $repairs = Repair::where(function($q) use ($craftsmanCode) {
                         if ($craftsmanCode) {
-                            $q->where('allocated_craftsman_code', $craftsmanCode);
+                            $q->where('craftman_code', $craftsmanCode);
                         }
                     })
                     ->whereIn('id', $matchedItems[Repair::class])
                     ->get();
-                $addResults('Repairs', $repairs, 'craftsman_staff.repairs.show', 'repair', 'order_no');
+                $addResults('Repairs', $repairs, 'craftsman_staff.repairs.show', 'repair', 'order_number');
             }
 
             // Purchase Orders
@@ -216,16 +216,17 @@ class GlobalSearchController extends Controller
             if ($canAccess('repair')) {
                 $repairs = Repair::where(function($q) use ($craftsmanCode) {
                         if ($craftsmanCode) {
-                            $q->where('allocated_craftsman_code', $craftsmanCode);
+                            $q->where('craftman_code', $craftsmanCode);
                         }
                     })
                     ->where(function($q) use ($query) {
-                        $q->where('order_no', 'LIKE', "%{$query}%")
+                        $q->where('order_number', 'LIKE', "%{$query}%")
                             ->orWhere('product_name', 'LIKE', "%{$query}%")
+                            ->orWhere('reference_number', 'LIKE', "%{$query}%")
                             ->orWhere('repair_details', 'LIKE', "%{$query}%")
                             ->orWhere('notes', 'LIKE', "%{$query}%");
                     })->limit(20)->get();
-                $addResults('Repairs', $repairs, 'craftsman_staff.repairs.show', 'repair', 'order_no');
+                $addResults('Repairs', $repairs, 'craftsman_staff.repairs.show', 'repair', 'order_number');
             }
 
             // Purchase Orders
