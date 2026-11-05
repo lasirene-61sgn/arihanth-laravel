@@ -11,8 +11,9 @@ class DetailsAllController extends Controller
     public function index(Request $request)
     {
         $craftsmen = \App\Models\Craftman::all();
-        $allWorkOrders = \App\Models\WorkOrder::whereNotNull('allocated_craftsman_bp_code')->get();
+        $allWorkOrders = \App\Models\WorkOrder::with('craftsman')->whereNotNull('allocated_craftsman_bp_code')->get();
         $allPurchaseOrders = \App\Models\PurchaseOrder::whereNotNull('allocated_craftsman_code')->get();
+        $craftsmenLookup = $craftsmen->keyBy('craftman_code');
         
         $craftsmanStats = [];
         
@@ -58,14 +59,17 @@ class DetailsAllController extends Controller
             foreach ($myWorkOrders as $wo) {
                 $w = floatval($wo->weight_to ?: $wo->weight_from);
                 
+                $crCode = $wo->allocated_craftsman_bp_code ?: $code;
+                $crName = $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : ($c->name ?? $c->business_name ?? ($craftsmenLookup[$crCode]->name ?? 'N/A'));
+                
                 $orderDetails = [
                     'number' => $wo->work_order_number,
                     'qty' => $wo->quantity,
                     'weight' => $w,
                     'bp_code' => $wo->bp_code,
                     'business_name' => $wo->customer_name,
-                    'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
-                    'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
+                    'craftsman_code' => $crCode,
+                    'craftsman_name' => $crName,
                     'due_date' => $wo->due_date ? \Carbon\Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
                     'overdue_days' => $wo->isOverdue() ? intval(\Carbon\Carbon::parse($wo->due_date)->diffInDays(now())) : 0
                 ];
@@ -141,6 +145,8 @@ class DetailsAllController extends Controller
                     'weight' => $poWeight,
                     'bp_code' => '-',
                     'business_name' => '-',
+                    'craftsman_code' => $code,
+                    'craftsman_name' => $c->name ?? $c->business_name ?? ($craftsmenLookup[$code]->name ?? 'N/A'),
                     'due_date' => $po->due_date ? \Carbon\Carbon::parse($po->due_date)->format('Y-m-d') : '-',
                     'overdue_days' => ($po->due_date && $po->due_date < now() && $po->status != 'completed') ? intval(\Carbon\Carbon::parse($po->due_date)->diffInDays(now())) : 0
                 ];
@@ -232,6 +238,9 @@ class DetailsAllController extends Controller
             
             $isWoOverdue = (method_exists($wo, 'isOverdue') && $wo->isOverdue());
             
+            $crCode = $wo->allocated_craftsman_bp_code ?? 'N/A';
+            $crName = $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : ($craftsmenLookup[$crCode]->name ?? $craftsmenLookup[$crCode]->business_name ?? 'N/A');
+
             $orderDetails = [
                 'number' => $wo->work_order_number,
                 'qty' => $wo->quantity,
@@ -239,8 +248,8 @@ class DetailsAllController extends Controller
                 'bp_code' => $wo->bp_code,
                 'business_name' => $wo->customer_name,
                 'due_date' => $wo->due_date ? \Carbon\Carbon::parse($wo->due_date)->format('Y-m-d') : '-',
-                'craftsman_code' => $wo->allocated_craftsman_bp_code ?? 'N/A',
-                'craftsman_name' => $wo->craftsman ? ($wo->craftsman->name ?? $wo->craftsman->business_name) : 'N/A',
+                'craftsman_code' => $crCode,
+                'craftsman_name' => $crName,
                 'overdue_days' => ($isWoOverdue && $wo->due_date) ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($wo->due_date)->startOfDay()) : 0
             ];
 

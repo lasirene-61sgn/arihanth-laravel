@@ -169,6 +169,14 @@
             </li>
             @endif
 
+            {{-- Live Chat --}}
+            <li>
+                <a href="{{ route('craftsman.chat.index') }}"
+                    class="nav-link flex items-center p-3 rounded-lg hover:bg-emerald-800 transition {{ request()->routeIs('craftsman.chat.*') ? 'active bg-emerald-800' : '' }}">
+                    <i class="bi bi-chat-dots mr-3"></i> Live Chat
+                </a>
+            </li>
+
             <div class="my-2 border-t border-emerald-800/50 mx-3"></div>
 
             {{-- My Profile --}}
@@ -318,6 +326,11 @@
 
                     <!-- Desktop Icons -->
                     
+                    <!-- Live Chat Icon -->
+                    <a href="{{ route('craftsman.chat.index') }}" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" title="Live Chat">
+                        <i class="bi bi-chat-dots"></i>
+                    </a>
+
                     <div class="dropdown hidden md:block">
                         <button class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors" type="button" id="meetingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Meetings">
                             <i class="bi bi-camera-video"></i>

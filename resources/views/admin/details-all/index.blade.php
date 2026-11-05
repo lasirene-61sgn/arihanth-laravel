@@ -9,13 +9,113 @@
         border: 1px solid #edf2f9;
         border-radius: 12px;
     }
+
     .kpi-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
     }
-    .status-badge-soft-primary { background-color: #e7f1ff; color: #0d6efd; }
-    .status-badge-soft-info { background-color: #e8f7fa; color: #0dcaf0; }
+
+    .status-badge-soft-primary {
+        background-color: #e7f1ff;
+        color: #0d6efd;
+    }
+
+    .status-badge-soft-info {
+        background-color: #e8f7fa;
+        color: #0dcaf0;
+    }
 </style>
+
+<script>
+    // Initialize toggle functions immediately on window so KPI cards onclick handlers are available before rest of DOM renders
+    window.toggleSection = function(containerId, iconId, ignoreSession = false) {
+        const sections = [{
+                id: 'detailsTableContainer',
+                icon: 'toggleIcon'
+            },
+            {
+                id: 'clientsTableContainer',
+                icon: 'toggleClientsIcon'
+            },
+            {
+                id: 'craftsmanDesignsTableContainer',
+                icon: 'toggleCraftsmanDesignsIcon'
+            },
+            {
+                id: 'buyerDesignsTableContainer',
+                icon: 'toggleBuyerDesignsIcon'
+            },
+            {
+                id: 'overallDesignsTableContainer',
+                icon: 'toggleOverallDesignsIcon'
+            },
+            {
+                id: 'craftsmanFavoritesTableContainer',
+                icon: 'toggleCraftsmanFavoritesIcon'
+            },
+            {
+                id: 'buyerFavoritesTableContainer',
+                icon: 'toggleBuyerFavoritesIcon'
+            }
+        ];
+
+        let anyOpen = false;
+
+        sections.forEach(sec => {
+            const el = document.getElementById(sec.id);
+            const ic = document.getElementById(sec.icon);
+            if (!el) return;
+
+            if (sec.id === containerId) {
+                const isCurrentlyHidden = el.style.display === 'none' || el.style.display === '';
+                const shouldOpen = isCurrentlyHidden || (ignoreSession && el.style.display === 'block');
+
+                el.style.display = shouldOpen ? 'block' : 'none';
+                if (ic) {
+                    ic.classList.toggle('bi-chevron-down', !shouldOpen);
+                    ic.classList.toggle('bi-chevron-up', shouldOpen);
+                }
+
+                if (shouldOpen) {
+                    sessionStorage.setItem('activeAdminGrid', sec.id);
+                    anyOpen = true;
+                }
+            } else {
+                el.style.display = 'none';
+                if (ic) {
+                    ic.classList.remove('bi-chevron-up');
+                    ic.classList.add('bi-chevron-down');
+                }
+            }
+        });
+
+        if (!anyOpen) {
+            sessionStorage.removeItem('activeAdminGrid');
+        }
+    };
+
+    window.toggleDetailsTable = function() {
+        window.toggleSection('detailsTableContainer', 'toggleIcon');
+    };
+    window.toggleClientsTable = function() {
+        window.toggleSection('clientsTableContainer', 'toggleClientsIcon');
+    };
+    window.toggleCraftsmanDesignsTable = function() {
+        window.toggleSection('craftsmanDesignsTableContainer', 'toggleCraftsmanDesignsIcon');
+    };
+    window.toggleBuyerDesignsTable = function() {
+        window.toggleSection('buyerDesignsTableContainer', 'toggleBuyerDesignsIcon');
+    };
+    window.toggleOverallDesignsTable = function() {
+        window.toggleSection('overallDesignsTableContainer', 'toggleOverallDesignsIcon');
+    };
+    window.toggleCraftsmanFavoritesTable = function() {
+        window.toggleSection('craftsmanFavoritesTableContainer', 'toggleCraftsmanFavoritesIcon');
+    };
+    window.toggleBuyerFavoritesTable = function() {
+        window.toggleSection('buyerFavoritesTableContainer', 'toggleBuyerFavoritesIcon');
+    };
+</script>
 
 <div class="container-fluid py-4">
     <!-- Top Action Header -->
@@ -91,7 +191,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Overall Designs Card -->
         <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleOverallDesignsTable()" style="cursor: pointer;">
@@ -107,7 +207,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Craftsman Favorites Card -->
         <div class="col-xl-2 col-lg-4 col-md-6">
             <div class="card kpi-card shadow-sm h-100 bg-white" onclick="toggleCraftsmanFavoritesTable()" style="cursor: pointer;">
@@ -233,84 +333,84 @@
                                 {{-- WO In Process --}}
                                 <td class="text-center border-end">
                                     @if(($stat['wo']['in_process']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-semibold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="In Process (WO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['wo']['in_process']['orders'] ?? [])'>
-                                            {{ $stat['wo']['in_process']['count'] }} | {{ number_format($stat['wo']['in_process']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 fw-semibold"
+                                        onclick="showOrdersList(this, 'wo', 'craftsman')"
+                                        data-title="In Process (WO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['wo']['in_process']['orders'] ?? []) }}">
+                                        {{ $stat['wo']['in_process']['count'] }} | {{ number_format($stat['wo']['in_process']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
 
                                 {{-- WO For Approval --}}
                                 <td class="text-center border-end">
                                     @if(($stat['wo']['for_approval']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="For Approval (WO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['wo']['for_approval']['orders'] ?? [])'>
-                                            {{ $stat['wo']['for_approval']['count'] }} | {{ number_format($stat['wo']['for_approval']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
+                                        onclick="showOrdersList(this, 'wo', 'craftsman')"
+                                        data-title="For Approval (WO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['wo']['for_approval']['orders'] ?? []) }}">
+                                        {{ $stat['wo']['for_approval']['count'] }} | {{ number_format($stat['wo']['for_approval']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
 
                                 {{-- WO Overdue --}}
                                 <td class="text-center border-end">
                                     @if(($stat['wo']['overdue']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
-                                            onclick="showOrdersList(this, 'wo')" 
-                                            data-title="Overdue (WO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['wo']['overdue']['orders'] ?? [])'>
-                                            {{ $stat['wo']['overdue']['count'] }} | {{ number_format($stat['wo']['overdue']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold"
+                                        onclick="showOrdersList(this, 'wo', 'craftsman')"
+                                        data-title="Overdue (WO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['wo']['overdue']['orders'] ?? []) }}">
+                                        {{ $stat['wo']['overdue']['count'] }} | {{ number_format($stat['wo']['overdue']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
 
                                 {{-- PO In Process --}}
                                 <td class="text-center border-end">
                                     @if(($stat['po']['in_process']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-info text-decoration-none p-0 fw-semibold" 
-                                            onclick="showOrdersList(this, 'po')" 
-                                            data-title="In Process (PO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['po']['in_process']['orders'] ?? [])'>
-                                            {{ $stat['po']['in_process']['count'] }} | {{ number_format($stat['po']['in_process']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-info text-decoration-none p-0 fw-semibold"
+                                        onclick="showOrdersList(this, 'po', 'craftsman')"
+                                        data-title="In Process (PO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['po']['in_process']['orders'] ?? []) }}">
+                                        {{ $stat['po']['in_process']['count'] }} | {{ number_format($stat['po']['in_process']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
 
                                 {{-- PO For Approval --}}
                                 <td class="text-center border-end">
                                     @if(($stat['po']['for_approval']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
-                                            onclick="showOrdersList(this, 'po')" 
-                                            data-title="For Approval (PO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['po']['for_approval']['orders'] ?? [])'>
-                                            {{ $stat['po']['for_approval']['count'] }} | {{ number_format($stat['po']['for_approval']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" style="color: #6f42c1;"
+                                        onclick="showOrdersList(this, 'po', 'craftsman')"
+                                        data-title="For Approval (PO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['po']['for_approval']['orders'] ?? []) }}">
+                                        {{ $stat['po']['for_approval']['count'] }} | {{ number_format($stat['po']['for_approval']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
 
                                 {{-- PO Overdue --}}
                                 <td class="text-center">
                                     @if(($stat['po']['overdue']['count'] ?? 0) > 0)
-                                        <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold" 
-                                            onclick="showOrdersList(this, 'po')" 
-                                            data-title="Overdue (PO) - {{ $stat['name'] }}" 
-                                            data-orders='@json($stat['po']['overdue']['orders'] ?? [])'>
-                                            {{ $stat['po']['overdue']['count'] }} | {{ number_format($stat['po']['overdue']['weight'], 2) }}
-                                        </button>
+                                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-bold"
+                                        onclick="showOrdersList(this, 'po', 'craftsman')"
+                                        data-title="Overdue (PO) - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat['po']['overdue']['orders'] ?? []) }}">
+                                        {{ $stat['po']['overdue']['count'] }} | {{ number_format($stat['po']['overdue']['weight'], 2) }}
+                                    </button>
                                     @else
-                                        <span class="text-muted small">-</span>
+                                    <span class="text-muted small">-</span>
                                     @endif
                                 </td>
                             </tr>
@@ -387,21 +487,21 @@
                                     <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
                                 </td>
                                 <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
-                                
+
                                 {{-- Client Status Columns --}}
                                 @foreach(['new' => 'text-primary', 'in_process' => 'text-primary', 'for_approval' => 'text-purple', 'overdue' => 'text-danger', 'rejected' => 'text-danger', 'completed' => 'text-success'] as $type => $textClass)
-                                    <td>
-                                        @if(isset($stat[$type]['weight']) && $stat[$type]['weight'] > 0)
-                                            <button type="button" class="btn btn-sm btn-link {{ $textClass }} text-decoration-none p-0 fw-semibold" 
-                                                onclick="showOrdersList(this, 'wo')" 
-                                                data-title="{{ ucfirst(str_replace('_', ' ', $type)) }} Orders - {{ $stat['name'] }}" 
-                                                data-orders='@json($stat[$type]['orders'] ?? [])'>
-                                                {{ $stat[$type]['count'] }} | {{ number_format($stat[$type]['weight'], 2) }}
-                                            </button>
-                                        @else
-                                            <span class="text-muted small">-</span>
-                                        @endif
-                                    </td>
+                                <td>
+                                    @if(isset($stat[$type]['weight']) && $stat[$type]['weight'] > 0)
+                                    <button type="button" class="btn btn-sm btn-link {{ $textClass }} text-decoration-none p-0 fw-semibold"
+                                        onclick="showOrdersList(this, 'wo', 'client')"
+                                        data-title="{{ ucfirst(str_replace('_', ' ', $type)) }} Orders - {{ $stat['name'] }}"
+                                        data-orders="{{ json_encode($stat[$type]['orders'] ?? []) }}">
+                                        {{ $stat[$type]['count'] }} | {{ number_format($stat[$type]['weight'], 2) }}
+                                    </button>
+                                    @else
+                                    <span class="text-muted small">-</span>
+                                    @endif
+                                </td>
                                 @endforeach
 
                                 <td>
@@ -409,7 +509,9 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="10" class="text-center py-4">{{ __('messages.no_data_found') }}</td></tr>
+                            <tr>
+                                <td colspan="10" class="text-center py-4">{{ __('messages.no_data_found') }}</td>
+                            </tr>
                             @endforelse
                         </tbody>
                         <tfoot class="bg-light fw-bold border-top border-2">
@@ -458,7 +560,7 @@
                                 <th>Craftsman</th>
                                 <th>Code</th>
                                 @foreach($craftsmanAllCategories as $cat)
-                                    <th class="text-center">{{ $cat }}</th>
+                                <th class="text-center">{{ $cat }}</th>
                                 @endforeach
                                 <th class="text-center">Total Accepted</th>
                                 <th>Last Accepted</th>
@@ -466,30 +568,32 @@
                         </thead>
                         <tbody>
                             @php
-                                $totalCraftsmanAccepted = 0;
-                                $categoryTotals = array_fill_keys($craftsmanAllCategories, 0);
+                            $totalCraftsmanAccepted = 0;
+                            $categoryTotals = array_fill_keys($craftsmanAllCategories, 0);
                             @endphp
                             @forelse($craftsmanDesignStats as $code => $stat)
                             <tr>
-                                <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
+                                </td>
                                 <td><span class="badge bg-secondary">{{ $code }}</span></td>
                                 @foreach($craftsmanAllCategories as $cat)
-                                    <td class="text-center">
-                                        @if(isset($stat['categories'][$cat]))
-                                            @php
-                                                $categoryTotals[$cat] += $stat['categories'][$cat];
-                                            @endphp
-                                            <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
-                                                {{ $stat['categories'][$cat] }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
+                                <td class="text-center">
+                                    @if(isset($stat['categories'][$cat]))
+                                    @php
+                                    $categoryTotals[$cat] += $stat['categories'][$cat];
+                                    @endphp
+                                    <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                        {{ $stat['categories'][$cat] }}
+                                    </span>
+                                    @else
+                                    <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 @endforeach
                                 <td class="text-center">
                                     @php
-                                        $totalCraftsmanAccepted += $stat['total_accepted'];
+                                    $totalCraftsmanAccepted += $stat['total_accepted'];
                                     @endphp
                                     <span class="text-decoration-underline text-primary fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Craftsman')" data-title="Accepted Designs (All) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
                                         {{ $stat['total_accepted'] }}
@@ -498,14 +602,16 @@
                                 <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] ?? '-' }}</span></td>
                             </tr>
                             @empty
-                            <tr><td colspan="{{ count($craftsmanAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            <tr>
+                                <td colspan="{{ count($craftsmanAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td>
+                            </tr>
                             @endforelse
                         </tbody>
                         <tfoot class="bg-light fw-bold">
                             <tr>
                                 <td colspan="2" class="text-end">Total:</td>
                                 @foreach($craftsmanAllCategories as $cat)
-                                    <td class="text-center text-success">{{ $categoryTotals[$cat] ?? 0 }}</td>
+                                <td class="text-center text-success">{{ $categoryTotals[$cat] ?? 0 }}</td>
                                 @endforeach
                                 <td class="text-center text-primary fs-5">{{ $totalCraftsmanAccepted }}</td>
                                 <td></td>
@@ -531,7 +637,7 @@
                                 <th>Buyer</th>
                                 <th>Code</th>
                                 @foreach($buyerAllCategories as $cat)
-                                    <th class="text-center">{{ $cat }}</th>
+                                <th class="text-center">{{ $cat }}</th>
                                 @endforeach
                                 <th class="text-center">Total Accepted</th>
                                 <th>Last Accepted</th>
@@ -539,30 +645,32 @@
                         </thead>
                         <tbody>
                             @php
-                                $totalBuyerAccepted = 0;
-                                $buyerCategoryTotals = array_fill_keys($buyerAllCategories, 0);
+                            $totalBuyerAccepted = 0;
+                            $buyerCategoryTotals = array_fill_keys($buyerAllCategories, 0);
                             @endphp
                             @forelse($buyerDesignStats as $code => $stat)
                             <tr>
-                                <td><div class="fw-semibold text-dark">{{ $stat['name'] }}</div></td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ $stat['name'] }}</div>
+                                </td>
                                 <td><span class="badge bg-light text-dark border">{{ $code }}</span></td>
                                 @foreach($buyerAllCategories as $cat)
-                                    <td class="text-center">
-                                        @if(isset($stat['categories'][$cat]))
-                                            @php
-                                                $buyerCategoryTotals[$cat] += $stat['categories'][$cat];
-                                            @endphp
-                                            <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
-                                                {{ $stat['categories'][$cat] }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
+                                <td class="text-center">
+                                    @if(isset($stat['categories'][$cat]))
+                                    @php
+                                    $buyerCategoryTotals[$cat] += $stat['categories'][$cat];
+                                    @endphp
+                                    <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer', '{{ $cat }}')" data-title="Accepted Designs ({{ $cat }}) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
+                                        {{ $stat['categories'][$cat] }}
+                                    </span>
+                                    @else
+                                    <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 @endforeach
                                 <td class="text-center">
                                     @php
-                                        $totalBuyerAccepted += $stat['total_accepted'];
+                                    $totalBuyerAccepted += $stat['total_accepted'];
                                     @endphp
                                     <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Buyer')" data-title="Accepted Designs (All) - {{ $stat['name'] }}" data-bpcode="{{ $code }}">
                                         {{ $stat['total_accepted'] }}
@@ -571,14 +679,16 @@
                                 <td><span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $stat['last_accepted_date'] ?? '-' }}</span></td>
                             </tr>
                             @empty
-                            <tr><td colspan="{{ count($buyerAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
+                            <tr>
+                                <td colspan="{{ count($buyerAllCategories) + 4 }}" class="text-center py-4 text-muted">No accepted designs found.</td>
+                            </tr>
                             @endforelse
                         </tbody>
                         <tfoot class="bg-light fw-bold">
                             <tr>
                                 <td colspan="2" class="text-end">Total:</td>
                                 @foreach($buyerAllCategories as $cat)
-                                    <td class="text-center text-danger">{{ $buyerCategoryTotals[$cat] ?? 0 }}</td>
+                                <td class="text-center text-danger">{{ $buyerCategoryTotals[$cat] ?? 0 }}</td>
                                 @endforeach
                                 <td class="text-center text-primary fs-5">{{ $totalBuyerAccepted }}</td>
                                 <td></td>
@@ -596,138 +706,154 @@
 <!-- ==========================================
          COLLAPSIBLE OVERALL DESIGNS CONTAINER
     =========================================== -->
-    <div id="overallDesignsTableContainer" style="display: none;">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-bold text-info"><i class="bi bi-boxes me-2"></i>Overall Accepted Designs (Platform-Wide)</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Category</th>
-                                <th class="text-center">Total Accepted Designs</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($overallDesignStats as $catName => $count)
-                            <tr>
-                                <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
-                                <td class="text-center">
-                                    <span class="text-decoration-underline text-info fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Overall', '{{ $catName }}')" data-title="Overall Designs - {{ $catName }}" data-bpcode="Overall">
-                                        {{ $count }}
-                                    </span>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="2" class="text-center py-4 text-muted">No accepted designs found.</td></tr>
-                            @endforelse
-                        </tbody>
-                        @if(count($overallDesignStats) > 0)
-                        <tfoot class="bg-light fw-bold border-top border-2">
-                            <tr>
-                                <td class="text-end">Platform Total:</td>
-                                <td class="text-center text-primary fs-5">
-                                    <span class="text-decoration-underline" style="cursor: pointer;" onclick="showDesignsList(this, 'Overall', 'All')" data-title="Overall Designs - All Categories" data-bpcode="Overall">
-                                        {{ collect($overallDesignStats)->sum() }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tfoot>
-                        @endif
-                    </table>
-                </div>
+<div id="overallDesignsTableContainer" style="display: none;">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 fw-bold text-info"><i class="bi bi-boxes me-2"></i>Overall Accepted Designs (Platform-Wide)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Category</th>
+                            <th class="text-center">Total Accepted Designs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($overallDesignStats as $catName => $count)
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ $catName }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-decoration-underline text-info fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showDesignsList(this, 'Overall', '{{ $catName }}')" data-title="Overall Designs - {{ $catName }}" data-bpcode="Overall">
+                                    {{ $count }}
+                                </span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="2" class="text-center py-4 text-muted">No accepted designs found.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                    @if(count($overallDesignStats) > 0)
+                    <tfoot class="bg-light fw-bold border-top border-2">
+                        <tr>
+                            <td class="text-end">Platform Total:</td>
+                            <td class="text-center text-primary fs-5">
+                                <span class="text-decoration-underline" style="cursor: pointer;" onclick="showDesignsList(this, 'Overall', 'All')" data-title="Overall Designs - All Categories" data-bpcode="Overall">
+                                    {{ collect($overallDesignStats)->sum() }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                    @endif
+                </table>
             </div>
         </div>
     </div>
+</div>
 
 
-    <!-- ==========================================
+<!-- ==========================================
          COLLAPSIBLE CRAFTSMAN FAVORITES CONTAINER
     =========================================== -->
-    <div id="craftsmanFavoritesTableContainer" style="display: none;">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-bold text-success"><i class="bi bi-heart-fill me-2"></i>Craftsman Favorites</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Craftsman Name</th>
-                                <th>Craftsman Code</th>
-                                <th>Category</th>
-                                <th class="text-center">Total Favorites</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($craftsmanFavoritesStats as $stat)
-                                @foreach($stat['categories'] as $catName => $count)
-                                <tr>
-                                    <td><div class="fw-bold text-dark">{{ $stat['name'] }}</div></td>
-                                    <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
-                                    <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
-                                    <td class="text-center">
-                                        <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('craftsman', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Craftsman: {{ addslashes($stat['name']) }} | Code: {{ $stat['code'] }}')" data-title="Craftsman Favorites - {{ $catName }}">
-                                            {{ $count }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            @empty
-                            <tr><td colspan="4" class="text-center py-4 text-muted">No Craftsman favorites found.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+<div id="craftsmanFavoritesTableContainer" style="display: none;">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 fw-bold text-success"><i class="bi bi-heart-fill me-2"></i>Craftsman Favorites</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Craftsman Name</th>
+                            <th>Craftsman Code</th>
+                            <th>Category</th>
+                            <th class="text-center">Total Favorites</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($craftsmanFavoritesStats as $stat)
+                        @foreach($stat['categories'] as $catName => $count)
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ $stat['name'] }}</div>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ $catName }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-decoration-underline text-success fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('craftsman', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Craftsman: {{ addslashes($stat['name']) }} | Code: {{ $stat['code'] }}')" data-title="Craftsman Favorites - {{ $catName }}">
+                                    {{ $count }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No Craftsman favorites found.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- ==========================================
+<!-- ==========================================
          COLLAPSIBLE BUYER FAVORITES CONTAINER
     =========================================== -->
-    <div id="buyerFavoritesTableContainer" style="display: none;">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-heart-fill me-2"></i>Buyer Favorites</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Buyer Name</th>
-                                <th>BP Code</th>
-                                <th>Category</th>
-                                <th class="text-center">Total Favorites</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($buyerFavoritesStats as $stat)
-                                @foreach($stat['categories'] as $catName => $count)
-                                <tr>
-                                    <td><div class="fw-bold text-dark">{{ $stat['name'] }}</div></td>
-                                    <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
-                                    <td><div class="fw-semibold text-dark">{{ $catName }}</div></td>
-                                    <td class="text-center">
-                                        <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('buyer', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Buyer: {{ addslashes($stat['name']) }} | BP Code: {{ $stat['code'] }}')" data-title="Buyer Favorites - {{ $catName }}">
-                                            {{ $count }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            @empty
-                            <tr><td colspan="4" class="text-center py-4 text-muted">No Buyer favorites found.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+<div id="buyerFavoritesTableContainer" style="display: none;">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-heart-fill me-2"></i>Buyer Favorites</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Buyer Name</th>
+                            <th>BP Code</th>
+                            <th>Category</th>
+                            <th class="text-center">Total Favorites</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($buyerFavoritesStats as $stat)
+                        @foreach($stat['categories'] as $catName => $count)
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ $stat['name'] }}</div>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ $stat['code'] }}</span></td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ $catName }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-decoration-underline text-danger fw-bold" style="cursor: pointer; font-size:1.1rem;" onclick="showFavoritesList('buyer', '{{ $stat['user_id'] }}', '{{ $catName }}', 'Buyer: {{ addslashes($stat['name']) }} | BP Code: {{ $stat['code'] }}')" data-title="Buyer Favorites - {{ $catName }}">
+                                    {{ $count }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No Buyer favorites found.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 
 
 <!-- FAVORITES MODAL -->
@@ -754,7 +880,7 @@
                             <option value="300">300</option>
                         </select>
                         <span class="small text-muted me-3">per page</span>
-                        
+
                         <button class="btn btn-outline-secondary btn-sm" id="favoritesPrevPage">Prev</button>
                         <span class="mx-2 small fw-bold" id="favoritesPageInfo">Page 1 of 1</span>
                         <button class="btn btn-outline-secondary btn-sm" id="favoritesNextPage">Next</button>
@@ -795,7 +921,7 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
+
             <div class="modal-body p-4">
                 <div class="bg-light p-3 rounded-3 mb-3 border">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -803,19 +929,19 @@
                         <div class="d-flex align-items-center gap-2">
                             <select id="ordersPerPage" class="form-select form-select-sm" style="width: auto;">
                                 <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="30">30</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                                 <option value="200">200</option>
                                 <option value="300">300</option>
                             </select>
                             <span class="small text-muted">per page</span>
-                            
+
                             <button class="btn btn-outline-secondary btn-sm ms-2" id="ordersPrevPage">Prev</button>
                             <span class="small fw-bold" id="ordersPageInfo">Page 1 of 1</span>
                             <button class="btn btn-outline-secondary btn-sm" id="ordersNextPage">Next</button>
-                            
+
                             <button class="btn btn-primary btn-sm px-3 shadow-sm rounded-pill ms-3" onclick="printModalSelected()">
                                 <i class="bi bi-printer-fill me-1"></i> Print Selected
                             </button>
@@ -911,7 +1037,7 @@
                             <option value="300">300</option>
                         </select>
                         <span class="small text-muted me-3">per page</span>
-                        
+
                         <button class="btn btn-outline-secondary btn-sm" id="designsPrevPage">Prev</button>
                         <span class="mx-2 small fw-bold" id="designsPageInfo">Page 1 of 1</span>
                         <button class="btn btn-outline-secondary btn-sm" id="designsNextPage">Next</button>
@@ -951,23 +1077,43 @@
     document.addEventListener('DOMContentLoaded', function() {
         ordersModalInstance = new bootstrap.Modal(document.getElementById('ordersListModal'));
         designsModalInstance = new bootstrap.Modal(document.getElementById('designsListModal'));
-        
+
         let activeGrid = sessionStorage.getItem('activeAdminGrid');
         if (activeGrid) {
-            const sections = [
-                { id: 'detailsTableContainer', icon: 'toggleIcon' },
-                { id: 'clientsTableContainer', icon: 'toggleClientsIcon' },
-                { id: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
-                { id: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' },
-                { id: 'overallDesignsTableContainer', icon: 'toggleOverallDesignsIcon' },
-                { id: 'craftsmanFavoritesTableContainer', icon: 'toggleCraftsmanFavoritesIcon' },
-                { id: 'buyerFavoritesTableContainer', icon: 'toggleBuyerFavoritesIcon' }
+            const sections = [{
+                    id: 'detailsTableContainer',
+                    icon: 'toggleIcon'
+                },
+                {
+                    id: 'clientsTableContainer',
+                    icon: 'toggleClientsIcon'
+                },
+                {
+                    id: 'craftsmanDesignsTableContainer',
+                    icon: 'toggleCraftsmanDesignsIcon'
+                },
+                {
+                    id: 'buyerDesignsTableContainer',
+                    icon: 'toggleBuyerDesignsIcon'
+                },
+                {
+                    id: 'overallDesignsTableContainer',
+                    icon: 'toggleOverallDesignsIcon'
+                },
+                {
+                    id: 'craftsmanFavoritesTableContainer',
+                    icon: 'toggleCraftsmanFavoritesIcon'
+                },
+                {
+                    id: 'buyerFavoritesTableContainer',
+                    icon: 'toggleBuyerFavoritesIcon'
+                }
             ];
             let sec = sections.find(s => s.id === activeGrid);
             if (sec) {
                 // Force open the section based on session
                 const el = document.getElementById(sec.id);
-                if(el) el.style.display = 'none'; // reset to force open
+                if (el) el.style.display = 'none'; // reset to force open
                 toggleSection(activeGrid, sec.icon, true);
             }
         }
@@ -975,14 +1121,34 @@
 
     // Helper to toggle container visibility and icon state
     function toggleSection(containerId, iconId, ignoreSession = false) {
-        const sections = [
-            { id: 'detailsTableContainer', icon: 'toggleIcon' },
-            { id: 'clientsTableContainer', icon: 'toggleClientsIcon' },
-            { id: 'craftsmanDesignsTableContainer', icon: 'toggleCraftsmanDesignsIcon' },
-            { id: 'buyerDesignsTableContainer', icon: 'toggleBuyerDesignsIcon' },
-            { id: 'overallDesignsTableContainer', icon: 'toggleOverallDesignsIcon' },
-            { id: 'craftsmanFavoritesTableContainer', icon: 'toggleCraftsmanFavoritesIcon' },
-            { id: 'buyerFavoritesTableContainer', icon: 'toggleBuyerFavoritesIcon' }
+        const sections = [{
+                id: 'detailsTableContainer',
+                icon: 'toggleIcon'
+            },
+            {
+                id: 'clientsTableContainer',
+                icon: 'toggleClientsIcon'
+            },
+            {
+                id: 'craftsmanDesignsTableContainer',
+                icon: 'toggleCraftsmanDesignsIcon'
+            },
+            {
+                id: 'buyerDesignsTableContainer',
+                icon: 'toggleBuyerDesignsIcon'
+            },
+            {
+                id: 'overallDesignsTableContainer',
+                icon: 'toggleOverallDesignsIcon'
+            },
+            {
+                id: 'craftsmanFavoritesTableContainer',
+                icon: 'toggleCraftsmanFavoritesIcon'
+            },
+            {
+                id: 'buyerFavoritesTableContainer',
+                icon: 'toggleBuyerFavoritesIcon'
+            }
         ];
 
         let anyOpen = false;
@@ -996,13 +1162,13 @@
                 // If it's already open and we aren't forcing a load, close it
                 const isCurrentlyHidden = el.style.display === 'none' || el.style.display === '';
                 const shouldOpen = isCurrentlyHidden || (ignoreSession && el.style.display === 'block');
-                
+
                 el.style.display = shouldOpen ? 'block' : 'none';
                 if (ic) {
                     ic.classList.toggle('bi-chevron-down', !shouldOpen);
                     ic.classList.toggle('bi-chevron-up', shouldOpen);
                 }
-                
+
                 if (shouldOpen) {
                     sessionStorage.setItem('activeAdminGrid', sec.id);
                     anyOpen = true;
@@ -1021,15 +1187,30 @@
         }
     }
 
-    function toggleDetailsTable() { toggleSection('detailsTableContainer', 'toggleIcon'); }
-    function toggleClientsTable() { toggleSection('clientsTableContainer', 'toggleClientsIcon'); }
-    function toggleCraftsmanDesignsTable() { toggleSection('craftsmanDesignsTableContainer', 'toggleCraftsmanDesignsIcon'); }
+    function toggleDetailsTable() {
+        toggleSection('detailsTableContainer', 'toggleIcon');
+    }
 
-    function toggleOverallDesignsTable() { toggleSection('overallDesignsTableContainer', 'toggleOverallDesignsIcon'); }
+    function toggleClientsTable() {
+        toggleSection('clientsTableContainer', 'toggleClientsIcon');
+    }
+
+    function toggleCraftsmanDesignsTable() {
+        toggleSection('craftsmanDesignsTableContainer', 'toggleCraftsmanDesignsIcon');
+    }
+
+    function toggleOverallDesignsTable() {
+        toggleSection('overallDesignsTableContainer', 'toggleOverallDesignsIcon');
+    }
 
     // --- Favorites Collapse Toggles ---
-    function toggleCraftsmanFavoritesTable() { toggleSection('craftsmanFavoritesTableContainer', 'toggleCraftsmanFavoritesIcon'); }
-    function toggleBuyerFavoritesTable() { toggleSection('buyerFavoritesTableContainer', 'toggleBuyerFavoritesIcon'); }
+    function toggleCraftsmanFavoritesTable() {
+        toggleSection('craftsmanFavoritesTableContainer', 'toggleCraftsmanFavoritesIcon');
+    }
+
+    function toggleBuyerFavoritesTable() {
+        toggleSection('buyerFavoritesTableContainer', 'toggleBuyerFavoritesIcon');
+    }
 
     // --- Fetch & Render Favorites ---
     let currentFavorites = [];
@@ -1039,7 +1220,7 @@
     function renderFavoritesPage() {
         const body = document.getElementById('favoritesListModalBody');
         body.innerHTML = '';
-        
+
         const totalPages = Math.ceil(currentFavorites.length / favoritesPerPage) || 1;
         document.getElementById('favoritesPageInfo').innerText = `Page ${currentFavoritesPage} of ${totalPages}`;
         document.getElementById('favoritesPrevPage').disabled = (currentFavoritesPage === 1);
@@ -1056,7 +1237,7 @@
 
         paginated.forEach(fav => {
             const tr = document.createElement('tr');
-            
+
             let imgHtml = '<div class="text-muted small">No Image</div>';
             if (fav.image_path) {
                 const imgUrl = `/storage/${fav.image_path}`;
@@ -1077,12 +1258,12 @@
 
     function showFavoritesList(userType, userId, categoryFilter, userSubtitle) {
         document.getElementById('favoritesListModalBody').innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted small">Loading favorites...</div></td></tr>';
-        
+
         document.getElementById('favoritesModalSubtitle').innerText = `${userSubtitle} | Category: ${categoryFilter}`;
-        
+
         let url = `{{ route('admin.details-all.favorites', ['user_type' => '__USER_TYPE__', 'user_id' => '__USER_ID__']) }}`;
         url = url.replace('__USER_TYPE__', userType).replace('__USER_ID__', userId);
-        
+
         if (categoryFilter && categoryFilter !== 'All') {
             url += `?category=${encodeURIComponent(categoryFilter)}`;
         }
@@ -1099,7 +1280,7 @@
                 console.error(err);
                 document.getElementById('favoritesListModalBody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load favorites.</td></tr>';
             });
-            
+
         let favoritesModalInstance = bootstrap.Modal.getInstance(document.getElementById('favoritesListModal'));
         if (!favoritesModalInstance) {
             favoritesModalInstance = new bootstrap.Modal(document.getElementById('favoritesListModal'));
@@ -1129,7 +1310,9 @@
     });
 
 
-    function toggleBuyerDesignsTable() { toggleSection('buyerDesignsTableContainer', 'toggleBuyerDesignsIcon'); }
+    function toggleBuyerDesignsTable() {
+        toggleSection('buyerDesignsTableContainer', 'toggleBuyerDesignsIcon');
+    }
 
     // Checkbox toggles
     document.getElementById('selectAll')?.addEventListener('change', function() {
@@ -1150,27 +1333,60 @@
 
     // Orders Modal State
     let currentOrderType = 'wo';
+    let currentOrderSource = 'craftsman';
     let currentModalOrders = [];
     let currentOrdersPage = 1;
     let ordersPerPage = 10;
 
-    function showOrdersList(el, type) {
+    function showOrdersList(el, type, source = null) {
         currentOrderType = type;
+        if (!source) {
+            source = el.closest('#clientsTable') ? 'client' : 'craftsman';
+        }
+        currentOrderSource = source;
+
         const title = el.getAttribute('data-title') || 'Orders List';
         const orders = JSON.parse(el.getAttribute('data-orders') || '[]');
         currentModalOrders = orders;
-        
+
         document.getElementById('ordersListModalTitle').innerText = title;
         document.getElementById('ordersModalSubtitle').innerText = `${orders.length} total item(s) found`;
-        
+
         const isPO = (type === 'po');
         const isOverdue = title.toLowerCase().includes('overdue');
+        const isClient = (source === 'client');
 
-        document.querySelectorAll('.bp-col, .business-col, .craftsman-col, .bp-print-toggle, .craftsman-print-toggle')
-            .forEach(col => col.style.display = isPO ? 'none' : '');
+        const isCraftsman = !isClient;
 
+        // Top Pick Client: show BP Code, Business Name; hide Craftsman Code, Craftsman Name
+        // Top Pick Craftsman: show Craftsman Code, Craftsman Name; hide BP Code, Business Name
+        const showBP = isClient && !isPO;
+        const showCraftsman = isCraftsman;
+
+        // Toggle visibility of BP columns and filter toggles (Client only)
+        document.querySelectorAll('.bp-col, .business-col, .bp-print-toggle')
+            .forEach(col => col.style.display = showBP ? '' : 'none');
+
+        // Toggle visibility of Craftsman columns and filter toggles (Craftsman only)
+        document.querySelectorAll('.craftsman-col, .craftsman-print-toggle')
+            .forEach(col => col.style.display = showCraftsman ? '' : 'none');
+
+        // Overdue column and toggle
         document.querySelectorAll('.overdue-col, .overdue-print-toggle')
             .forEach(col => col.style.display = isOverdue ? '' : 'none');
+
+        // Update default checked state of customize checkboxes
+        const bpCheck = document.getElementById('printCol_bp');
+        const bizCheck = document.getElementById('printCol_business');
+        const crCodeCheck = document.getElementById('printCol_craftsman_code');
+        const crNameCheck = document.getElementById('printCol_craftsman_name');
+        const overdueCheck = document.getElementById('printCol_overdue');
+
+        if (bpCheck) bpCheck.checked = showBP;
+        if (bizCheck) bizCheck.checked = showBP;
+        if (crCodeCheck) crCodeCheck.checked = showCraftsman;
+        if (crNameCheck) crNameCheck.checked = showCraftsman;
+        if (overdueCheck) overdueCheck.checked = isOverdue;
 
         currentOrdersPage = 1;
         renderOrdersPage();
@@ -1180,7 +1396,7 @@
     function renderOrdersPage() {
         const body = document.getElementById('ordersListModalBody');
         body.innerHTML = '';
-        
+
         const totalPages = Math.ceil(currentModalOrders.length / ordersPerPage) || 1;
         document.getElementById('ordersPageInfo').innerText = `Page ${currentOrdersPage} of ${totalPages}`;
         document.getElementById('ordersPrevPage').disabled = (currentOrdersPage === 1);
@@ -1196,6 +1412,23 @@
         const title = document.getElementById('ordersListModalTitle').innerText;
         const isOverdue = title.toLowerCase().includes('overdue');
         const isPO = (currentOrderType === 'po');
+        const isClient = (currentOrderSource === 'client');
+        const isCraftsman = !isClient;
+        const showBP = isClient && !isPO;
+        const showCraftsman = isCraftsman;
+
+        const bpVisible = showBP && (document.getElementById('printCol_bp')?.checked ?? true);
+        const bizVisible = showBP && (document.getElementById('printCol_business')?.checked ?? true);
+        const crCodeVisible = showCraftsman && (document.getElementById('printCol_craftsman_code')?.checked ?? true);
+        const crNameVisible = showCraftsman && (document.getElementById('printCol_craftsman_name')?.checked ?? true);
+        const overdueVisible = isOverdue && (document.getElementById('printCol_overdue')?.checked ?? true);
+
+        // Update modal table headers visibility
+        document.querySelectorAll('#modalOrdersTable .bp-col').forEach(th => th.style.display = bpVisible ? '' : 'none');
+        document.querySelectorAll('#modalOrdersTable .business-col').forEach(th => th.style.display = bizVisible ? '' : 'none');
+        document.querySelectorAll('#modalOrdersTable .col-craftsman-code').forEach(th => th.style.display = crCodeVisible ? '' : 'none');
+        document.querySelectorAll('#modalOrdersTable .col-craftsman-name').forEach(th => th.style.display = crNameVisible ? '' : 'none');
+        document.querySelectorAll('#modalOrdersTable .overdue-col').forEach(th => th.style.display = overdueVisible ? '' : 'none');
 
         let rowsHtml = '';
         pageItems.forEach(order => {
@@ -1205,18 +1438,24 @@
                         <input class="form-check-input modal-row-checkbox" type="checkbox" checked>
                     </td>
                     <td class="fw-semibold text-dark col-order-num">${order.number || '-'}</td>
-                    <td class="bp-col col-bp" style="${isPO ? 'display:none;' : ''}"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
-                    <td class="business-col col-business text-muted" style="${isPO ? 'display:none;' : ''}">${order.business_name || '-'}</td>
-                    <td class="craftsman-col col-craftsman-code" style="${isPO ? 'display:none;' : ''}"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
-                    <td class="craftsman-col col-craftsman-name text-muted" style="${isPO ? 'display:none;' : ''}">${order.craftsman_name || '-'}</td>
+                    <td class="bp-col col-bp" style="${bpVisible ? '' : 'display:none;'}"><span class="badge bg-light text-dark border">${order.bp_code || '-'}</span></td>
+                    <td class="business-col col-business text-muted" style="${bizVisible ? '' : 'display:none;'}">${order.business_name || '-'}</td>
+                    <td class="craftsman-col col-craftsman-code" style="${crCodeVisible ? '' : 'display:none;'}"><span class="badge bg-info text-dark border">${order.craftsman_code || '-'}</span></td>
+                    <td class="craftsman-col col-craftsman-name text-muted" style="${crNameVisible ? '' : 'display:none;'}">${order.craftsman_name || '-'}</td>
                     <td class="text-center col-qty">${order.qty || 0}</td>
                     <td class="text-center fw-medium col-weight">${parseFloat(order.weight || 0).toFixed(2)}</td>
                     <td class="text-center col-due">${order.due_date || '-'}</td>
-                    <td class="text-center overdue-col col-overdue text-danger fw-bold" style="${isOverdue ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
+                    <td class="text-center overdue-col col-overdue text-danger fw-bold" style="${overdueVisible ? '' : 'display:none;'}">${order.overdue_days || 0} days</td>
                 </tr>`;
         });
         body.innerHTML = rowsHtml;
     }
+
+    document.querySelectorAll('.print-col-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            renderOrdersPage();
+        });
+    });
 
     document.getElementById('ordersPerPage')?.addEventListener('change', function() {
         ordersPerPage = parseInt(this.value);
@@ -1318,7 +1557,7 @@
 
     ${bodyContent}
 
-    <script>
+    ` + '<scr' + 'ipt>' + `
         function triggerPrint() {
             window.focus();
             window.print();
@@ -1328,7 +1567,7 @@
         };
         // Trigger print after short delay
         setTimeout(triggerPrint, 350);
-    <\/script>
+    ` + '</scr' + 'ipt>' + `
 </body>
 </html>`;
 
@@ -1342,7 +1581,7 @@
             try {
                 printWindow.focus();
                 printWindow.print();
-            } catch(e) {}
+            } catch (e) {}
         }, 500);
     }
 
@@ -1357,12 +1596,17 @@
         const title = document.getElementById('ordersListModalTitle').innerText;
         const isOverdue = title.toLowerCase().includes('overdue');
         const isPO = currentOrderType === 'po';
+        const isClient = (currentOrderSource === 'client');
+
+        const isCraftsman = !isClient;
 
         const showNum = document.getElementById('printCol_number')?.checked ?? true;
-        const showBP = !isPO && (document.getElementById('printCol_bp')?.checked ?? true);
-        const showBusiness = !isPO && (document.getElementById('printCol_business')?.checked ?? true);
-        const showCraftsmanCode = !isPO && (document.getElementById('printCol_craftsman_code')?.checked ?? true);
-        const showCraftsmanName = !isPO && (document.getElementById('printCol_craftsman_name')?.checked ?? true);
+        // In Top Pick Client: show BP Code and Business Name (NO Craftsman Code / Name)
+        const showBP = isClient && !isPO && (document.getElementById('printCol_bp')?.checked ?? true);
+        const showBusiness = isClient && !isPO && (document.getElementById('printCol_business')?.checked ?? true);
+        // In Top Pick Craftsman: show Craftsman Code and Craftsman Name (NO BP Code / Business Name)
+        const showCraftsmanCode = isCraftsman && (document.getElementById('printCol_craftsman_code')?.checked ?? true);
+        const showCraftsmanName = isCraftsman && (document.getElementById('printCol_craftsman_name')?.checked ?? true);
         const showQty = document.getElementById('printCol_qty')?.checked ?? true;
         const showWeight = document.getElementById('printCol_weight')?.checked ?? true;
         const showDue = document.getElementById('printCol_due')?.checked ?? true;
@@ -1383,15 +1627,15 @@
         checkboxes.forEach(cb => {
             const row = cb.closest('tr');
             rowsHtml += '<tr>';
-            if (showNum) rowsHtml += `<td>${row.querySelector('.col-order-num')?.innerText || ''}</td>`;
-            if (showBP) rowsHtml += `<td>${row.querySelector('.col-bp')?.innerText || ''}</td>`;
-            if (showBusiness) rowsHtml += `<td>${row.querySelector('.col-business')?.innerText || ''}</td>`;
-            if (showCraftsmanCode) rowsHtml += `<td>${row.querySelector('.col-craftsman-code')?.innerText || ''}</td>`;
-            if (showCraftsmanName) rowsHtml += `<td>${row.querySelector('.col-craftsman-name')?.innerText || ''}</td>`;
-            if (showQty) rowsHtml += `<td class="text-center">${row.querySelector('.col-qty')?.innerText || ''}</td>`;
-            if (showWeight) rowsHtml += `<td class="text-center">${row.querySelector('.col-weight')?.innerText || ''}</td>`;
-            if (showDue) rowsHtml += `<td class="text-center">${row.querySelector('.col-due')?.innerText || ''}</td>`;
-            if (showOverdueDays) rowsHtml += `<td class="text-center text-danger font-bold">${row.querySelector('.col-overdue')?.innerText || ''}</td>`;
+            if (showNum) rowsHtml += `<td>${row.querySelector('.col-order-num')?.innerText.trim() || ''}</td>`;
+            if (showBP) rowsHtml += `<td>${row.querySelector('.col-bp')?.innerText.trim() || ''}</td>`;
+            if (showBusiness) rowsHtml += `<td>${row.querySelector('.col-business')?.innerText.trim() || ''}</td>`;
+            if (showCraftsmanCode) rowsHtml += `<td>${row.querySelector('.col-craftsman-code')?.innerText.trim() || ''}</td>`;
+            if (showCraftsmanName) rowsHtml += `<td>${row.querySelector('.col-craftsman-name')?.innerText.trim() || ''}</td>`;
+            if (showQty) rowsHtml += `<td class="text-center">${row.querySelector('.col-qty')?.innerText.trim() || ''}</td>`;
+            if (showWeight) rowsHtml += `<td class="text-center">${row.querySelector('.col-weight')?.innerText.trim() || ''}</td>`;
+            if (showDue) rowsHtml += `<td class="text-center">${row.querySelector('.col-due')?.innerText.trim() || ''}</td>`;
+            if (showOverdueDays) rowsHtml += `<td class="text-center text-danger font-bold">${row.querySelector('.col-overdue')?.innerText.trim() || ''}</td>`;
             rowsHtml += '</tr>';
         });
 
@@ -1417,7 +1661,7 @@
     function renderDesignsPage() {
         const body = document.getElementById('designsListModalBody');
         body.innerHTML = '';
-        
+
         const totalPages = Math.ceil(currentDesigns.length / designsPerPage) || 1;
         document.getElementById('designsPageInfo').innerText = `Page ${currentDesignsPage} of ${totalPages}`;
         document.getElementById('designsPrevPage').disabled = (currentDesignsPage === 1);
@@ -1476,22 +1720,22 @@
         const title = el.getAttribute('data-title');
         const bpcode = el.getAttribute('data-bpcode');
         const count = el.innerText.trim();
-        
+
         let nameMatch = title.match(/-\s(.*?)\s\(/);
         if (!nameMatch) nameMatch = title.match(/-\s(.*)$/);
         const name = nameMatch ? nameMatch[1] : '';
         const category = categoryFilter === null || categoryFilter === 'All' ? 'All' : categoryFilter;
-        
+
         let headerText = '';
         if (type === 'Buyer') {
-             headerText = `Buyer Name: <strong>${name}</strong> | BP Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
+            headerText = `Buyer Name: <strong>${name}</strong> | BP Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
         } else {
-             headerText = `Craftsman Name: <strong>${name}</strong> | Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
+            headerText = `Craftsman Name: <strong>${name}</strong> | Code: <strong>${bpcode}</strong> | Category: <strong>${category}</strong> | Total: <strong>${count}</strong>`;
         }
 
         document.getElementById('designsListModalTitle').innerText = title;
         let subtitleEl = document.getElementById('designsModalSubtitle');
-        if(!subtitleEl) {
+        if (!subtitleEl) {
             const titleEl = document.getElementById('designsListModalTitle');
             subtitleEl = document.createElement('div');
             subtitleEl.id = 'designsModalSubtitle';
@@ -1502,7 +1746,7 @@
 
         const body = document.getElementById('designsListModalBody');
         body.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>';
-        
+
         designsModalInstance.show();
 
         const fetchUrl = "{{ route('admin.details-all.accepted-designs', ':bpcode') }}".replace(':bpcode', encodeURIComponent(bpcode));
@@ -1532,7 +1776,7 @@
 
         const title = document.getElementById('favoritesListModalTitle').innerText;
         let tbodyHtml = '';
-        
+
         rows.forEach(row => {
             const imgEl = row.querySelector('.design-img-preview');
             const imgSrc = imgEl ? imgEl.src : '';
@@ -1622,77 +1866,6 @@
         openPrintWindow(title, bodyContent);
     }
 
-    function printSelectedDesigns() {
-        const checkboxes = document.querySelectorAll('.modal-design-checkbox:checked');
-        if (checkboxes.length === 0) {
-            alert('Please select at least one design to print.');
-            return;
-        }
-
-        const title = document.getElementById('designsListModalTitle').innerText;
-        const rowsToPrint = Array.from(checkboxes).map(cb => cb.closest('tr'));
-
-        let tbodyHtml = '';
-        rowsToPrint.forEach(row => {
-            const imgEl = row.querySelector('.design-img-preview');
-            const imgSrc = imgEl ? imgEl.src : '';
-            const code = row.cells[2]?.innerText || '';
-            const name = row.cells[3]?.innerText || '';
-            const category = row.cells[4]?.innerText || '';
-            const weight = row.cells[5]?.innerText || '';
-
-            tbodyHtml += `
-                <tr>
-                    <td style="text-align: center; vertical-align: middle; padding: 8px;">
-                        ${imgSrc ? `<img src="${imgSrc}" style="max-height: 80px; max-width: 80px; object-fit: contain;">` : '-'}
-                    </td>
-                    <td style="vertical-align: middle; font-weight: bold;">${code}</td>
-                    <td style="vertical-align: middle;">${name}</td>
-                    <td style="vertical-align: middle;">${category}</td>
-                    <td style="text-align: center; vertical-align: middle; font-weight: bold;">${weight}</td>
-                </tr>`;
-        });
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print - ${title}</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    @media print {
-                        body { margin: 15mm; font-family: system-ui, sans-serif; -webkit-print-color-adjust: exact; }
-                        .table { width: 100%; border-collapse: collapse; }
-                        .table th, .table td { border: 1px solid #dee2e6; padding: 8px; font-size: 12px; }
-                        .text-center { text-align: center; }
-                    }
-                </style>
-            </head>
-            <body>
-                <h4 class="text-center mb-4 fw-bold">${title}</h4>
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="text-align: center; width: 100px;">Image</th>
-                            <th>Design Code</th>
-                            <th>Design Name</th>
-                            <th>Category</th>
-                            <th style="text-align: center;">Weight From (g)</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tbodyHtml}</tbody>
-                </table>
-                <script>
-                    window.onload = function() { 
-                        setTimeout(() => { window.print(); window.close(); }, 400); 
-                    }
-                <\/script>
-            </body>
-            </html>`);
-        printWindow.document.close();
-    }
-
     // Craftsmen and Clients Main Table Print logic
     function generatePrintTableHtml(rowsToPrint, title, isClients = false) {
         let rowsHtml = '';
@@ -1774,29 +1947,40 @@
         openPrintWindow('Top Picks Clients Report (Work Orders)', bodyContent);
     }
 
+    window.printSelected = printSelected;
+    window.printAllFiltered = printAllFiltered;
+    window.printSelectedClients = printSelectedClients;
+    window.printAllClients = printAllClients;
+    window.printModalSelected = printModalSelected;
+    window.printAllFavorites = printAllFavorites;
+    window.printSelectedDesigns = printSelectedDesigns;
+    window.showOrdersList = showOrdersList;
+    window.showFavoritesList = showFavoritesList;
+    window.showDesignsList = showDesignsList;
+
     // --- Custom Pagination for Main Grids ---
     document.addEventListener('DOMContentLoaded', function() {
         // Target all tables except modals
         const tables = document.querySelectorAll('.table:not(#modalFavoritesTable):not(#modalOrdersTable):not(#modalDesignsTable)');
-        
+
         tables.forEach(table => {
             const tbody = table.querySelector('tbody');
-            if(!tbody) return;
-            
+            if (!tbody) return;
+
             // Only count rows that are not empty messages (colspan)
             const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => {
                 const td = tr.querySelector('td');
                 return !(td && td.getAttribute('colspan'));
             });
-            
-            if(rows.length === 0) return;
+
+            if (rows.length === 0) return;
 
             let currentPage = 1;
             let perPage = 10; // Default items per page
 
             const controls = document.createElement('div');
             controls.className = 'd-flex justify-content-between align-items-center p-3 border-top bg-light';
-            
+
             // Left side: Per Page Selector
             const leftDiv = document.createElement('div');
             leftDiv.className = 'd-flex align-items-center gap-2';
@@ -1811,35 +1995,35 @@
             `;
             const perPageSelect = leftDiv.querySelector('.per-page-select');
             const info = leftDiv.querySelector('.pagination-info');
-            
+
             // Right side: Pagination Buttons
             const btnGroup = document.createElement('div');
             btnGroup.className = 'btn-group btn-group-sm';
-            
+
             const prevBtn = document.createElement('button');
             prevBtn.className = 'btn btn-outline-secondary';
             prevBtn.innerHTML = '&laquo; Prev';
-            
+
             const nextBtn = document.createElement('button');
             nextBtn.className = 'btn btn-outline-secondary';
             nextBtn.innerHTML = 'Next &raquo;';
 
             btnGroup.appendChild(prevBtn);
             btnGroup.appendChild(nextBtn);
-            
+
             controls.appendChild(leftDiv);
             controls.appendChild(btnGroup);
-            
+
             const wrapper = table.closest('.table-responsive') || table;
             wrapper.parentNode.insertBefore(controls, wrapper.nextSibling);
 
             function render() {
                 const totalPages = Math.ceil(rows.length / perPage) || 1;
                 if (currentPage > totalPages) currentPage = totalPages;
-                
+
                 const start = (currentPage - 1) * perPage;
                 const end = start + perPage;
-                
+
                 rows.forEach((row, index) => {
                     row.style.display = (index >= start && index < end) ? '' : 'none';
                 });
@@ -1857,12 +2041,18 @@
 
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                if(currentPage > 1) { currentPage--; render(); }
+                if (currentPage > 1) {
+                    currentPage--;
+                    render();
+                }
             });
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const totalPages = Math.ceil(rows.length / perPage) || 1;
-                if(currentPage < totalPages) { currentPage++; render(); }
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    render();
+                }
             });
 
             render(); // Initialize first view

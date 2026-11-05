@@ -106,7 +106,7 @@ class ProcessOwner extends Authenticatable
         }
 
         // Default permissions granted to all users
-        $defaults = ['work_order', 'product', 'design', 'catalogue'];
+        $defaults = ['work_order', 'product', 'design', 'catalogue', 'chat', 'messages'];
         if (in_array($permission, $defaults)) {
             return true;
         }

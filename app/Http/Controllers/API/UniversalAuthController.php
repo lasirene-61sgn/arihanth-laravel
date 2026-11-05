@@ -104,7 +104,9 @@ class UniversalAuthController extends Controller
         $defaultPermissions = [
             'work_order',
             'global_search',
-            'dashboard_details'
+            'dashboard_details',
+            'chat',
+            'messages'
         ];
 
 

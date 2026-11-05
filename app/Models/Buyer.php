@@ -116,7 +116,7 @@ class Buyer extends Authenticatable
         }
 
         if ($permission === 'chat' || $permission === 'messages') {
-            return in_array('chat', $permissions) || in_array('messages', $permissions);
+            return empty($permissions) || in_array('chat', $permissions) || in_array('messages', $permissions);
         }
 
         return in_array($permission, $permissions);

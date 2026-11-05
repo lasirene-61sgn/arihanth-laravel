@@ -190,8 +190,12 @@
                         <span>My Profile</span>
                     </a>
 
-                    {{-- Messages --}}
-
+                    {{-- Live Chat --}}
+                    <a href="{{ route('buyer.chat.index') }}"
+                        class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('buyer.chat.*') ? 'text-white font-semibold' : 'text-purple-200 hover:text-white' }}" style="{{ request()->routeIs('buyer.chat.*') ? 'background:rgba(255,255,255,0.15)' : '' }}">
+                        <i class="bi bi-chat-dots text-lg mr-3"></i>
+                        <span>Live Chat</span>
+                    </a>
 
                     {{-- Meetings --}}
                     @if($authUser && $authUser->hasPermission('meetings'))
@@ -228,6 +232,10 @@
                     <div class="hidden md:flex items-center space-x-3 mr-2">
                         <a href="{{ route('buyer.global-search') }}" class="text-purple-600 hover:text-purple-800 transition-colors" title="Global Search">
                             <i class="bi bi-search text-xl"></i>
+                        </a>
+
+                        <a href="{{ route('buyer.chat.index') }}" class="text-purple-600 hover:text-purple-800 transition-colors" title="Live Chat">
+                            <i class="bi bi-chat-dots text-xl"></i>
                         </a>
 
                         <div class="dropdown">

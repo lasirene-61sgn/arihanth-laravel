@@ -180,10 +180,12 @@ class RepairController extends Controller
         $repair->permissions = [
             'can_edit' => $admin || ($isBuyer && $repair->buyer_id == $buyerId && $repair->status === 'pending'),
             'can_delete' => $admin || ($isBuyer && $repair->buyer_id == $buyerId && $repair->status === 'pending'),
-            'can_allocate' => $admin && in_array($repair->status, ['pending', 'received']),
+            'can_allocate' => $admin && in_array($repair->status, ['pending', 'received', 'accepted']),
             'can_admin_accept' => $admin && $repair->status === 'pending',
-            'can_admin_reject' => $admin && in_array($repair->status, ['pending', 'allocated']),
+            'can_admin_reject' => $admin && in_array($repair->status, ['pending', 'allocated', 'accepted', 'received']),
             'can_admin_approve_completion' => $admin && $repair->craftsman_status === 'pending_approval',
+            'can_admin_send_item' => $admin && $repair->craftsman_status === 'approved_by_superadmin' && is_null($repair->item_sent_by),
+            'can_admin_mark_buyer_completed' => $admin && $repair->craftsman_status === 'approved_by_superadmin' && !is_null($repair->item_sent_by) && $repair->status !== 'completed',
             'can_admin_complete' => $admin && $repair->status !== 'completed',
             'can_craftsman_accept' => $isCraftsman && $repair->craftman_code === $craftsmanCode && ($repair->craftsman_status === 'pending_acceptance' || is_null($repair->craftsman_status)),
             'can_craftsman_complete' => $isCraftsman && $repair->craftman_code === $craftsmanCode && in_array($repair->craftsman_status, ['in_progress', 'pending_acceptance', 'accepted', null]),
@@ -266,7 +268,11 @@ class RepairController extends Controller
 
         // Explicit status filter (only when tab is not provided)
         if ($request->filled('status') && !$request->filled('tab')) {
-            $query->where('status', $request->status);
+            if (in_array(strtolower($request->status), ['accepted', 'received'])) {
+                $query->whereIn('status', ['accepted', 'Accepted', 'received', 'Received']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Keyword Search
@@ -331,7 +337,7 @@ class RepairController extends Controller
             $counts = [
                 'all'                => (clone $baseQuery)->count(),
                 'new'                => (clone $baseQuery)->whereIn('status', ['pending', 'Pending'])->count(),
-                'accepted'           => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted'])->count(),
+                'accepted'           => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted', 'received', 'Received'])->count(),
                 'allocated'          => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
                                           $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
                                       })->count(),
@@ -343,11 +349,12 @@ class RepairController extends Controller
             ];
 
             // Backward compatibility alias
-            $counts['received'] = $counts['new'];
+            $counts['received'] = $counts['accepted'];
 
             // Normalize activeTab
             $activeTab = match ($activeTab) {
-                'pending', 'received'                     => 'new',
+                'pending'                                 => 'new',
+                'received'                                => 'accepted',
                 'craftsman-approval'                      => 'craftsman_approval',
                 'buyer-approval'                          => 'buyer_approval',
                 default                                   => ($activeTab ?: 'new')
@@ -357,7 +364,7 @@ class RepairController extends Controller
             if ($activeTab === 'new') {
                 $baseQuery->whereIn('status', ['pending', 'Pending']);
             } elseif ($activeTab === 'accepted') {
-                $baseQuery->whereIn('status', ['accepted', 'Accepted']);
+                $baseQuery->whereIn('status', ['accepted', 'Accepted', 'received', 'Received']);
             } elseif ($activeTab === 'allocated') {
                 $baseQuery->whereIn('status', ['allocated', 'Allocated'])->where(function ($q) {
                     $q->whereNull('craftsman_status')->orWhere('craftsman_status', '!=', 'pending_approval');
@@ -423,7 +430,7 @@ class RepairController extends Controller
                                 ->whereNotIn('status', ['completed', 'Completed'])->count(),
                 'completed' => (clone $baseQuery)->whereIn('status', ['completed', 'Completed'])->count(),
                 'new'       => (clone $baseQuery)->whereIn('status', ['pending', 'Pending'])->count(),
-                'accepted'  => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted'])->count(),
+                'accepted'  => (clone $baseQuery)->whereIn('status', ['accepted', 'Accepted', 'received', 'Received'])->count(),
                 'allocated' => (clone $baseQuery)->whereIn('status', ['allocated', 'Allocated'])->count(),
                 'rejected'  => (clone $baseQuery)->whereIn('status', ['rejected', 'Rejected'])->count(),
             ];
@@ -433,6 +440,7 @@ class RepairController extends Controller
                 'in_progress', 'in-progress'              => 'active',
                 'pending_acceptance', 'pending-acceptance'=> 'approval',
                 'pending'                                 => 'new',
+                'received'                                => 'accepted',
                 default                                   => ($activeTab ?: 'active')
             };
 
@@ -450,7 +458,7 @@ class RepairController extends Controller
             } elseif ($activeTab === 'new') {
                 $baseQuery->whereIn('status', ['pending', 'Pending']);
             } elseif ($activeTab === 'accepted') {
-                $baseQuery->whereIn('status', ['accepted', 'Accepted']);
+                $baseQuery->whereIn('status', ['accepted', 'Accepted', 'received', 'Received']);
             } elseif ($activeTab === 'allocated') {
                 $baseQuery->whereIn('status', ['allocated', 'Allocated']);
             } elseif ($activeTab === 'rejected') {
@@ -756,7 +764,7 @@ class RepairController extends Controller
 
     /**
      * Accept Repair
-     * - Admin accepts pending repair -> status = 'received'
+     * - Admin accepts pending repair -> status = 'accepted'
      * - Craftsman accepts assigned order -> craftsman_status = 'in_progress'
      */
     public function accept(Request $request, $id)
@@ -766,7 +774,7 @@ class RepairController extends Controller
 
         if ($this->isAdmin($user)) {
             $repair->update([
-                'status'           => 'received',
+                'status'           => 'accepted',
                 'item_received_by' => $user->name ?? 'Admin',
             ]);
             return response()->json(['success' => true, 'message' => 'Repair order accepted by admin.']);
@@ -955,6 +963,8 @@ class RepairController extends Controller
 
     /**
      * Approve Completion (Admin / SuperAdmin approves craftsman completion)
+     * - Moves order to 'Approval' tab (craftsman_status = 'approved_by_superadmin', item_sent_by = null)
+     * - In 'Approval' tab, admin then stores 'item_sent_by' to move to 'Buyer Approval' tab.
      */
     public function approveCompletion(Request $request, $id)
     {
@@ -964,7 +974,8 @@ class RepairController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'item_sent_by' => ['required', 'string', 'max:255'],
+            'item_returned_by'  => ['nullable', 'string', 'max:255'],
+            'item_collected_by' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($validator->fails()) {
@@ -972,14 +983,23 @@ class RepairController extends Controller
         }
 
         $repair = Repair::findOrFail($id);
-        $repair->update([
+        $updateData = [
             'craftsman_status' => 'approved_by_superadmin',
-            'item_sent_by'     => $request->item_sent_by,
-        ]);
+            'item_sent_by'     => null, // Keeps order in 'Approval' tab (not 'Buyer Approval' tab)
+        ];
+
+        if ($request->filled('item_returned_by')) {
+            $updateData['item_returned_by'] = $request->item_returned_by;
+        }
+        if ($request->filled('item_collected_by')) {
+            $updateData['item_collected_by'] = $request->item_collected_by;
+        }
+
+        $repair->update($updateData);
 
         return response()->json([
             'success' => true,
-            'message' => 'Craftsman completion approved. Ready for buyer collection/delivery.',
+            'message' => 'Craftsman completion approved successfully. Moved to Approval tab.',
             'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
         ]);
     }
@@ -1007,7 +1027,7 @@ class RepairController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Item sent by recorded successfully.',
+            'message' => 'Item sent by recorded successfully. Moved to Buyer Approval tab.',
             'data'    => $this->transformRepair($repair->fresh(['buyer', 'craftsman']), $user),
         ]);
     }

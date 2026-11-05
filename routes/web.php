@@ -68,6 +68,10 @@ use App\Http\Controllers\SuperAdmin\NewUpdatesController;
 use App\Http\Controllers\SuperAdmin\RegistrationController as SuperAdminRegistrationController;
 use App\Http\Controllers\SuperAdmin\RepairController;
 use App\Http\Controllers\SuperAdmin\UpdateAllController;
+use App\Http\Controllers\SuperAdmin\ChatController as SuperAdminChatController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
+use App\Http\Controllers\Buyer\ChatController as BuyerChatController;
+use App\Http\Controllers\Craftsman\ChatController as CraftsmanChatController;
 
 Route::get('/ajlogo.svg', function () {
     $path = public_path('images/ajlogo.svg');
@@ -593,6 +597,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('repairs/{repair}/buyer-complete', [AdminRepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete');
 
         // Chat Routes
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::get('/', [AdminChatController::class, 'index'])->name('index');
+            Route::get('/conversations', [AdminChatController::class, 'getConversations'])->name('conversations');
+            Route::get('/contacts', [AdminChatController::class, 'getContacts'])->name('contacts');
+            Route::post('/conversations', [AdminChatController::class, 'startConversation'])->name('start');
+            Route::get('/conversations/{id}/messages', [AdminChatController::class, 'getMessages'])->name('messages');
+            Route::post('/conversations/{id}/messages', [AdminChatController::class, 'sendMessage'])->name('send');
+        });
     });
 });
 
@@ -963,6 +975,18 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
         Route::patch('repairs/{repair}/mark-fully-completed', [RepairController::class, 'markFullyCompleted'])->name('repairs.mark-fully-completed');
         Route::patch('repairs/{repair}/store-item-sent-by', [RepairController::class, 'storeItemSentBy'])->name('repairs.store-item-sent-by');
         Route::patch('repairs/{repair}/buyer-complete', [RepairController::class, 'markBuyerCompleted'])->name('repairs.buyer-complete');
+
+        // Chat Routes for Super Admin
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::get('/', [SuperAdminChatController::class, 'index'])->name('index');
+            Route::get('/conversations', [SuperAdminChatController::class, 'getConversations'])->name('conversations');
+            Route::get('/all-conversations', [SuperAdminChatController::class, 'getAllConversations'])->name('all-conversations');
+            Route::get('/contacts', [SuperAdminChatController::class, 'getContacts'])->name('contacts');
+            Route::post('/conversations', [SuperAdminChatController::class, 'startConversation'])->name('start');
+            Route::get('/conversations/{id}/messages', [SuperAdminChatController::class, 'getMessages'])->name('messages');
+            Route::post('/conversations/{id}/messages', [SuperAdminChatController::class, 'sendMessage'])->name('send');
+            Route::delete('/messages/{id}', [SuperAdminChatController::class, 'deleteMessage'])->name('delete-message');
+        });
     });
 
     Route::resource('update', UpdateAllController::class);
@@ -1126,6 +1150,14 @@ Route::prefix('craftsman')->name('craftsman.')->group(function () {
         Route::patch('repairs/{repair}/complete', [CraftsmanRepairController::class, 'markComplete'])->name('repairs.complete');
 
         // Chat Routes for Craftsmen
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::get('/', [CraftsmanChatController::class, 'index'])->name('index');
+            Route::get('/conversations', [CraftsmanChatController::class, 'getConversations'])->name('conversations');
+            Route::get('/contacts', [CraftsmanChatController::class, 'getContacts'])->name('contacts');
+            Route::post('/conversations', [CraftsmanChatController::class, 'startConversation'])->name('start');
+            Route::get('/conversations/{id}/messages', [CraftsmanChatController::class, 'getMessages'])->name('messages');
+            Route::post('/conversations/{id}/messages', [CraftsmanChatController::class, 'sendMessage'])->name('send');
+        });
     });
 });
 // Key User Routes
@@ -1285,7 +1317,7 @@ Route::prefix('key-user')->name('key-user.')->group(function () {
             ]);
         })->name('debug-catalogue');
 
-        // Chat Routes (Buyer)
+        // Chat Routes (Key User)
     });
 });
 
@@ -1417,6 +1449,14 @@ Route::prefix('buyer')->name('buyer.')->group(function () {
         Route::patch('repairs/{repair}/accept-completion', [BuyerRepairController::class, 'acceptCompletion'])->name('repairs.accept-completion');
 
         // Chat Routes for Buyers
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::get('/', [BuyerChatController::class, 'index'])->name('index');
+            Route::get('/conversations', [BuyerChatController::class, 'getConversations'])->name('conversations');
+            Route::get('/contacts', [BuyerChatController::class, 'getContacts'])->name('contacts');
+            Route::post('/conversations', [BuyerChatController::class, 'startConversation'])->name('start');
+            Route::get('/conversations/{id}/messages', [BuyerChatController::class, 'getMessages'])->name('messages');
+            Route::post('/conversations/{id}/messages', [BuyerChatController::class, 'sendMessage'])->name('send');
+        });
     });
 });
 

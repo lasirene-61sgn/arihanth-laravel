@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Broadcast;
 $allowedGuards = ['sanctum', 'web', 'admin', 'super_admin', 'craftsman', 'key_user', 'buyer', 'craftsman_staff'];
 
 // Allow both Session-based web guards and Token-based Sanctum API guard (for iOS / mobile apps / Flutter)
-Broadcast::routes(['middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
+Broadcast::routes(['middleware' => ['web', 'auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
 Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
 Broadcast::routes(['prefix' => 'api/common', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);
 Broadcast::routes(['prefix' => 'api/common/chat', 'middleware' => ['auth:sanctum,web,admin,super_admin,craftsman,key_user,buyer,craftsman_staff']]);

@@ -352,6 +352,16 @@
                     </li>
                     @endif
 
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.chat.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.chat.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-chat-dots text-lg"></i>
+                                <span class="text-sm font-medium">Live Chat</span>
+                            </div>
+                        </a>
+                    </li>
+
                     @if(Auth::guard('admin')->user()->hasPermission('kyc_pending'))
                     <li class="px-3">
                         <a class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.kyc-pending.index') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
@@ -438,6 +448,16 @@
                         </a>
                     </li>
                     @endif
+
+                    <li class="px-3">
+                        <a class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/10 transition-colors {{ request()->routeIs('admin.chat.*') ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:text-white' }}"
+                            href="{{ route('admin.chat.index') }}">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-chat-dots text-lg"></i>
+                                <span class="text-sm font-medium">Live Chat</span>
+                            </div>
+                        </a>
+                    </li>
                     
 
                     <!-- Operations Section -->
@@ -722,6 +742,11 @@
                             </div>
 
                            
+
+                            <!-- Live Chat Link -->
+                            <a href="{{ route('admin.chat.index') }}" class="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg text-white/90 text-[0.85rem] font-bold hover:bg-white/20 transition-colors" title="Live Chat">
+                                <i class="bi bi-chat-dots"></i>
+                            </a>
 
                             <!-- Meetings Icon Dropdown -->
                             <div class="dropdown">
@@ -1182,7 +1207,7 @@
                 fieldsToHide.forEach(field => {
 
                     if (current.includes(field) || combined.includes(field)) {
-                        // 🔥 GET LABEL POSITION
+                        // ≡ƒöÑ GET LABEL POSITION
                         const labelTx = pdfjsLib.Util.transform(
                             viewport.transform,
                             items[i].transform
@@ -1190,7 +1215,7 @@
 
                         const labelY = labelTx[5];
 
-                        // 🔥 FIND VALUE ON SAME LINE
+                        // ≡ƒöÑ FIND VALUE ON SAME LINE
                         for (let k = 0; k < items.length; k++) {
                             const valueTx = pdfjsLib.Util.transform(
                                 viewport.transform,
@@ -1250,7 +1275,7 @@
                 const pdf = await pdfjsLib.getDocument(url).promise;
                 const numPages = pdf.numPages;
 
-                // 🔥 MULTI IMAGE BADGE
+                // ≡ƒöÑ MULTI IMAGE BADGE
                 if (numPages > 1) {
                     const container = canvas.parentElement;
 
@@ -1286,7 +1311,7 @@
 
                 await page.render(renderContext).promise;
 
-                // 🔥 VALUE REDACTION
+                // ≡ƒöÑ VALUE REDACTION
                 await redactSensitiveText(page, context, viewport);
             });
         };
@@ -1367,7 +1392,7 @@
 
                     await page.render(renderContext).promise;
 
-                    // 🔥 VALUE REDACTION
+                    // ≡ƒöÑ VALUE REDACTION
                     await redactSensitiveText(page, context, viewport);
                 }
             } else {
@@ -1533,9 +1558,9 @@
   }
 
   // ============================================================
-  // FCM WEB PUSH — Registers browser for push notifications
+  // FCM WEB PUSH ΓÇö Registers browser for push notifications
   // Requires FIREBASE_VAPID_KEY in .env (from Firebase Console
-  // → Project Settings → Cloud Messaging → Web Push certificates)
+  // ΓåÆ Project Settings ΓåÆ Cloud Messaging ΓåÆ Web Push certificates)
   // ============================================================
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
 
@@ -1544,8 +1569,8 @@
   async function registerAdminFcmToken() {
       // Skip silently if VAPID key not configured yet
       if (!VAPID_KEY || VAPID_KEY === 'your_vapid_key_here' || VAPID_KEY.length < 20) {
-          console.info('FCM: VAPID key not configured — skipping web push registration.');
-          console.info('FCM: To enable: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → copy Key pair → set FIREBASE_VAPID_KEY in .env');
+          console.info('FCM: VAPID key not configured ΓÇö skipping web push registration.');
+          console.info('FCM: To enable: Firebase Console ΓåÆ Project Settings ΓåÆ Cloud Messaging ΓåÆ Web Push certificates ΓåÆ copy Key pair ΓåÆ set FIREBASE_VAPID_KEY in .env');
           return;
       }
 
@@ -1584,14 +1609,14 @@
               body: JSON.stringify({ token })
           });
 
-          console.log('FCM: Admin browser token registered ✓');
+          console.log('FCM: Admin browser token registered Γ£ô');
 
           onMessage(messaging, (payload) => {
               console.log('FCM foreground message:', payload);
           });
 
       } catch (err) {
-          // Non-fatal — admin panel uses RTDB active_calls listener as primary notification channel
+          // Non-fatal ΓÇö admin panel uses RTDB active_calls listener as primary notification channel
           console.warn('FCM web push registration skipped:', err.message);
       }
   }

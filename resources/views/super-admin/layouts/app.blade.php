@@ -167,6 +167,7 @@
                 ['perm' => 'work_order', 'route' => 'super-admin.work-order.index', 'icon' => 'bi-clipboard-check', 'label' => __('messages.work_order'), 'count' => $sidebarCounts['workOrdersCount']],
                 ['perm' => 'stock_order', 'route' => 'super-admin.stock-order.index', 'icon' => 'bi-box2-heart', 'label' => __('messages.live_stock_order'), 'count' => $sidebarCounts['stockOrdersCount']],
                 ['perm' => 'meetings', 'route' => 'super-admin.meetings.index', 'icon' => 'bi-camera-video', 'label' => 'Meetings', 'count' => null],
+                ['perm' => null, 'route' => 'super-admin.chat.index', 'icon' => 'bi-chat-dots', 'label' => 'Live Chat', 'count' => null],
                 ['perm' => 'purchase_order', 'route' => 'super-admin.purchase-order.index', 'icon' => 'bi-cart3', 'label' => __('messages.purchase_order'), 'count' => $sidebarCounts['purchaseOrdersCount']],
                 ['perm' => 'product', 'route' => 'super-admin.product.index', 'icon' => 'bi-box-seam', 'label' => __('messages.product'), 'count' => $sidebarCounts['productsCount']],
                 ['perm' => 'design', 'route' => 'super-admin.design.index', 'icon' => 'bi-palette', 'label' => __('messages.design'), 'count' => $sidebarCounts['designsCount']],
@@ -179,7 +180,7 @@
                 @endphp
 
                 @foreach($opItems as $op)
-                @if(Auth::guard('super_admin')->user()?->hasPermission($op['perm']))
+                @if(empty($op['perm']) || Auth::guard('super_admin')->user()?->hasPermission($op['perm']))
                 <li>
                     <a href="{{ route($op['route']) }}"
                         class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-2.5 tw-rounded-lg tw-font-medium tw-text-sm tw-transition-all tw-no-underline hover:tw-bg-white/10 hover:tw-text-white {{ request()->routeIs($op['route']) ? 'tw-bg-white/20 tw-text-white' : 'tw-text-white/80' }}">
@@ -260,6 +261,11 @@
                 </div>
                 <div class="tw-flex tw-items-center tw-gap-4">
 
+
+                    <!-- Live Chat Icon Link -->
+                    <a href="{{ route('super-admin.chat.index') }}" class="tw-text-white/80 hover:tw-text-white tw-transition-colors" title="Live Chat">
+                        <i class="bi bi-chat-dots tw-text-xl"></i>
+                    </a>
 
                     <!-- Meetings Icon Dropdown -->
                     <div class="tw-relative dropdown">
