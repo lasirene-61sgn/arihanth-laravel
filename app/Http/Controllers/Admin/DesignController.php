@@ -41,8 +41,7 @@ class DesignController extends Controller
     public function index(Request $request)
     {
         $baseQuery = Product::with(['category', 'subcategory', 'images', 'creator', 'userAccess'])
-            ->notFromFrozenAccounts()
-            ->whereNotNull('type');
+            ->notFromFrozenAccounts();
 
         $applyFilters = function ($q) use ($request) {
             if ($request->filled('search')) {
@@ -67,8 +66,8 @@ class DesignController extends Controller
             if ($request->filled('filter_product_code')) {
                 $q->where('product_code', 'like', '%' . $request->filter_product_code . '%');
             }
-            if ($request->filled('filter_category')) {
-                $q->where('product_category_id', $request->filter_category);
+            if ($request->filled('filter_category') || $request->filled('category_filter')) {
+                $q->where('product_category_id', $request->filter_category ?: $request->category_filter);
             }
             if ($request->filled('filter_subcategory')) {
                 $q->where('product_subcategory_id', $request->filter_subcategory);
@@ -89,7 +88,11 @@ class DesignController extends Controller
             'all' => (clone $countQuery)->count(),
             'accepted' => (clone $countQuery)->where('design_status', 'Accepted')->count(),
             'rejected' => (clone $countQuery)->where('design_status', 'Rejected')->count(),
-            'pending' => (clone $countQuery)->whereNotIn('design_status', ['Accepted', 'Rejected'])->count(),
+            'pending' => (clone $countQuery)->where(function ($q) {
+                $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                  ->orWhereNull('design_status')
+                  ->orWhere('design_status', '');
+            })->count(),
         ];
 
         // --- MAIN QUERY ---
@@ -106,7 +109,11 @@ class DesignController extends Controller
                 $query->where('design_status', 'Rejected');
                 break;
             case 'pending':
-                $query->whereNotIn('design_status', ['Accepted', 'Rejected']);
+                $query->where(function ($q) {
+                    $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                      ->orWhereNull('design_status')
+                      ->orWhere('design_status', '');
+                });
                 break;
             case 'all':
             default:

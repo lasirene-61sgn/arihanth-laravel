@@ -28,8 +28,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with(['category', 'subcategory', 'creator', 'images'])
-            ->notFromFrozenAccounts()
-            ->whereNotNull('bp_code');
+            ->notFromFrozenAccounts();
 
         // --- SEARCH & FILTERS ---
         if ($request->filled('search')) {
@@ -37,6 +36,7 @@ class ProductController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('product_name', 'like', "%{$search}%")
                     ->orWhere('product_code', 'like', "%{$search}%")
+                    ->orWhere('design_code', 'like', "%{$search}%")
                     ->orWhere('bp_code', 'like', "%{$search}%");
             });
         }
@@ -47,8 +47,8 @@ class ProductController extends Controller
         if ($request->filled('filter_code')) {
             $query->where('product_code', 'like', '%' . $request->filter_code . '%');
         }
-        if ($request->filled('filter_category')) {
-            $query->where('product_category_id', $request->filter_category);
+        if ($request->filled('filter_category') || $request->filled('category_filter')) {
+            $query->where('product_category_id', $request->filter_category ?: $request->category_filter);
         }
         if ($request->filled('filter_subcategory')) {
             $query->where('product_subcategory_id', $request->filter_subcategory);
@@ -206,12 +206,10 @@ class ProductController extends Controller
     {
         $categories = ProductCategory::whereIn('id', function ($query) {
             $query->select('product_category_id')
-                ->from('products')
-                ->whereNotNull('bp_code');
+                ->from('products');
         })->orWhereIn('name', function ($query) {
             $query->select('product_category')
-                ->from('work_orders')
-                ->whereNotNull('bp_code');
+                ->from('work_orders');
         })->orderBy('name')->get();
         $subcategories = $product->product_category_id ? ProductSubcategory::where('product_category_id', $product->product_category_id)->get() : collect();
         $product->load('images');

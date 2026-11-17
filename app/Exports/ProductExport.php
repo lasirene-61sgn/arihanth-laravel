@@ -66,7 +66,11 @@ class ProductExport implements FromCollection, WithHeadings, WithMapping
                     $query->where('design_status', 'Rejected');
                     break;
                 case 'pending':
-                    $query->whereNotIn('design_status', ['Accepted', 'Rejected']);
+                    $query->where(function ($q) {
+                        $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                          ->orWhereNull('design_status')
+                          ->orWhere('design_status', '');
+                    });
                     break;
                 case 'all':
                 default:

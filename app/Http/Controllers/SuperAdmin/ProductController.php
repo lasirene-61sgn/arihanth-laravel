@@ -79,15 +79,16 @@ class ProductController extends Controller
         }
 
         $query = Product::with(['category', 'subcategory', 'creator', 'images'])
-            ->notFromFrozenAccounts()
-            ->whereNotNull('type');
+            ->notFromFrozenAccounts();
 
         // Quick Search (from Search Modal/Bar)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_code', 'like', "%{$search}%");
+                    ->orWhere('product_code', 'like', "%{$search}%")
+                    ->orWhere('design_code', 'like', "%{$search}%")
+                    ->orWhere('bp_code', 'like', "%{$search}%");
             });
         }
 
@@ -107,8 +108,8 @@ class ProductController extends Controller
         }
 
         // Advanced Filter: Category
-        if ($request->filled('category_filter')) {
-            $query->where('product_category_id', $request->category_filter);
+        if ($request->filled('category_filter') || $request->filled('filter_category')) {
+            $query->where('product_category_id', $request->category_filter ?: $request->filter_category);
         }
 
         // Advanced Filter: Subcategory

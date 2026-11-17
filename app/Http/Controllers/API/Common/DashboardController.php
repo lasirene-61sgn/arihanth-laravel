@@ -101,9 +101,9 @@ class DashboardController extends Controller
                 'totalBuyers' => Buyer::count(),
                 'totalCraftsmen' => Craftman::count(),
                 'totalWorkOrders' => WorkOrder::where('status', 'new')->count(),
-                'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
-                'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
-                'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
+                'totalProducts' => Product::notFromFrozenAccounts()->count(),
+                'totalDesigns' => Product::notFromFrozenAccounts()->count(),
+                'totalCatalogues' => Product::whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
                 'totalPurchaseOrders' => PurchaseOrder::whereIn('status', ['created', 'pending'])->whereNull('allocated_craftsman_code')->count(),
                 'totalRepairs' => Repair::whereIn('status', ['pending', 'Pending'])->count(),
                 'totalUsers' => User::count(),
@@ -261,9 +261,9 @@ class DashboardController extends Controller
                 'totalPurchaseOrders' => PurchaseOrder::where('creator_type', 'key_user')->where('created_by', $user->id)->whereIn('status', ['created', 'pending'])->count(),
                 'totalRepairs' => Repair::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
                 'totalStockOrders' => StockOrder::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
-                'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
-                'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
-                'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
+                'totalProducts' => Product::notFromFrozenAccounts()->count(),
+                'totalDesigns' => Product::notFromFrozenAccounts()->count(),
+                'totalCatalogues' => Product::whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
 
                 // Work Order status breakdown
                 'newOrders' => WorkOrder::where('creator_user_code', $userCode)->where('status', 'new')->count(),
@@ -298,9 +298,9 @@ class DashboardController extends Controller
                 'totalPurchaseOrders' => PurchaseOrder::where('creator_type', 'user')->where('created_by', $user->id)->whereIn('status', ['created', 'pending'])->count(),
                 'totalRepairs' => Repair::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
                 'totalStockOrders' => StockOrder::where('buyer_id', $buyerId)->whereIn('status', ['pending', 'Pending'])->count(),
-                'totalProducts' => Product::whereNotNull('bp_code')->notFromFrozenAccounts()->count(),
-                'totalDesigns' => Product::whereNotNull('bp_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
-                'totalCatalogues' => Product::whereNotNull('bp_code')->whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
+                'totalProducts' => Product::notFromFrozenAccounts()->count(),
+                'totalDesigns' => Product::notFromFrozenAccounts()->count(),
+                'totalCatalogues' => Product::whereNotNull('design_code')->where('design_status', 'Accepted')->notFromFrozenAccounts()->count(),
 
                 // Work Order status breakdown
                 'newOrders' => WorkOrder::where('creator_user_code', $userCode)->where('status', 'new')->count(),

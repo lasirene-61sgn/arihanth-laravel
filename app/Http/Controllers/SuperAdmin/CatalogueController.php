@@ -19,8 +19,6 @@ class CatalogueController extends Controller
     $query = Product::with(['category', 'subcategory', 'images', 'creator'])
             ->where('design_status', 'Accepted')
             ->whereNotNull('design_code')
-            ->whereNotNull('type')
-            ->where('type', '!=', '')
             ->notFromFrozenAccounts();
 
     // Search Logic (Global)

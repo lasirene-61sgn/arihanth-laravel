@@ -55,16 +55,18 @@ class SidebarCountComposer
                                     ->count(),
                 'cataloguesCount' => Product::where('design_status', 'Accepted')
                                     ->whereNotNull('design_code')
-                                    ->whereNotNull('type')
-                                    ->where('type', '!=', '')
                                     ->notFromFrozenAccounts()
                                     ->count(),
                 'productsCount' => Product::notFromFrozenAccounts()
-                                    ->whereNotNull('type')
                                     ->count(),
                 'designsCount' => Product::notFromFrozenAccounts()
-                                    ->whereNotNull('type')
-                                    ->where('design_status', 'Pending')
+                                    ->count(),
+                'pendingDesignsCount' => Product::notFromFrozenAccounts()
+                                    ->where(function ($q) {
+                                        $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                                          ->orWhereNull('design_status')
+                                          ->orWhere('design_status', '');
+                                    })
                                     ->count(),
                 'kycPendingCount' => 0,
                 'stockOrdersCount' => StockOrder::where('status', 'Pending')->count(),

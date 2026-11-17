@@ -105,11 +105,15 @@ class LoginController extends Controller
         $buyersCount = Buyer::count();
         $craftsmenCount = Craftman::count();
         $productsCount = Product::notFromFrozenAccounts()
-            ->whereNotNull('type')
             ->count();
         $designsCount = Product::notFromFrozenAccounts()
-            ->whereNotNull('type')
-            ->where('design_status', 'Accepted')
+            ->count();
+        $pendingDesignsCount = Product::notFromFrozenAccounts()
+            ->where(function ($q) {
+                $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                  ->orWhereNull('design_status')
+                  ->orWhere('design_status', '');
+            })
             ->count();
         $workOrdersCount = WorkOrder::where('status', 'new')->count();
         $purchaseOrdersCount = PurchaseOrder::where('status', 'created')
@@ -130,8 +134,6 @@ class LoginController extends Controller
 
         $cataloguesCount = Product::where('design_status', 'Accepted')
             ->whereNotNull('design_code')
-            ->whereNotNull('type')
-            ->where('type', '!=', '')
             ->notFromFrozenAccounts()
             ->count();
 
@@ -513,6 +515,7 @@ class LoginController extends Controller
             'craftsmenCount',
             'productsCount',
             'designsCount',
+            'pendingDesignsCount',
             'workOrdersCount',
             'purchaseOrdersCount',
             'usersCount',
@@ -561,9 +564,18 @@ class LoginController extends Controller
         $totalPurchaseOrders = PurchaseOrder::where('status', 'created')
             ->whereNull('allocated_craftsman_code')
             ->count();
-        $totalDesigns = Product::notFromFrozenAccounts()
-            ->whereNotNull('type')
-            ->where('design_status', 'Accepted')
+        $totalProducts = Product::notFromFrozenAccounts()->count();
+        $totalDesigns = Product::notFromFrozenAccounts()->count();
+        $totalCatalogues = Product::where('design_status', 'Accepted')
+            ->whereNotNull('design_code')
+            ->notFromFrozenAccounts()
+            ->count();
+        $totalPendingDesigns = Product::notFromFrozenAccounts()
+            ->where(function ($q) {
+                $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                  ->orWhereNull('design_status')
+                  ->orWhere('design_status', '');
+            })
             ->count();
         $totalStockOrders = StockOrder::where('status', 'Pending')->count();
         $totalRepairs = Repair::whereIn('status', ['Pending', 'Accepted'])->count();
@@ -602,6 +614,7 @@ class LoginController extends Controller
             'totalWorkOrders' => $totalWorkOrders,
             'totalProducts' => $totalProducts,
             'totalDesigns' => $totalDesigns,
+            'totalPendingDesigns' => $totalPendingDesigns,
             'totalCatalogues' => $totalCatalogues,
             'totalPurchaseOrders' => $totalPurchaseOrders,
             'totalStockOrders' => $totalStockOrders,

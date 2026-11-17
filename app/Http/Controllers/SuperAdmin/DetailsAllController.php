@@ -296,10 +296,10 @@ class DetailsAllController extends Controller
         uasort($clientStats, function($a, $b) { return $b['orders'] <=> $a['orders']; });
         $topPicksClientsFull = array_slice($clientStats, 0, 15, true);
 
-        $acceptedProducts = Product::with('category')->whereIn('design_status', ['Accepted', 'accepted'])->get();
+        $allDesigns = Product::with('category')->notFromFrozenAccounts()->get();
 
         $overallDesignStats = [];
-        foreach ($acceptedProducts as $p) {
+        foreach ($allDesigns as $p) {
             $catName = $p->category ? $p->category->name : 'Uncategorized';
             if (!isset($overallDesignStats[$catName])) {
                 $overallDesignStats[$catName] = 0;
@@ -312,7 +312,7 @@ class DetailsAllController extends Controller
         foreach ($craftsmen as $c) {
             $code = $c->craftman_code;
             $name = $c->name ?? $c->business_name;
-            $cProducts = $acceptedProducts->where('bp_code', $code);
+            $cProducts = $allDesigns->where('bp_code', $code);
             if ($cProducts->count() > 0) {
                 $catCounts = [];
                 $lastAccepted = null;
@@ -346,7 +346,7 @@ class DetailsAllController extends Controller
         foreach ($allBuyers as $b) {
             $code = $b->bp_code;
             $name = $b->name ?? $b->business_name;
-            $bProducts = $acceptedProducts->where('bp_code', $code);
+            $bProducts = $allDesigns->where('bp_code', $code);
             if ($bProducts->count() > 0) {
                 $catCounts = [];
                 $lastAccepted = null;
@@ -452,7 +452,7 @@ class DetailsAllController extends Controller
     public function getAcceptedDesigns($bp_code)
     {
         $query = Product::with(['category', 'images'])
-            ->whereIn('design_status', ['Accepted', 'accepted']);
+            ->notFromFrozenAccounts();
 
         if ($bp_code !== 'Overall') {
             $query->where('bp_code', $bp_code);

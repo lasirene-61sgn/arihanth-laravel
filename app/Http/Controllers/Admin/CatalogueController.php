@@ -23,7 +23,6 @@ class CatalogueController extends Controller
     $query = Product::with(['category', 'subcategory', 'images', 'creator'])
         ->where('design_status', 'Accepted')
         ->whereNotNull('design_code')
-        ->whereNotNull('bp_code')
         ->notFromFrozenAccounts();
 
     // Advanced Filters from Dropdown

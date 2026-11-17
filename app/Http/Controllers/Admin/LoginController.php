@@ -29,10 +29,10 @@ class LoginController extends Controller
         ]);
 
         // Find admin user by email or user_code
-        $admin = ProcessOwner::where(function($query) use ($request) {
-                $query->where('email_id', $request->email_or_user_code)
-                      ->orWhere('user_code', $request->email_or_user_code);
-            })
+        $admin = ProcessOwner::where(function ($query) use ($request) {
+            $query->where('email_id', $request->email_or_user_code)
+                ->orWhere('user_code', $request->email_or_user_code);
+        })
             ->where('role', 'admin')
             ->first();
 
@@ -44,7 +44,7 @@ class LoginController extends Controller
                     'email_or_user_code' => 'Your account has been frozen. Please contact the Super Admin.',
                 ])->withInput($request->only('email_or_user_code'));
             }
-            
+
             Auth::guard('admin')->login($admin);
             return redirect()->route('admin.dashboard');
         }
@@ -60,40 +60,45 @@ class LoginController extends Controller
     public function dashboard()
     {
         $admin = Auth::guard('admin')->user();
-        
+
         // Get real-time data for admin dashboard
         $buyersCount = \App\Models\Buyer::count();
         $craftsmenCount = \App\Models\Craftman::count();
         $productsCount = \App\Models\Product::notFromFrozenAccounts()
-                                    ->whereNotNull('type')
-                                    ->count();
+            ->count();
         $designsCount = \App\Models\Product::notFromFrozenAccounts()
-                                    ->whereNotNull('type')
-                                    ->where('design_status', 'Accepted')
-                                    ->count();
+            ->count();
+        $pendingDesignsCount = \App\Models\Product::notFromFrozenAccounts()
+            ->where(function ($q) {
+                $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                    ->orWhereNull('design_status')
+                    ->orWhere('design_status', '');
+            })
+            ->count();
         $workOrdersCount = \App\Models\WorkOrder::where('status', 'new')->count();
         $purchaseOrdersCount = \App\Models\PurchaseOrder::where('status', 'created')
-                                    ->whereNull('allocated_craftsman_code')
-                                    ->count();
+            ->whereNull('allocated_craftsman_code')
+            ->count();
         $stockOrdersCount = \App\Models\StockOrder::where('status', 'Pending')->count();
         $usersCount = \App\Models\User::count();
         $keyUsersCount = \App\Models\KeyUser::count();
-        
+
         // Overdue counts
         $workOrdersOverdueCount = \App\Models\WorkOrder::where('status', '!=', 'completed')
-                                    ->get()
-                                    ->filter(function($wo) { return $wo->isOverdue(); })
-                                    ->count();
+            ->get()
+            ->filter(function ($wo) {
+                return $wo->isOverdue(); })
+            ->count();
         $purchaseOrdersOverdueCount = \App\Models\PurchaseOrder::where('status', '!=', 'completed')
-                                    ->where('due_date', '<', now())
-                                    ->count();
-        
+            ->where('due_date', '<', now())
+            ->count();
+
         // Get admins count (ProcessOwner with role = 'admin')
         $adminsCount = \App\Models\ProcessOwner::where('role', 'admin')->count();
-        
+
         // Set KYC pending count to 0 since there's no status field in the tables
         $kycPendingCount = 0;
-        
+
         // Get most selling products with design codes
         $productCounts = [];
         $wos = \App\Models\WorkOrder::whereNotNull('product_name')->get();
@@ -131,19 +136,23 @@ class LoginController extends Controller
                 }
             }
         }
-        
-        uasort($productCounts, function($a, $b) { return $b['count'] <=> $a['count']; });
+
+        uasort($productCounts, function ($a, $b) {
+            return $b['count'] <=> $a['count']; });
         $mostSellingProductsFull = array_slice($productCounts, 0, 15, true);
-        $mostSellingProducts = array_map(function($p) { return $p['count']; }, $mostSellingProductsFull);
-        
-        uasort($productCounts, function($a, $b) { return $a['count'] <=> $b['count']; });
+        $mostSellingProducts = array_map(function ($p) {
+            return $p['count']; }, $mostSellingProductsFull);
+
+        uasort($productCounts, function ($a, $b) {
+            return $a['count'] <=> $b['count']; });
         $leastSellingProductsFull = array_slice($productCounts, 0, 15, true);
-        $leastSellingProducts = array_map(function($p) { return $p['count']; }, $leastSellingProductsFull);
+        $leastSellingProducts = array_map(function ($p) {
+            return $p['count']; }, $leastSellingProductsFull);
 
         // Get craftsman performance
         $craftsmen = \App\Models\Craftman::all();
         $craftsmanStats = [];
-        
+
         // Bulk fetch all relevant orders to avoid N+1 queries
         $allWorkOrders = \App\Models\WorkOrder::whereNotNull('allocated_craftsman_bp_code')->get();
         $allPurchaseOrders = \App\Models\PurchaseOrder::whereNotNull('allocated_craftsman_code')->get();
@@ -161,7 +170,7 @@ class LoginController extends Controller
                 'wa_total_weight' => 0,
                 'po_total_weight' => 0,
                 'total_amount' => 0,
-                
+
                 // Work Order Breakdown
                 'wo' => [
                     'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
@@ -171,7 +180,7 @@ class LoginController extends Controller
                     'overdue' => ['count' => 0, 'weight' => 0, 'orders' => []],
                     'for_approval' => ['count' => 0, 'weight' => 0, 'orders' => []],
                 ],
-                
+
                 // Purchase Order Breakdown
                 'po' => [
                     'new' => ['count' => 0, 'weight' => 0, 'orders' => []],
@@ -195,23 +204,23 @@ class LoginController extends Controller
                     $overdueDaysText = " [{$overdueDays} days overdue]";
                 }
                 $woStr = $wo->work_order_number . ' - ' . ($wo->bp_code ?? 'N/A') . ' - ' . ($wo->customer_name ?? 'Unknown') . ' (W: ' . floatval($wo->weight_from) . 'g, Qty: ' . floatval($wo->quantity) . ', Due: ' . $dueDateStr . ')' . $overdueDaysText;
-                
+
                 $stats['wo']['allocated']['count']++;
                 $stats['wo']['allocated']['weight'] += $w;
                 $stats['wo']['allocated']['orders'][] = $woStr;
-                
+
                 if (!$wo->craftsman_status || $wo->craftsman_status == 'new' || $wo->craftsman_status == 'allocated') {
                     $stats['wo']['new']['count']++;
                     $stats['wo']['new']['weight'] += $w;
                     $stats['wo']['new']['orders'][] = $woStr;
                 }
-                
+
                 if ($wo->craftsman_status == 'in_process') {
                     $stats['wo']['in_process']['count']++;
                     $stats['wo']['in_process']['weight'] += $w;
                     $stats['wo']['in_process']['orders'][] = $woStr;
                 }
-                
+
                 if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') {
                     $stats['wo']['completed']['count']++;
                     $stats['wo']['completed']['weight'] += $w;
@@ -229,12 +238,14 @@ class LoginController extends Controller
                     $stats['wo']['for_approval']['weight'] += $w;
                     $stats['wo']['for_approval']['orders'][] = $woStr;
                 }
-                
+
                 $stats['wa_total_weight'] += $w;
                 $stats['allocated']++;
                 $stats['total_weight'] += $w;
-                if ($wo->craftsman_status == 'completed' || $wo->status == 'completed') $stats['completed']++;
-                if ($wo->craftsman_status == 'in_process') $stats['in_process']++;
+                if ($wo->craftsman_status == 'completed' || $wo->status == 'completed')
+                    $stats['completed']++;
+                if ($wo->craftsman_status == 'in_process')
+                    $stats['in_process']++;
             }
 
             // 2. Process Purchase Orders
@@ -253,7 +264,7 @@ class LoginController extends Controller
                                 $poWeight += floatval($gram) * intval($item['quantity'][$i] ?? 1);
                             }
                         }
-                        
+
                         if (isset($item['quantity']) && isset($item['rate'])) {
                             // If quantity is an array, take its sum
                             $qty = is_array($item['quantity']) ? array_sum($item['quantity']) : floatval($item['quantity']);
@@ -308,17 +319,19 @@ class LoginController extends Controller
                 $stats['allocated']++;
                 $stats['total_weight'] += $poWeight;
                 $stats['total_amount'] += $poAmount;
-                if ($po->craftsman_status == 'completed' || $po->status == 'completed') $stats['completed']++;
-                if ($po->craftsman_status == 'in_process') $stats['in_process']++;
+                if ($po->craftsman_status == 'completed' || $po->status == 'completed')
+                    $stats['completed']++;
+                if ($po->craftsman_status == 'in_process')
+                    $stats['in_process']++;
             }
 
             if ($stats['allocated'] > 0) {
                 $craftsmanStats[$code] = $stats;
             }
         }
-        
+
         // Top Picks Craftsman (Sorted by Total Overdue count first, then allocated)
-        uasort($craftsmanStats, function($a, $b) {
+        uasort($craftsmanStats, function ($a, $b) {
             $aOverdue = $a['wo']['overdue']['count'] + $a['po']['overdue']['count'];
             $bOverdue = $b['wo']['overdue']['count'] + $b['po']['overdue']['count'];
             if ($aOverdue === $bOverdue) {
@@ -327,11 +340,14 @@ class LoginController extends Controller
             return $bOverdue <=> $aOverdue;
         });
         $topPicksCraftsmanFull = $craftsmanStats;
-        $topPicksCraftsman = array_map(function($stat) { return $stat['allocated']; }, $topPicksCraftsmanFull);
-        
-        uasort($craftsmanStats, function($a, $b) { return $a['allocated'] <=> $b['allocated']; });
+        $topPicksCraftsman = array_map(function ($stat) {
+            return $stat['allocated']; }, $topPicksCraftsmanFull);
+
+        uasort($craftsmanStats, function ($a, $b) {
+            return $a['allocated'] <=> $b['allocated']; });
         $leastPicksCraftsmanFull = array_slice($craftsmanStats, 0, 15, true);
-        $leastPicksCraftsman = array_map(function($stat) { return $stat['allocated']; }, $leastPicksCraftsmanFull);
+        $leastPicksCraftsman = array_map(function ($stat) {
+            return $stat['allocated']; }, $leastPicksCraftsmanFull);
 
         // Get buyer order counts for top/least picks with BP codes
         $clientStats = [];
@@ -351,10 +367,10 @@ class LoginController extends Controller
                 ];
             }
             $clientStats[$code]['orders']++;
-            
+
             // Use weight_to as requested, fallback to weight_from if missing
             $w = floatval($wo->weight_to ?: $wo->weight_from);
-            
+
             $orderDetails = [
                 'number' => $wo->work_order_number,
                 'weight' => $w,
@@ -396,15 +412,19 @@ class LoginController extends Controller
                 $clientStats[$code]['rejected']['orders'][] = $orderDetails;
             }
         }
-        
-        uasort($clientStats, function($a, $b) { return $b['orders'] <=> $a['orders']; });
+
+        uasort($clientStats, function ($a, $b) {
+            return $b['orders'] <=> $a['orders']; });
         $topPicksClientsFull = array_slice($clientStats, 0, 15, true);
-        $topPicksClients = array_map(function($c) { return $c['orders']; }, $topPicksClientsFull);
-        
-        uasort($clientStats, function($a, $b) { return $a['orders'] <=> $b['orders']; });
+        $topPicksClients = array_map(function ($c) {
+            return $c['orders']; }, $topPicksClientsFull);
+
+        uasort($clientStats, function ($a, $b) {
+            return $a['orders'] <=> $b['orders']; });
         $leastPicksClientsFull = array_slice($clientStats, 0, 15, true);
-        $leastPicksClients = array_map(function($c) { return $c['orders']; }, $leastPicksClientsFull);
-        
+        $leastPicksClients = array_map(function ($c) {
+            return $c['orders']; }, $leastPicksClientsFull);
+
         // Get buyer order counts for top/least picks
         $topPicksClients = \App\Models\WorkOrder::select('customer_name')
             ->selectRaw('COUNT(*) as order_count')
@@ -413,7 +433,7 @@ class LoginController extends Controller
             ->orderBy('order_count', 'desc')
             ->limit(10)
             ->pluck('order_count', 'customer_name');
-        
+
         $leastPicksClients = \App\Models\WorkOrder::select('customer_name')
             ->selectRaw('COUNT(*) as order_count')
             ->whereNotNull('customer_name')
@@ -421,22 +441,22 @@ class LoginController extends Controller
             ->orderBy('order_count', 'asc')
             ->limit(10)
             ->pluck('order_count', 'customer_name');
-        
+
         // Get quick payments (recent purchase orders with pending payment)
         $quickPayments = \App\Models\PurchaseOrder::where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->count();
-        
+
         // Get overdue payments (purchase orders past due date)
         $overduePayments = \App\Models\PurchaseOrder::where('status', 'pending')
             ->where('due_date', '<', now())
             ->count();
-        
+
         // Finance total (calculate from purchase order items)
         $purchaseOrders = \App\Models\PurchaseOrder::all();
         $financeTotal = 0;
-        
+
         foreach ($purchaseOrders as $po) {
             if ($po->items) {
                 // Check if items is a string (JSON) or already an array
@@ -445,7 +465,7 @@ class LoginController extends Controller
                 } else {
                     $items = $po->items;
                 }
-                
+
                 if (is_array($items)) {
                     foreach ($items as $item) {
                         if (isset($item['quantity']) && isset($item['rate'])) {
@@ -455,21 +475,20 @@ class LoginController extends Controller
                 }
             }
         }
-        
+
         // Count catalogues (products with design_status = 'Accepted' and not null design_code)
         $cataloguesCount = \App\Models\Product::where('design_status', 'Accepted')
-                                    ->whereNotNull('design_code')
-                                    ->whereNotNull('type')
-                                    ->where('type', '!=', '')
-                                    ->notFromFrozenAccounts()
-                                    ->count();
-        
+            ->whereNotNull('design_code')
+            ->notFromFrozenAccounts()
+            ->count();
+
         return view('admin.dashboard', compact(
             'admin',
             'buyersCount',
             'craftsmenCount',
             'productsCount',
             'designsCount',
+            'pendingDesignsCount',
             'workOrdersCount',
             'purchaseOrdersCount',
             'usersCount',

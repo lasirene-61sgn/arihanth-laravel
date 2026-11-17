@@ -22,14 +22,16 @@ class DesignController extends Controller
 {
     public function index(Request $request)
     {
-        $baseQuery = Product::with(['category', 'subcategory', 'images', 'creator', 'userAccess'])->notFromFrozenAccounts()->whereNotNull('type');
+        $baseQuery = Product::with(['category', 'subcategory', 'images', 'creator', 'userAccess'])
+            ->notFromFrozenAccounts();
 
         $applyFilters = function($q) use ($request) {
             if ($request->filled('search')) {
                 $q->where(function ($subQ) use ($request) {
                     $subQ->where('product_name', 'like', '%' . $request->search . '%')
                         ->orWhere('product_code', 'like', '%' . $request->search . '%')
-                        ->orWhere('design_code', 'like', '%' . $request->search . '%');
+                        ->orWhere('design_code', 'like', '%' . $request->search . '%')
+                        ->orWhere('bp_code', 'like', '%' . $request->search . '%');
                 });
             }
             if ($request->filled('filter_name')) {
@@ -41,8 +43,8 @@ class DesignController extends Controller
             if ($request->filled('filter_design_code')) {
                 $q->where('design_code', 'like', '%' . $request->filter_design_code . '%');
             }
-            if ($request->filled('category_filter')) {
-                $q->where('product_category_id', $request->category_filter);
+            if ($request->filled('category_filter') || $request->filled('filter_category')) {
+                $q->where('product_category_id', $request->category_filter ?: $request->filter_category);
             }
             if ($request->filled('filter_subcategory')) {
                 $q->where('product_subcategory_id', $request->filter_subcategory);
@@ -66,7 +68,11 @@ class DesignController extends Controller
         $allCount = (clone $countQuery)->count();
         $acceptedCount = (clone $countQuery)->where('design_status', 'Accepted')->count();
         $rejectedCount = (clone $countQuery)->where('design_status', 'Rejected')->count();
-        $pendingCount = (clone $countQuery)->whereNotIn('design_status', ['Accepted', 'Rejected'])->count();
+        $pendingCount = (clone $countQuery)->where(function ($q) {
+            $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+              ->orWhereNull('design_status')
+              ->orWhere('design_status', '');
+        })->count();
 
         $statusCounts = [
             'all' => $allCount,
@@ -89,7 +95,11 @@ class DesignController extends Controller
                 $query->where('design_status', 'Rejected');
                 break;
             case 'pending':
-                $query->whereNotIn('design_status', ['Accepted', 'Rejected']);
+                $query->where(function ($q) {
+                    $q->whereNotIn('design_status', ['Accepted', 'Rejected'])
+                      ->orWhereNull('design_status')
+                      ->orWhere('design_status', '');
+                });
                 break;
             case 'all':
             default:
