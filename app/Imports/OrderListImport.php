@@ -349,31 +349,14 @@ class OrderListImport implements ToModel, WithHeadingRow, WithValidation, WithEv
              }
         }
 
-        if ($designCode) {
-            // Find Existing or Prepare New
-            $product = Product::firstOrNew(['design_code' => $designCode]);
-            
-            // If NEW, set defaults that shouldn't be overwritten if they already exist
-            if (!$product->exists) {
-                $product->product_code = $designCode;
-                $product->product_name = $productName ?: $designCode; // Default to Design Code if no name
-                $product->design_status = 'Accepted';
-                $product->created_by = $this->created_by;
+        // If no image was found in Excel/ZIP, check if an existing product in DB has an image to use for the Work Order
+        if (!$importedImage && $designCode) {
+            $existingProduct = Product::where('design_code', $designCode)
+                ->orWhere('product_code', $designCode)
+                ->first();
+            if ($existingProduct && $existingProduct->product_image) {
+                $importedImage = $existingProduct->product_image;
             }
-
-            // Sync/Update fields if provided in Excel
-            if ($productName) $product->product_name = $productName;
-            
-            if ($categoryId) $product->product_category_id = $categoryId;
-            if ($subcategoryId) $product->product_subcategory_id = $subcategoryId;
-            if ($weight) {
-                $product->weight_from = $weight;
-                $product->weight_to = $weight;
-            }
-            if ($size) $product->size = $size;
-            if ($importedImage) $product->product_image = $importedImage;
-
-            $product->save();
         }
 
         // Automatic BP Matching: If customerName matches a Buyer's business_name, use that bp_code

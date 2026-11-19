@@ -438,8 +438,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{design}', [AdminDesignController::class, 'show'])->name('design.show');
             Route::post('/accept/{product}', [AdminDesignController::class, 'accept'])->name('design.accept');
             Route::post('/reject/{product}', [AdminDesignController::class, 'reject'])->name('design.reject');
+            Route::post('/move-to-pending/{product}', [AdminDesignController::class, 'moveToPending'])->name('design.move-to-pending');
             Route::post('/bulk-accept', [AdminDesignController::class, 'bulkAccept'])->name('design.bulk-accept');
             Route::post('/bulk-reject', [AdminDesignController::class, 'bulkReject'])->name('design.bulk-reject');
+            Route::post('/bulk-move-to-pending', [AdminDesignController::class, 'bulkMoveToPending'])->name('design.bulk-move-to-pending');
             Route::post('/{product}/toggle-lock', [AdminDesignController::class, 'toggleLock'])->name('design.toggle-lock');
             Route::post('/print-selected', [AdminDesignController::class, 'printSelected'])->name('design.print-selected');
             Route::post('/unlock-designs', [AdminDesignController::class, 'unlockDesigns'])->name('design.unlock-designs');
@@ -791,8 +793,10 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::get('/{design}', [SuperAdminDesignController::class, 'show'])->name('design.show');
             Route::post('/accept/{product}', [SuperAdminDesignController::class, 'accept'])->name('design.accept');
             Route::post('/reject/{product}', [SuperAdminDesignController::class, 'reject'])->name('design.reject');
+            Route::post('/move-to-pending/{product}', [SuperAdminDesignController::class, 'moveToPending'])->name('design.move-to-pending');
             Route::post('/bulk-accept', [SuperAdminDesignController::class, 'bulkAccept'])->name('design.bulk-accept');
             Route::post('/bulk-reject', [SuperAdminDesignController::class, 'bulkReject'])->name('design.bulk-reject');
+            Route::post('/bulk-move-to-pending', [SuperAdminDesignController::class, 'bulkMoveToPending'])->name('design.bulk-move-to-pending');
             Route::post('/{product}/toggle-lock', [SuperAdminDesignController::class, 'toggleLock'])->name('design.toggle-lock');
             Route::post('/print-selected', [SuperAdminDesignController::class, 'printSelected'])->name('design.print-selected');
             Route::post('/unlock-designs', [SuperAdminDesignController::class, 'unlockDesigns'])->name('design.unlock-designs');

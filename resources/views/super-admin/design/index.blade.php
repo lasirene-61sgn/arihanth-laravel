@@ -336,6 +336,15 @@
                                     </form>
                                     @endif
 
+                                    @if($product->design_status == 'Accepted')
+                                    <form action="{{ route('super-admin.design.move-to-pending', $product) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" onclick="return confirm('Move this accepted design back to Pending?')" class="p-2 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded transition-all shadow-sm" title="Move to Pending">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                    @endif
+
                                     <a href="{{ route('super-admin.design.show', $product) }}" class="p-2 bg-slate-100 text-slate-600 rounded hover:bg-slate-200" title="View Detail">
                                         <i class="bi bi-eye"></i>
                                     </a>

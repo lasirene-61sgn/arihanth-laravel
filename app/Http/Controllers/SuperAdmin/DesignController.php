@@ -320,6 +320,42 @@ class DesignController extends Controller
     }
 
     /**
+     * Move accepted/rejected product design back to Pending
+     */
+    public function moveToPending(Product $product)
+    {
+        $product->update([
+            'design_status' => 'Pending',
+            'accepted_by' => null,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Product design moved to Pending successfully. You can now change partner assignment.');
+    }
+
+    /**
+     * Bulk move products to Pending
+     */
+    public function bulkMoveToPending(Request $request)
+    {
+        $ids = $request->input('selected_designs', []);
+        if (empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'No designs selected.']);
+        }
+
+        Product::whereIn('id', $ids)->update([
+            'design_status' => 'Pending',
+            'accepted_by' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => count($ids) . " designs moved to Pending successfully."
+        ]);
+    }
+
+    /**
      * Generate unique design code
      */
     private function generateDesignCode($product)

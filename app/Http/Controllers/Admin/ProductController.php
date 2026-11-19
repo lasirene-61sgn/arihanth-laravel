@@ -215,11 +215,11 @@ class ProductController extends Controller
         $product->load('images');
         
         $buyers = Buyer::orderBy('business_name')->get();
-        $craftsmen = Craftman::orderBy('business_name')->get();
+        $craftsmen = Craftman::orderBy('name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
         
-        return view('admin.product.edit', compact('product', 'categories', 'subcategories'));
+        return view('admin.product.edit', compact('product', 'categories', 'subcategories', 'buyers', 'craftsmen'));
     }
 
     /**
@@ -228,6 +228,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
+            'assign_type' => 'nullable|in:craftsman,buyer',
             'product_code' => 'nullable|string|max:255|unique:products,product_code,' . $product->id,
             'relabel_code' => 'nullable|string|max:255',
             'product_name' => 'nullable|string|max:255',
@@ -251,8 +252,58 @@ class ProductController extends Controller
         ]);
 
         $data = $validated;
-        $data['bp_code'] = $validated['bp_code'] ?? $validated['craftsman_code'] ?? $product->bp_code;
-        unset($data['craftsman_code']);
+        unset($data['craftsman_code'], $data['assign_type']);
+
+        $isDesignAccepted = strtolower($product->design_status ?? '') === 'accepted';
+        if ($isDesignAccepted) {
+            $assignType = $request->input('assign_type');
+            $requestedCode = ($assignType === 'craftsman') ? $request->input('craftsman_code') : $request->input('bp_code');
+            if (!empty($requestedCode) && $requestedCode !== $product->bp_code) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['assign_type' => 'This product\'s design is already accepted. You cannot change the Craftsman or Buyer. If you want to change, please move the accepted design to pending first.']);
+            }
+            $data['bp_code'] = $product->bp_code;
+        } else {
+            $assignType = $request->input('assign_type');
+            if ($assignType === 'craftsman') {
+                if (!empty($validated['craftsman_code'])) {
+                    $craftsman = Craftman::where('craftman_code', $validated['craftsman_code'])->first();
+                    if ($craftsman) {
+                        $data['bp_code'] = $craftsman->craftman_code;
+                        $data['created_by'] = $craftsman->id;
+                    }
+                } else {
+                    $data['bp_code'] = $product->bp_code;
+                }
+            } elseif ($assignType === 'buyer') {
+                if (!empty($validated['bp_code'])) {
+                    $buyer = Buyer::where('bp_code', $validated['bp_code'])->first();
+                    if ($buyer) {
+                        $data['bp_code'] = $buyer->bp_code;
+                        $data['created_by'] = $buyer->id;
+                    }
+                } else {
+                    $data['bp_code'] = $product->bp_code;
+                }
+            } else {
+                if (!empty($validated['craftsman_code'])) {
+                    $craftsman = Craftman::where('craftman_code', $validated['craftsman_code'])->first();
+                    if ($craftsman) {
+                        $data['bp_code'] = $craftsman->craftman_code;
+                        $data['created_by'] = $craftsman->id;
+                    }
+                } elseif (!empty($validated['bp_code'])) {
+                    $buyer = Buyer::where('bp_code', $validated['bp_code'])->first();
+                    if ($buyer) {
+                        $data['bp_code'] = $buyer->bp_code;
+                        $data['created_by'] = $buyer->id;
+                    }
+                } else {
+                    $data['bp_code'] = $product->bp_code;
+                }
+            }
+        }
 
         $product->update($data);
 
