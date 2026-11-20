@@ -604,7 +604,7 @@ class DesignController extends Controller
             'product_name'        => 'required|string|max:255',
             'product_category_id' => 'required|exists:product_categories,id',
             'subcategory_id'      => 'nullable|exists:product_subcategories,id',
-            'type'                => 'required|string|in:Piece,Pair',
+            'type'                => 'required|string|in:Piece,Pair,Set',
             'description'         => 'nullable|string',
             'images.*'            => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);

@@ -60,7 +60,7 @@ class ProductController extends Controller
         if ($request->filled('filter_design_code')) {
             $query->where('design_code', 'like', '%' . $request->filter_design_code . '%');
         }
-        
+
         if (!$request->filled('filter_bp_code') && $request->filled('filter_craftsman')) {
             $query->where('bp_code', $request->filter_craftsman);
         }
@@ -70,25 +70,30 @@ class ProductController extends Controller
 
         // --- SORTING ---
         $sort = $request->get('sort', 'latest');
-        if ($sort == 'name_asc') $query->orderBy('product_name', 'asc');
-        elseif ($sort == 'name_desc') $query->orderBy('product_name', 'desc');
-        else $query->latest();
+        if ($sort == 'name_asc')
+            $query->orderBy('product_name', 'asc');
+        elseif ($sort == 'name_desc')
+            $query->orderBy('product_name', 'desc');
+        else
+            $query->latest();
 
         $products = $query->paginate(15)->withQueryString();
-        
+
         $all_categories = ProductCategory::withCount('products')
-            ->with(['subcategories' => function($query) {
-                $query->withCount('products');
-            }])
+            ->with([
+                'subcategories' => function ($query) {
+                    $query->withCount('products');
+                }
+            ])
             ->orderBy('name')
             ->get();
 
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('admin.product.index', compact('products', 'all_categories', 'buyers', 'craftsmen', 'subCategories', 'categories'));
     }
 
@@ -100,12 +105,12 @@ class ProductController extends Controller
     public function create()
     {
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('admin.product.create', compact('categories'));
     }
 
@@ -127,7 +132,7 @@ class ProductController extends Controller
             'craftsman_code' => 'nullable|string|exists:craftmen,craftman_code',
             'product_category_id' => 'required|exists:product_categories,id',
             'product_subcategory_id' => 'nullable|exists:product_subcategories,id',
-            'type' => 'required|in:Piece,Pair',
+            'type' => 'required|in:Piece,Pair,Set',
             // 'order_type' => 'required|in:Regular,Urgent,Super Urgent',
             'open_close' => 'nullable|in:Open,Close',
             'size' => 'nullable|string|max:255',
@@ -188,16 +193,16 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'subcategory', 'images']);
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('admin.product.show', compact('product'));
     }
 
-    
+
 
     /**
      * Show the form for editing the specified product.
@@ -213,12 +218,12 @@ class ProductController extends Controller
         })->orderBy('name')->get();
         $subcategories = $product->product_category_id ? ProductSubcategory::where('product_category_id', $product->product_category_id)->get() : collect();
         $product->load('images');
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('admin.product.edit', compact('product', 'categories', 'subcategories', 'buyers', 'craftsmen'));
     }
 
@@ -236,7 +241,7 @@ class ProductController extends Controller
             'craftsman_code' => 'nullable|string|exists:craftmen,craftman_code',
             'product_category_id' => 'required|exists:product_categories,id',
             'product_subcategory_id' => 'nullable|exists:product_subcategories,id',
-            'type' => 'required|in:Piece,Pair',
+            'type' => 'required|in:Piece,Pair,Set',
             // 'order_type' => 'required|in:Regular,Urgent,Super Urgent',
             'open_close' => 'nullable|in:Open,Close',
             'size' => 'nullable|string|max:255',
@@ -359,16 +364,20 @@ class ProductController extends Controller
     {
         $request->validate(['category_id' => 'required|exists:product_categories,id']);
         $subcategories = ProductSubcategory::where('product_category_id', $request->category_id)
-            ->withCount(['products' => function($query) {
-                $query->whereNotNull('design_code'); // Usually we only count designs in this context
-            }])
+            ->withCount([
+                'products' => function ($query) {
+                    $query->whereNotNull('design_code'); // Usually we only count designs in this context
+                }
+            ])
             ->orderBy('name')
             ->get();
-            
-        $category = ProductCategory::withCount(['products' => function($query) {
+
+        $category = ProductCategory::withCount([
+            'products' => function ($query) {
                 $query->whereNotNull('design_code');
-            }])->find($request->category_id);
-            
+            }
+        ])->find($request->category_id);
+
         return response()->json([
             'subcategories' => $subcategories,
             'total_products' => $category ? $category->products_count : 0
@@ -407,7 +416,7 @@ class ProductController extends Controller
 
         return response()->json($product);
     }
-    
+
 
     public function export(Request $request)
     {
@@ -418,71 +427,71 @@ class ProductController extends Controller
     {
         $ids = $request->input('selected_products', []);
         $products = Product::whereIn('id', $ids)->with(['category', 'subcategory', 'images'])->get();
-        
+
         $buyers = Buyer::orderBy('business_name')->get();
         $craftsmen = Craftman::orderBy('business_name')->get();
         $subCategories = ProductSubcategory::orderBy('name')->get();
         $categories = ProductCategory::orderBy('name')->get();
-        
+
         return view('admin.product.print-selected', compact('products'));
     }
 
     public function bulkUpload(Request $request)
-{
-    $request->validate([
-        'zip_file' => 'required|mimes:zip|max:102400',
-    ]);
+    {
+        $request->validate([
+            'zip_file' => 'required|mimes:zip|max:102400',
+        ]);
 
-    $zip = new \ZipArchive;
-    $file = $request->file('zip_file');
+        $zip = new \ZipArchive;
+        $file = $request->file('zip_file');
 
-    if ($zip->open($file->getRealPath()) === TRUE) {
-        $timestamp = time();
-        $baseTempPath = storage_path('app/temp_admin_bulk_' . $timestamp);
-        $zip->extractTo($baseTempPath);
-        $zip->close();
+        if ($zip->open($file->getRealPath()) === TRUE) {
+            $timestamp = time();
+            $baseTempPath = storage_path('app/temp_admin_bulk_' . $timestamp);
+            $zip->extractTo($baseTempPath);
+            $zip->close();
 
-        $excelFile = null;
-        $actualExtractPath = $baseTempPath;
-        
-        // Correctly using RecursiveIteratorIterator to look inside folders
-        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($baseTempPath));
+            $excelFile = null;
+            $actualExtractPath = $baseTempPath;
 
-        foreach ($files as $fileInfo) {
-            // Check if it's a file, not a directory
-            if ($fileInfo->isFile()) {
-                $extension = strtolower($fileInfo->getExtension());
-                if (in_array($extension, ['xlsx', 'xls', 'csv'])) {
-                    // Ignore hidden system files starting with ._
-                    if (strpos($fileInfo->getFilename(), '._') === false) {
-                        $excelFile = $fileInfo->getRealPath();
-                        // Point to the folder where the Excel actually lives
-                        $actualExtractPath = dirname($excelFile);
-                        break;
+            // Correctly using RecursiveIteratorIterator to look inside folders
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($baseTempPath));
+
+            foreach ($files as $fileInfo) {
+                // Check if it's a file, not a directory
+                if ($fileInfo->isFile()) {
+                    $extension = strtolower($fileInfo->getExtension());
+                    if (in_array($extension, ['xlsx', 'xls', 'csv'])) {
+                        // Ignore hidden system files starting with ._
+                        if (strpos($fileInfo->getFilename(), '._') === false) {
+                            $excelFile = $fileInfo->getRealPath();
+                            // Point to the folder where the Excel actually lives
+                            $actualExtractPath = dirname($excelFile);
+                            break;
+                        }
                     }
                 }
             }
+
+            if (!$excelFile || !file_exists($excelFile)) {
+                \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
+                return redirect()->back()->with('Error', 'Excel Not found. Check your ZIP structure.');
+            }
+
+            try {
+                // Use full namespaces to avoid "Class not found" errors
+                \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductImport($actualExtractPath), $excelFile);
+
+                \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
+                return redirect()->back()->with('Success', 'Products and Images added successfully');
+
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
+                // Catching specific errors from the import class
+                return redirect()->back()->with('Error', 'Import Error: ' . $e->getMessage());
+            }
         }
 
-        if (!$excelFile || !file_exists($excelFile)) {
-            \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
-            return redirect()->back()->with('Error', 'Excel Not found. Check your ZIP structure.');
-        }
-
-        try {
-            // Use full namespaces to avoid "Class not found" errors
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductImport($actualExtractPath), $excelFile);
-            
-            \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
-            return redirect()->back()->with('Success', 'Products and Images added successfully');
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\File::deleteDirectory($baseTempPath);
-            // Catching specific errors from the import class
-            return redirect()->back()->with('Error', 'Import Error: ' . $e->getMessage());
-        }
+        return redirect()->back()->with('Error', 'Could Not Open Zip File');
     }
-
-    return redirect()->back()->with('Error', 'Could Not Open Zip File');
-}
 }

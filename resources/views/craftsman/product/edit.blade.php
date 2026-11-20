@@ -44,6 +44,7 @@
                         <select name="type" class="form-control">
                             <option value="Piece" {{ $product->type == 'Piece' ? 'selected' : '' }}>Piece</option>
                             <option value="Pair" {{ $product->type == 'Pair' ? 'selected' : '' }}>Pair</option>
+                            <option value="Set" {{ $product->type == 'Set' ? 'selected' : '' }}>Set</option>
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">

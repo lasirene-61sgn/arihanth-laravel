@@ -745,7 +745,7 @@ class WorkOrderController extends Controller
             'product_year'        => 'nullable|string',
             'product_category_id' => 'nullable|exists:product_categories,id',
             'subcategory_id'      => 'nullable|exists:product_subcategories,id',
-            'type'                => 'nullable|in:Piece,Pair',
+            'type'                => 'nullable|in:Piece,Pair,Set',
             'open_close'          => 'nullable|in:Open,Close',
             'size'                => 'nullable|string|max:255',
             'length'              => 'nullable|string|max:255',

@@ -184,7 +184,7 @@ class ProductController extends Controller
             'craftsman_code' => 'nullable|exists:craftmen,craftman_code',
             'product_category_id' => 'required|exists:product_categories,id',
             'subcategory_id' => 'nullable|exists:product_subcategories,id',
-            'type' => 'required|in:Piece,Pair',
+            'type' => 'required|in:Piece,Pair,Set',
             // 'order_type' => 'nullable|in:Regular,Urgent,Super Urgent',
             'open_close' => 'nullable|in:Open,Close',
             'size' => 'nullable|string|max:255',
@@ -278,7 +278,7 @@ class ProductController extends Controller
 
             'product_category_id' => 'required|exists:product_categories,id',
             'subcategory_id' => 'nullable|exists:product_subcategories,id',
-            'type' => 'required|in:Piece,Pair',
+            'type' => 'required|in:Piece,Pair,Set',
             // 'order_type' => 'nullable|in:Regular,Urgent,Super Urgent',
             'open_close' => 'nullable|in:Open,Close',
             'size' => 'nullable|string|max:255',

@@ -133,6 +133,7 @@
                                         <option value="">Select Type</option>
                                         <option value="Piece" {{ old('type', $product->type) == 'Piece' ? 'selected' : '' }}>Piece</option>
                                         <option value="Pair" {{ old('type', $product->type) == 'Pair' ? 'selected' : '' }}>Pair</option>
+                                        <option value="Set" {{ old('type', $product->type) == 'Set' ? 'selected' : '' }}>Set</option>
                                     </select>
                                     @error('type')
                                         <div class="invalid-feedback">{{ $message }}</div>
